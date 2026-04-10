@@ -320,16 +320,248 @@ r = requests.post(f"{BASE}/file/read", headers=HEADERS_JSON, json={
 # 返回下载链接
 ```
 
-### 导入文献
+### 上传文件
+
+支持将本地文件（PDF、Markdown 等）上传到知识库中。
+
+#### 上传流程（三步）
+
+```
+1) GET  /file/multipart   → 获取上传凭证 (host, path, token)
+2) POST {host}/api/upload/binary  → 上传文件二进制内容
+3) POST /file/submit       → 将文件注册到知识库（使其可见）
+```
+
+#### 获取上传凭证
 
 ```python
+# 计算文件MD5和大小
+import hashlib
+def md5_hex(path):
+    h = hashlib.md5()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+# 获取上传凭证
+file_path = "paper.pdf"
+file_name = "paper.pdf"
+file_size = os.path.getsize(file_path)
+file_md5 = md5_hex(file_path)
+parent_id = 456  # 知识库或文件夹的nodeId
+
+r = requests.get(f"{BASE}/file/multipart", headers=HEADERS,
+    params={
+        "fileName": file_name,
+        "md5": file_md5,
+        "parentId": parent_id,
+        "size": file_size
+    })
+
+multipart_data = r.json()["data"]
+if multipart_data.get("fileExist"):
+    print("文件已存在，无需重复上传")
+else:
+    host = multipart_data["host"]
+    path = multipart_data["path"]
+    token = multipart_data["token"]
+    print(f"获取上传凭证成功: {host}, {path}")
+```
+
+#### 执行二进制上传
+
+```python
+import base64
+import json
+import urllib.request
+
+def make_storage_param(remote_path: str, encoded_file_name: str, content_type: str) -> str:
+    payload = {
+        "path": remote_path,
+        "option": {
+            "contentDisposition": (
+                f'inline; filename="{encoded_file_name}"; '
+                f"filename*=UTF-8''{encoded_file_name}"
+            ),
+            "contentType": content_type,
+        },
+    }
+    b = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return base64.b64encode(b).decode("utf-8")
+
+# 文件上传到存储服务
+file_content = open(file_path, "rb").read()
+content_type = "application/pdf"  # 或其他合适的MIME类型
+encoded_file_name = urllib.parse.quote(file_name, safe="-_.!~*'()")
+
+storage_param = make_storage_param(path, encoded_file_name, content_type)
+upload_url = host.rstrip("/") + "/api/upload/binary"
+
+req = urllib.request.Request(upload_url, method="POST", data=file_content)
+req.add_header("Authorization", f"Bearer {token}")
+req.add_header("X-Storage-Param", storage_param)
+req.add_header("Content-Type", "application/octet-stream")
+
+with urllib.request.urlopen(req, timeout=300) as resp:
+    upload_result = json.loads(resp.read().decode("utf-8"))
+
+print("二进制文件上传完成")
+```
+
+#### 注册文件到知识库
+
+```python
+# 将上传的文件注册到知识库中，使其在知识库中可见
+final_path = (upload_result.get("data") or {}).get("path") or path
+
 r = requests.post(f"{BASE}/file/submit", headers=HEADERS_JSON, json={
-    "parentId": 456,
-    "fileName": "paper.pdf",
-    "md5": "abc123...",
-    "size": 1024000,
-    "url": "https://..."        # 文件上传后的 URL
+    "parentId": parent_id,
+    "fileName": file_name,
+    "md5": file_md5,
+    "size": file_size,
+    "url": final_path  # 上传完成后返回的路径
 })
+
+result = r.json()
+if result.get("code") == 0:
+    print("文件成功注册到知识库")
+elif result.get("code") == 230117:  # 文件已存在
+    print("文件已在知识库中")
+else:
+    print(f"注册失败: {result}")
+```
+
+#### 完整的上传函数示例
+
+```python
+import hashlib
+import base64
+import json
+import urllib.request
+import mimetypes
+import os
+
+def guess_content_type(path):
+    suffix = os.path.splitext(path)[1].lower()
+    if suffix in {".md", ".markdown"}:
+        return "text/markdown; charset=utf-8"
+    if suffix in {".txt"}:
+        return "text/plain; charset=utf-8"
+
+    ctype, _ = mimetypes.guess_type(path)
+    if ctype is None:
+        return "application/octet-stream"
+
+    if ctype.startswith("text/"):
+        return f"{ctype}; charset=utf-8"
+    return ctype
+
+def upload_file_to_knowledge_base(file_path, parent_id, custom_file_name=None):
+    # 准备文件信息
+    file_name = custom_file_name or os.path.basename(file_path)
+    file_size = os.path.getsize(file_path)
+
+    # 计算MD5
+    def md5_hex(path):
+        h = hashlib.md5()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                h.update(chunk)
+        return h.hexdigest()
+
+    file_md5 = md5_hex(file_path)
+
+    # 步骤1: 获取上传凭证
+    r = requests.get(f"{BASE}/file/multipart", headers=HEADERS,
+        params={
+            "fileName": file_name,
+            "md5": file_md5,
+            "parentId": parent_id,
+            "size": file_size
+        })
+
+    multipart_data = r.json()["data"]
+
+    if multipart_data.get("fileExist"):
+        print("文件已存在，跳过上传，但注册到知识库...")
+
+        # 即使文件已存在，仍需注册到知识库
+        r_submit = requests.post(f"{BASE}/file/submit", headers=HEADERS_JSON, json={
+            "parentId": parent_id,
+            "fileName": file_name,
+            "md5": file_md5,
+            "size": file_size,
+            "url": multipart_data.get("path", "")  # 使用已存在的路径
+        })
+        return r_submit.json()
+
+    # 获取上传凭证
+    host = multipart_data["host"]
+    path = multipart_data["path"]
+    token = multipart_data["token"]
+
+    # 准备上传参数
+    content_type = guess_content_type(file_path)
+    encoded_file_name = urllib.parse.quote(file_name, safe="-_.!~*'()")
+
+    storage_param = base64.b64encode(json.dumps({
+        "path": path,
+        "option": {
+            "contentDisposition": (
+                f'inline; filename="{encoded_file_name}"; '
+                f"filename*=UTF-8''{encoded_file_name}"
+            ),
+            "contentType": content_type,
+        },
+    }, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).decode("utf-8")
+
+    # 步骤2: 二进制上传
+    file_content = open(file_path, "rb").read()
+    upload_url = host.rstrip("/") + "/api/upload/binary"
+
+    req = urllib.request.Request(upload_url, method="POST", data=file_content)
+    req.add_header("Authorization", f"Bearer {token}")
+    req.add_header("X-Storage-Param", storage_param)
+    req.add_header("Content-Type", "application/octet-stream")
+
+    with urllib.request.urlopen(req, timeout=300) as resp:
+        upload_result = json.loads(resp.read().decode("utf-8"))
+
+    # 步骤3: 注册文件到知识库
+    final_path = (upload_result.get("data") or {}).get("path") or path
+
+    r_submit = requests.post(f"{BASE}/file/submit", headers=HEADERS_JSON, json={
+        "parentId": parent_id,
+        "fileName": file_name,
+        "md5": file_md5,
+        "size": file_size,
+        "url": final_path
+    })
+
+    return r_submit.json()
+
+# 使用示例
+result = upload_file_to_knowledge_base("./paper.pdf", 456)
+print(result)
+```
+
+#### 幂等性
+
+如果文件已存在（`fileExist=true`），系统会跳过二进制上传步骤，但仍会调用 submit 接口确保文件在知识库中可见。这使得多次上传同一文件是安全的操作。
+
+#### 脚本方式上传
+
+项目还提供了 `scripts/bohrium-kb-upload.py` 脚本，支持命令行上传：
+
+```bash
+# 单个文件上传
+python3 scripts/bohrium-kb-upload.py ./paper.pdf --parent-id 456
+
+# 批量上传目录下所有PDF
+for f in pdfs/*.pdf; do
+  python3 scripts/bohrium-kb-upload.py "$f" --parent-id 456
+done
 ```
 
 ### 编辑文献信息

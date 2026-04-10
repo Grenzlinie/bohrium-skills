@@ -320,16 +320,248 @@ r = requests.post(f"{BASE}/file/read", headers=HEADERS_JSON, json={
 # Returns download URL
 ```
 
-### Import Literature
+### Upload File
+
+Supports uploading local files (PDF, Markdown, etc.) to the knowledge base.
+
+#### Upload Flow (Three Steps)
+
+```
+1) GET  /file/multipart   → Get upload credentials (host, path, token)
+2) POST {host}/api/upload/binary  → Upload file binary content
+3) POST /file/submit       → Register file to knowledge base (make it visible)
+```
+
+#### Get Upload Credentials
 
 ```python
+# Calculate file MD5 and size
+import hashlib
+def md5_hex(path):
+    h = hashlib.md5()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+# Get upload credentials
+file_path = "paper.pdf"
+file_name = "paper.pdf"
+file_size = os.path.getsize(file_path)
+file_md5 = md5_hex(file_path)
+parent_id = 456  # NodeId of knowledge base or folder
+
+r = requests.get(f"{BASE}/file/multipart", headers=HEADERS,
+    params={
+        "fileName": file_name,
+        "md5": file_md5,
+        "parentId": parent_id,
+        "size": file_size
+    })
+
+multipart_data = r.json()["data"]
+if multipart_data.get("fileExist"):
+    print("File already exists, no need to upload again")
+else:
+    host = multipart_data["host"]
+    path = multipart_data["path"]
+    token = multipart_data["token"]
+    print(f"Successfully obtained upload credentials: {host}, {path}")
+```
+
+#### Execute Binary Upload
+
+```python
+import base64
+import json
+import urllib.request
+
+def make_storage_param(remote_path: str, encoded_file_name: str, content_type: str) -> str:
+    payload = {
+        "path": remote_path,
+        "option": {
+            "contentDisposition": (
+                f'inline; filename="{encoded_file_name}"; '
+                f"filename*=UTF-8''{encoded_file_name}"
+            ),
+            "contentType": content_type,
+        },
+    }
+    b = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return base64.b64encode(b).decode("utf-8")
+
+# Upload file to storage service
+file_content = open(file_path, "rb").read()
+content_type = "application/pdf"  # Or other appropriate MIME type
+encoded_file_name = urllib.parse.quote(file_name, safe="-_.!~*'()")
+
+storage_param = make_storage_param(path, encoded_file_name, content_type)
+upload_url = host.rstrip("/") + "/api/upload/binary"
+
+req = urllib.request.Request(upload_url, method="POST", data=file_content)
+req.add_header("Authorization", f"Bearer {token}")
+req.add_header("X-Storage-Param", storage_param)
+req.add_header("Content-Type", "application/octet-stream")
+
+with urllib.request.urlopen(req, timeout=300) as resp:
+    upload_result = json.loads(resp.read().decode("utf-8"))
+
+print("Binary file upload completed")
+```
+
+#### Register File to Knowledge Base
+
+```python
+# Register the uploaded file to the knowledge base to make it visible in the KB
+final_path = (upload_result.get("data") or {}).get("path") or path
+
 r = requests.post(f"{BASE}/file/submit", headers=HEADERS_JSON, json={
-    "parentId": 456,
-    "fileName": "paper.pdf",
-    "md5": "abc123...",
-    "size": 1024000,
-    "url": "https://..."        # URL of uploaded file
+    "parentId": parent_id,
+    "fileName": file_name,
+    "md5": file_md5,
+    "size": file_size,
+    "url": final_path  # Path returned after upload completes
 })
+
+result = r.json()
+if result.get("code") == 0:
+    print("File successfully registered to knowledge base")
+elif result.get("code") == 230117:  # File already exists
+    print("File already exists in knowledge base")
+else:
+    print(f"Registration failed: {result}")
+```
+
+#### Complete Upload Function Example
+
+```python
+import hashlib
+import base64
+import json
+import urllib.request
+import mimetypes
+import os
+
+def guess_content_type(path):
+    suffix = os.path.splitext(path)[1].lower()
+    if suffix in {".md", ".markdown"}:
+        return "text/markdown; charset=utf-8"
+    if suffix in {".txt"}:
+        return "text/plain; charset=utf-8"
+
+    ctype, _ = mimetypes.guess_type(path)
+    if ctype is None:
+        return "application/octet-stream"
+
+    if ctype.startswith("text/"):
+        return f"{ctype}; charset=utf-8"
+    return ctype
+
+def upload_file_to_knowledge_base(file_path, parent_id, custom_file_name=None):
+    # Prepare file info
+    file_name = custom_file_name or os.path.basename(file_path)
+    file_size = os.path.getsize(file_path)
+
+    # Calculate MD5
+    def md5_hex(path):
+        h = hashlib.md5()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                h.update(chunk)
+        return h.hexdigest()
+
+    file_md5 = md5_hex(file_path)
+
+    # Step 1: Get upload credentials
+    r = requests.get(f"{BASE}/file/multipart", headers=HEADERS,
+        params={
+            "fileName": file_name,
+            "md5": file_md5,
+            "parentId": parent_id,
+            "size": file_size
+        })
+
+    multipart_data = r.json()["data"]
+
+    if multipart_data.get("fileExist"):
+        print("File already exists, skipping upload but registering to knowledge base...")
+
+        # Even if file exists, still need to register to knowledge base
+        r_submit = requests.post(f"{BASE}/file/submit", headers=HEADERS_JSON, json={
+            "parentId": parent_id,
+            "fileName": file_name,
+            "md5": file_md5,
+            "size": file_size,
+            "url": multipart_data.get("path", "")  # Use existing path
+        })
+        return r_submit.json()
+
+    # Get upload credentials
+    host = multipart_data["host"]
+    path = multipart_data["path"]
+    token = multipart_data["token"]
+
+    # Prepare upload parameters
+    content_type = guess_content_type(file_path)
+    encoded_file_name = urllib.parse.quote(file_name, safe="-_.!~*'()")
+
+    storage_param = base64.b64encode(json.dumps({
+        "path": path,
+        "option": {
+            "contentDisposition": (
+                f'inline; filename="{encoded_file_name}"; '
+                f"filename*=UTF-8''{encoded_file_name}"
+            ),
+            "contentType": content_type,
+        },
+    }, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).decode("utf-8")
+
+    # Step 2: Binary upload
+    file_content = open(file_path, "rb").read()
+    upload_url = host.rstrip("/") + "/api/upload/binary"
+
+    req = urllib.request.Request(upload_url, method="POST", data=file_content)
+    req.add_header("Authorization", f"Bearer {token}")
+    req.add_header("X-Storage-Param", storage_param)
+    req.add_header("Content-Type", "application/octet-stream")
+
+    with urllib.request.urlopen(req, timeout=300) as resp:
+        upload_result = json.loads(resp.read().decode("utf-8"))
+
+    # Step 3: Register file to knowledge base
+    final_path = (upload_result.get("data") or {}).get("path") or path
+
+    r_submit = requests.post(f"{BASE}/file/submit", headers=HEADERS_JSON, json={
+        "parentId": parent_id,
+        "fileName": file_name,
+        "md5": file_md5,
+        "size": file_size,
+        "url": final_path
+    })
+
+    return r_submit.json()
+
+# Example usage
+result = upload_file_to_knowledge_base("./paper.pdf", 456)
+print(result)
+```
+
+#### Idempotency
+
+If the file already exists (`fileExist=true`), the system skips the binary upload step but still calls the submit interface to ensure the file is visible in the knowledge base. This makes uploading the same file multiple times a safe operation.
+
+#### Script-based Upload
+
+The project also provides a `scripts/bohrium-kb-upload.py` script that supports command-line uploads:
+
+```bash
+# Upload a single file
+python3 scripts/bohrium-kb-upload.py ./paper.pdf --parent-id 456
+
+# Batch upload all PDFs in directory
+for f in pdfs/*.pdf; do
+  python3 scripts/bohrium-kb-upload.py "$f" --parent-id 456
+done
 ```
 
 ### Edit Literature Metadata
