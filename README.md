@@ -11,7 +11,7 @@ Bohrium 平台 AI 技能集合，为 [OpenClaw](https://github.com/openclaw) 和
 本仓库同时是一个 Claude Code plugin marketplace。在 Claude Code 中：
 
 ```
-/plugin marketplace add dingzhaohan/bohrium-skill-hub
+/plugin marketplace add dptech-corp/bohrium-skills
 /plugin install bohrium-skills@bohrium
 ```
 
