@@ -1,0 +1,37 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "bohrium",
+  "description": "Bohrium platform skills for Claude Code — compute jobs, datasets, images, paper search, PDF parsing, scholar lookup, and more via open.bohrium.com",
+  "owner": {
+    "name": "DP Technology",
+    "email": "support@dp.tech"
+  },
+  "metadata": {
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "bohrium-skills",
+      "description": "14 Bohrium platform skills: job/node/dataset/image/project management, knowledge-base, paper & patent search, PDF parsing, scholar lookup, SciencePedia wiki, molecular search, web search, sandbox (E2B), and long-term memory (OpenViking).",
+      "category": "research",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./en/bohrium-dataset",
+        "./en/bohrium-image",
+        "./en/bohrium-job",
+        "./en/bohrium-knowledge-base",
+        "./en/bohrium-mol-search",
+        "./en/bohrium-node",
+        "./en/bohrium-paper-search",
+        "./en/bohrium-pdf-parser",
+        "./en/bohrium-project",
+        "./en/bohrium-sandbox",
+        "./en/bohrium-scholar",
+        "./en/bohrium-viking-memory",
+        "./en/bohrium-web-search",
+        "./en/bohrium-wiki"
+      ]
+    }
+  ]
+}

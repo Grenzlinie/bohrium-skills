@@ -1,8 +1,26 @@
 # Bohrium Skill Hub
 
-Bohrium 平台 AI 技能集合，为 [OpenClaw](https://github.com/openclaw) 提供结构化的 SKILL.md 文件。每个 skill 描述一个独立能力（API 调用、Agent 工作流等），供 AI 编码助手在对话中按需加载。
+Bohrium 平台 AI 技能集合，为 [OpenClaw](https://github.com/openclaw) 和 [Claude Code](https://claude.com/claude-code) 提供结构化的 SKILL.md 文件。每个 skill 描述一个独立能力（API 调用、Agent 工作流等），供 AI 编码助手在对话中按需加载。
 
 [English](#english) | [中文](#中文)
+
+---
+
+## Claude Code 插件安装
+
+本仓库同时是一个 Claude Code plugin marketplace。在 Claude Code 中：
+
+```
+/plugin marketplace add dingzhaohan/bohrium-skill-hub
+/plugin install bohrium-skills@bohrium
+```
+
+装完会得到 14 个 Bohrium skill（英文版）。认证：
+
+```bash
+export ACCESS_KEY="YOUR_BOHRIUM_ACCESS_KEY"
+# sandbox 需要 E2B_API_KEY；viking-memory 需要 OPENVIKING_API_KEY 等
+```
 
 ---
 
