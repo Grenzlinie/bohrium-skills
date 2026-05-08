@@ -221,11 +221,21 @@ print(r.json())
 ## 7. 磁盘用量统计 — `/file/accounting`
 
 ```python
-r = requests.get(f"{BASE}/accounting", headers=H_GET)
+r = requests.get(f"{BASE}/accounting", headers=H_GET, params={
+    "projectId": 109538,
+    "userId": 27071
+})
 data = r.json()
 print(f"Used: {data.get('data', {}).get('used')}")
 print(f"Total: {data.get('data', {}).get('total')}")
 ```
+
+**参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `projectId` | int | 是 | 项目 ID |
+| `userId` | int | 是 | 用户 ID |
 
 ---
 

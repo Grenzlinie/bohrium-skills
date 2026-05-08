@@ -11,11 +11,13 @@ Query scientific databases via multiple `open.bohrium.com` endpoints, covering m
 
 **Supported data sources:**
 
-| Endpoint prefix | Data type | Description |
-|-----------------|-----------|-------------|
-| `/v1/structures/` | Material structures | Crystal structure query, iteration, phase diagram convex hull |
-| `/v1/database/` | Common data | Public datasets, polymer data |
-| `/v1/molecular/` | Molecular properties | Lookup by name/SMILES/InChI/formula |
+| Endpoint prefix | Data type | Description | Status |
+|-----------------|-----------|-------------|--------|
+| `/v1/database/` | Common data | Public datasets, polymer data | Available |
+| `/v1/structures/` | Material structures | Crystal structure query, iteration, phase diagram convex hull | May be limited |
+| `/v1/molecular/` | Molecular properties | Lookup by name/SMILES/InChI/formula | May be limited |
+
+> **Note**: The `structures` and `molecular` endpoints depend on specific backend services and may not be available in all environments. If you get 404, use `bohrium-mol-search` as an alternative.
 
 **Use when:**
 
@@ -145,17 +147,26 @@ print(f"  Hull URL: {data.get('data', {}).get('hull')}")
 
 ## 4. Common data list — `/database/common_data/list`
 
-Query public scientific datasets.
+Query public scientific datasets. Requires a `tableAK` (table-specific AccessKey).
 
 ```python
 r = requests.post(f"{BASE}/database/common_data/list", headers=H, json={
+    "tableAK": "TABLE_ACCESS_KEY",
     "page": 1,
-    "pageSize": 20
+    "size": 20
 })
 data = r.json()
 for item in data.get("data", {}).get("items", []):
     print(f"  {item.get('name')}: {item.get('description')}")
 ```
+
+**Parameters:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `tableAK` | string | yes | Table-specific AccessKey |
+| `page` | int | no | Page number |
+| `size` | int | no | Items per page |
 
 ---
 
@@ -166,12 +177,19 @@ Query polymer material data.
 ```python
 r = requests.post(f"{BASE}/database/polymer/list", headers=H, json={
     "page": 1,
-    "pageSize": 20
+    "size": 20
 })
 data = r.json()
 for item in data.get("data", {}).get("items", []):
     print(f"  {item.get('name')}: {item.get('properties')}")
 ```
+
+**Parameters:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `page` | int | no | Page number |
+| `size` | int | yes | Items per page |
 
 ---
 

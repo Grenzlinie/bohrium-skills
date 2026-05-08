@@ -11,11 +11,13 @@ description: "Query scientific databases (materials structures, polymers, common
 
 **支持的数据源：**
 
-| 端点前缀 | 数据类型 | 说明 |
-|----------|----------|------|
-| `/v1/structures/` | 材料结构 | 晶体结构查询、遍历、相图凸包 |
-| `/v1/database/` | 通用数据 | 公共数据集列表、高分子数据 |
-| `/v1/molecular/` | 分子属性 | 按名称/SMILES/InChI/分子式查分子属性数据 |
+| 端点前缀 | 数据类型 | 说明 | 状态 |
+|----------|----------|------|------|
+| `/v1/database/` | 通用数据 | 公共数据集列表、高分子数据 | 可用 |
+| `/v1/structures/` | 材料结构 | 晶体结构查询、遍历、相图凸包 | 可能受限 |
+| `/v1/molecular/` | 分子属性 | 按名称/SMILES/InChI/分子式查分子属性数据 | 可能受限 |
+
+> **注意**：`structures` 和 `molecular` 端点依赖特定后端服务，可能在部分环境下不可用。如果返回 404，请使用 `bohrium-mol-search` 作为替代。
 
 **适用场景：**
 
@@ -145,17 +147,26 @@ print(f"  Hull URL: {data.get('data', {}).get('hull')}")
 
 ## 4. 通用数据集列表 — `/database/common_data/list`
 
-查询公共科学数据集。
+查询公共科学数据集。需要提供 `tableAK`（数据表的 AccessKey）。
 
 ```python
 r = requests.post(f"{BASE}/database/common_data/list", headers=H, json={
+    "tableAK": "TABLE_ACCESS_KEY",
     "page": 1,
-    "pageSize": 20
+    "size": 20
 })
 data = r.json()
 for item in data.get("data", {}).get("items", []):
     print(f"  {item.get('name')}: {item.get('description')}")
 ```
+
+**参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `tableAK` | string | 是 | 数据表 AccessKey |
+| `page` | int | 否 | 页码 |
+| `size` | int | 否 | 每页数量 |
 
 ---
 
@@ -166,12 +177,19 @@ for item in data.get("data", {}).get("items", []):
 ```python
 r = requests.post(f"{BASE}/database/polymer/list", headers=H, json={
     "page": 1,
-    "pageSize": 20
+    "size": 20
 })
 data = r.json()
 for item in data.get("data", {}).get("items", []):
     print(f"  {item.get('name')}: {item.get('properties')}")
 ```
+
+**参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `page` | int | 否 | 页码 |
+| `size` | int | 是 | 每页数量 |
 
 ---
 

@@ -80,26 +80,43 @@ print(data)
 
 ## 2. Claim matching — `/lkm/claims/match`
 
-Submit a scientific claim, get back evidence that supports or refutes it.
+Submit a scientific claim, get back evidence that supports or refutes it (with source papers and relevance scores).
 
 ```python
 r = requests.post(f"{BASE}/claims/match", headers=H, json={
-    "claim": "Graphene oxide improves the mechanical strength of concrete",
+    "text": "Graphene oxide improves the mechanical strength of concrete",
     "limit": 5
 })
 data = r.json()
-for item in data.get("data", []):
+# data["data"]["variables"] contains matched claims
+# data["data"]["papers"] contains related paper details
+# data["data"]["new_claim_likely"] indicates if this might be a novel claim
+for item in data.get("data", {}).get("variables", []):
     print(f"  Claim ID: {item['id']}")
-    print(f"  Support: {item.get('support_level')}")
-    print(f"  Source: {item.get('source')}")
+    print(f"  Role: {item.get('role')}")  # premise / conclusion
+    print(f"  Score: {item.get('score')}")
+    print(f"  Content: {item.get('content')[:100]}...")
 ```
 
 **Parameters:**
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `claim` | string | yes | Scientific claim to verify |
+| `text` | string | yes | Scientific claim to verify |
 | `limit` | int | no | Max matching results |
+
+**Response fields:**
+
+| Field | Description |
+|-------|-------------|
+| `data.new_claim_likely` | Whether this might be a novel claim (insufficient support/refutation) |
+| `data.variables[]` | List of matched existing claims |
+| `data.variables[].id` | Claim ID (use for evidence chain lookup) |
+| `data.variables[].content` | Claim content (with data and references) |
+| `data.variables[].role` | `premise` or `conclusion` |
+| `data.variables[].score` | Relevance score |
+| `data.variables[].provenance` | Source info (paper ID, version) |
+| `data.papers` | Related paper details map (keyed by paper ID) |
 
 ---
 
@@ -119,30 +136,26 @@ for ev in data.get("data", []):
 
 ---
 
-## 4. Variable relationships — `/lkm/variables/batch`
+## 4. Variable batch query — `/lkm/variables/batch`
 
-Query relationships between multiple variable pairs.
+Batch query variable details by ID. Variable IDs can be obtained from `/lkm/search` or `/lkm/claims/match` responses.
 
 ```python
 r = requests.post(f"{BASE}/variables/batch", headers=H, json={
-    "pairs": [
-        {"variable1": "temperature", "variable2": "reaction rate"},
-        {"variable1": "pH", "variable2": "enzyme activity"},
-        {"variable1": "pressure", "variable2": "boiling point"}
-    ]
+    "ids": ["gcn_b2bf079b541a4fa0", "gcn_5cecd02c3d8a4e61"]
 })
 data = r.json()
-for pair in data.get("data", []):
-    print(f"  {pair['variable1']} vs {pair['variable2']}: {pair.get('relationship')}")
+for var in data.get("data", {}).get("variables", []):
+    print(f"  ID: {var['id']}")
+    print(f"  Content: {var.get('content')[:100]}...")
+# data["data"]["not_found"] lists IDs that were not found
 ```
 
 **Parameters:**
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `pairs` | array | yes | List of variable pairs |
-| `pairs[].variable1` | string | yes | Variable 1 |
-| `pairs[].variable2` | string | yes | Variable 2 |
+| `ids` | string[] | yes | Variable/claim IDs (obtained from other LKM endpoints) |
 
 ---
 
@@ -181,16 +194,16 @@ curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/search" \
 # Claim matching
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/claims/match" \
   -H "accessKey: $AK" -H "Content-Type: application/json" \
-  -d '{"claim":"MoS2 is a promising catalyst for hydrogen evolution","limit":5}' | jq .
+  -d '{"text":"MoS2 is a promising catalyst for hydrogen evolution","limit":5}' | jq .
 
 # Evidence chain
 curl -s -X GET "https://open.bohrium.com/openapi/v1/lkm/claims/abc123/evidence" \
   -H "accessKey: $AK" | jq .
 
-# Variable relationships
+# Variable batch query (IDs from search/claims results)
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/variables/batch" \
   -H "accessKey: $AK" -H "Content-Type: application/json" \
-  -d '{"pairs":[{"variable1":"temperature","variable2":"conductivity"}]}' | jq .
+  -d '{"ids":["gcn_b2bf079b541a4fa0","gcn_5cecd02c3d8a4e61"]}' | jq .
 
 # Batch OCR
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/papers/ocr/batch" \

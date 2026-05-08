@@ -80,26 +80,43 @@ print(data)
 
 ## 2. 论断匹配 — `/lkm/claims/match`
 
-输入一个科学论断，系统返回支持或反驳该论断的已有证据。
+输入一个科学论断，系统返回支持或反驳该论断的已有证据（含论文来源和相关度评分）。
 
 ```python
 r = requests.post(f"{BASE}/claims/match", headers=H, json={
-    "claim": "Graphene oxide improves the mechanical strength of concrete",
+    "text": "Graphene oxide improves the mechanical strength of concrete",
     "limit": 5
 })
 data = r.json()
-for item in data.get("data", []):
+# data["data"]["variables"] 包含匹配到的论断列表
+# data["data"]["papers"] 包含相关论文详情
+# data["data"]["new_claim_likely"] 表示该论断是否可能是新发现
+for item in data.get("data", {}).get("variables", []):
     print(f"  Claim ID: {item['id']}")
-    print(f"  Support: {item.get('support_level')}")
-    print(f"  Source: {item.get('source')}")
+    print(f"  Role: {item.get('role')}")  # premise / conclusion
+    print(f"  Score: {item.get('score')}")
+    print(f"  Content: {item.get('content')[:100]}...")
 ```
 
 **参数：**
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `claim` | string | 是 | 待验证的科学论断 |
+| `text` | string | 是 | 待验证的科学论断 |
 | `limit` | int | 否 | 最大返回匹配数 |
+
+**返回字段：**
+
+| 字段 | 说明 |
+|------|------|
+| `data.new_claim_likely` | 是否可能是新论断（没有足够支持/反驳证据） |
+| `data.variables[]` | 匹配到的已有论断列表 |
+| `data.variables[].id` | 论断 ID（可用于查证据链） |
+| `data.variables[].content` | 论断内容（含数据和引用） |
+| `data.variables[].role` | `premise`（前提）或 `conclusion`（结论） |
+| `data.variables[].score` | 相关度评分 |
+| `data.variables[].provenance` | 来源信息（论文 ID、版本） |
+| `data.papers` | 相关论文详情 map（key 为 paper ID） |
 
 ---
 
@@ -119,30 +136,26 @@ for ev in data.get("data", []):
 
 ---
 
-## 4. 变量关系批量查询 — `/lkm/variables/batch`
+## 4. 变量批量查询 — `/lkm/variables/batch`
 
-查询多组变量之间的关系（如正相关、负相关、无关）。
+根据变量 ID 批量查询变量详情。变量 ID 可从 `/lkm/search` 或 `/lkm/claims/match` 返回结果中获取。
 
 ```python
 r = requests.post(f"{BASE}/variables/batch", headers=H, json={
-    "pairs": [
-        {"variable1": "temperature", "variable2": "reaction rate"},
-        {"variable1": "pH", "variable2": "enzyme activity"},
-        {"variable1": "pressure", "variable2": "boiling point"}
-    ]
+    "ids": ["gcn_b2bf079b541a4fa0", "gcn_5cecd02c3d8a4e61"]
 })
 data = r.json()
-for pair in data.get("data", []):
-    print(f"  {pair['variable1']} vs {pair['variable2']}: {pair.get('relationship')}")
+for var in data.get("data", {}).get("variables", []):
+    print(f"  ID: {var['id']}")
+    print(f"  Content: {var.get('content')[:100]}...")
+# data["data"]["not_found"] 列出未找到的 ID
 ```
 
 **参数：**
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `pairs` | array | 是 | 变量对列表 |
-| `pairs[].variable1` | string | 是 | 变量 1 |
-| `pairs[].variable2` | string | 是 | 变量 2 |
+| `ids` | string[] | 是 | 变量/论断 ID 列表（从其他 LKM 接口获取） |
 
 ---
 
@@ -181,16 +194,16 @@ curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/search" \
 # 论断匹配
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/claims/match" \
   -H "accessKey: $AK" -H "Content-Type: application/json" \
-  -d '{"claim":"MoS2 is a promising catalyst for hydrogen evolution","limit":5}' | jq .
+  -d '{"text":"MoS2 is a promising catalyst for hydrogen evolution","limit":5}' | jq .
 
 # 证据链
 curl -s -X GET "https://open.bohrium.com/openapi/v1/lkm/claims/abc123/evidence" \
   -H "accessKey: $AK" | jq .
 
-# 变量关系
+# 变量批量查询（ID 从 search/claims 结果获取）
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/variables/batch" \
   -H "accessKey: $AK" -H "Content-Type: application/json" \
-  -d '{"pairs":[{"variable1":"temperature","variable2":"conductivity"}]}' | jq .
+  -d '{"ids":["gcn_b2bf079b541a4fa0","gcn_5cecd02c3d8a4e61"]}' | jq .
 
 # 批量 OCR
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/papers/ocr/batch" \

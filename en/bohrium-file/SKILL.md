@@ -221,11 +221,21 @@ print(r.json())
 ## 7. Disk usage — `/file/accounting`
 
 ```python
-r = requests.get(f"{BASE}/accounting", headers=H_GET)
+r = requests.get(f"{BASE}/accounting", headers=H_GET, params={
+    "projectId": 109538,
+    "userId": 27071
+})
 data = r.json()
 print(f"Used: {data.get('data', {}).get('used')}")
 print(f"Total: {data.get('data', {}).get('total')}")
 ```
+
+**Parameters:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `projectId` | int | yes | Project ID |
+| `userId` | int | yes | User ID |
 
 ---
 
