@@ -15,7 +15,7 @@ Bohrium 平台 AI 技能集合，为 [OpenClaw](https://github.com/openclaw) 和
 /plugin install bohrium-skills@bohrium
 ```
 
-装完会得到 14 个 Bohrium skill（英文版）。认证：
+装完会得到 23 个 Bohrium skill（英文版）。认证：
 
 ```bash
 export ACCESS_KEY="YOUR_BOHRIUM_ACCESS_KEY"
@@ -59,6 +59,16 @@ bohrium-skill-hub/
 | [bohrium-paper-search](zh/bohrium-paper-search/SKILL.md) | 论文与专利搜索 — RAG 引擎关键词+语义检索 |
 | [bohrium-pdf-parser](zh/bohrium-pdf-parser/SKILL.md) | PDF 解析 — 提取文本、表格、图表、公式 |
 | [bohrium-scholar-search](zh/bohrium-scholar-search/SKILL.md) | 学者搜索与画像 — 按姓名/机构检索，查看发文/引用/h-index/研究方向 |
+| [bohrium-scholar](zh/bohrium-scholar/SKILL.md) | 学者检索 — 按姓名/机构/标签搜索学者信息 |
+| [bohrium-mol-search](zh/bohrium-mol-search/SKILL.md) | 分子检索 — 按 SMILES/InChI 搜索含特定分子的论文 |
+| [bohrium-wiki](zh/bohrium-wiki/SKILL.md) | 科学百科 — 按层级浏览科学词条 |
+| [bohrium-web-search](zh/bohrium-web-search/SKILL.md) | 网页搜索 — 代理 searchapi.io 做开放互联网检索 |
+| [bohrium-sandbox](zh/bohrium-sandbox/SKILL.md) | 云沙箱 — 在隔离 E2B 虚拟机中运行 shell/Python |
+| [bohrium-viking-memory](zh/bohrium-viking-memory/SKILL.md) | 长期记忆 — 跨会话持久化存取记忆 |
+| [bohrium-lkm](zh/bohrium-lkm/SKILL.md) | 大知识模型 — 知识图谱搜索、论断验证、变量关系、批量 OCR |
+| [bohrium-database](zh/bohrium-database/SKILL.md) | 科学数据库 — 材料结构、高分子、通用数据集、分子属性查询 |
+| [bohrium-file](zh/bohrium-file/SKILL.md) | 文件管理 — 文件列表、下载、分享、传输、批量任务文件操作 |
+| [bohrium-matmaster](zh/bohrium-matmaster/SKILL.md) | 材料大师 — MatMaster 用户 skill 查询与飞书集成 |
 
 #### 论文复现 Agent Skills
 
@@ -130,6 +140,16 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 | [bohrium-paper-search](en/bohrium-paper-search/SKILL.md) | Paper & patent search — RAG engine keyword + semantic retrieval |
 | [bohrium-pdf-parser](en/bohrium-pdf-parser/SKILL.md) | PDF parsing — extract text, tables, charts, formulas |
 | [bohrium-scholar-search](en/bohrium-scholar-search/SKILL.md) | Scholar search & profile — find scholars by name/affiliation, view papers/citations/h-index/research directions |
+| [bohrium-scholar](en/bohrium-scholar/SKILL.md) | Scholar lookup — search researchers by name/affiliation/tags |
+| [bohrium-mol-search](en/bohrium-mol-search/SKILL.md) | Molecule search — find papers mentioning a molecule by SMILES/InChI |
+| [bohrium-wiki](en/bohrium-wiki/SKILL.md) | SciencePedia — browse scientific topics by hierarchy |
+| [bohrium-web-search](en/bohrium-web-search/SKILL.md) | Web search — proxy to searchapi.io for open internet search |
+| [bohrium-sandbox](en/bohrium-sandbox/SKILL.md) | Cloud sandbox — run shell/Python in isolated E2B VM |
+| [bohrium-viking-memory](en/bohrium-viking-memory/SKILL.md) | Long-term memory — persist and recall memories across sessions |
+| [bohrium-lkm](en/bohrium-lkm/SKILL.md) | Large Knowledge Model — knowledge graph search, claim verification, variable relationships, batch OCR |
+| [bohrium-database](en/bohrium-database/SKILL.md) | Scientific database — material structures, polymers, common datasets, molecular properties |
+| [bohrium-file](en/bohrium-file/SKILL.md) | File management — list, download, share, transfer, bulk job file operations |
+| [bohrium-matmaster](en/bohrium-matmaster/SKILL.md) | Materials Master — MatMaster user skills and Feishu integration |
 
 #### Paper Reproduction Agent Skills
 
