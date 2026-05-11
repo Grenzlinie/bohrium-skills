@@ -28,6 +28,20 @@ Bohrium Sandbox 是平台提供的按需云 VM，通过 `lbg sdbx` CLI 操作。
 
 ---
 
+## 安装
+
+`sdbx` 子命令目前只在 **prerelease (beta) 版本** 的 `lbg` 上有。稳定版的 `lbg` 没有 `sdbx`，会报 `invalid choice: 'sdbx'`。
+
+```bash
+# 必须装 prerelease，否则 lbg sdbx 不存在
+pip install --pre --upgrade lbg
+
+# 验证
+lbg sdbx --help    # 应能看到 doctor / create / list / exec / files / terminal 等子命令
+```
+
+版本历史见 <https://pypi.org/project/lbg/#history>。当前 beta 形如 `4.0.0bNN`。
+
 ## 配置
 
 需要 Bohrium accessKey（不是 E2B）。两种方式：
@@ -321,6 +335,7 @@ lbg sdbx kill $SID
 
 | 问题 | 原因 | 解决 |
 |------|------|------|
+| `lbg: error: invalid choice: 'sdbx'` | 装的是稳定版 lbg，没有 sdbx 子命令 | `pip install --pre --upgrade lbg` 装 prerelease |
 | `access key required` / 鉴权失败 | 没 `lbg login` 或 `BOHRIUM_ACCESS_KEY` 没设 | `lbg login --ak <key>` 或 `export BOHRIUM_ACCESS_KEY=...` |
 | 前台命令超时被杀 | 默认 `--timeout 60` 太短 | 改 `--background --timeout 0` |
 | 后台命令到点被杀 | 同时设了 `--background` 和有限 `--timeout` | 后台只配 `--timeout 0`（默认就是 0） |
