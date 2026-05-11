@@ -131,64 +131,28 @@ r = requests.post(f"{BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{BASE}/rag/pass/patent", headers=HEADERS_JSON, json={
-    "words": ["neural network", "training"],
-    "question": "neural network training optimization",
-    "type": 3,                              # 0=普通, 1=加强, 2=专业, 3=尊享
-    "rerank": 1,                            # 0=不重排, 1=重排序
-    "assignees": [],                        # 专利权人（多个=且）
-    "examiners": [],                        # 审查员
-    "publicationDateRange": {               # 公开日范围
-        "start": "2020-01-01",
-        "end": "2025-01-01"
-    },
+    "keyword": "neural network training optimization",
+    "page": 1,
     "pageSize": 10
 })
 data = r.json()
-for p in data["data"]:
-    title = p.get("title", {})
-    print(f"  [{p['patentId']}] {title.get('enName', '')}")
-    print(f"    Status: {p['status']}, Assignees: {p.get('assignees', [])}")
-    print(f"    IPC: {p.get('ipcs', [])}, Year: {p.get('publicationYear')}")
+for p in data:
+    print(f"  Patent: {p}")
 ```
+
+**注意**: 专利搜索 API 参数格式较简单，不支持 `rerank`、`type`、`words`、`question` 等高级参数（传入会导致后端异常）。
 
 ### 专利请求参数
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `words` | string[] | 是 | 关键词 |
-| `question` | string | 是 | 搜索问题 |
-| `type` | integer | 否 | 0=普通, 1=加强, 2=专业, 3=尊享 |
-| `rerank` | integer | 否 | 0=不重排, 1=重排序 |
-| `assignees` | string[] | 否 | 专利权人（多个=且关系） |
-| `currentAssignees` | string[] | 否 | 当前专利权人 |
-| `examiners` | string[] | 否 | 审查员 |
-| `uspcs` | string[] | 否 | 美国专利分类（多个=或） |
-| `ipcs` | string[] | 否 | 国际专利分类（多个=或） |
-| `cpcs` | string[] | 否 | 合作专利分类（多个=或） |
-| `fis` | string[] | 否 | FI 分类 |
-| `fterms` | string[] | 否 | F-term 分类 |
-| `locarnos` | string[] | 否 | Locarno 分类 |
-| `publicationDateRange` | object | 否 | 公开日范围 `{start, end}` (YYYY-MM-DD) |
-| `publicationYearRange` | object | 否 | 公开年范围 `{start, end}` (integer) |
-| `pageSize` | integer | 是 | 返回数量 |
+| `keyword` | string | 是 | 搜索关键词 |
+| `page` | integer | 是 | 页码 |
+| `pageSize` | integer | 是 | 每页数量 |
 
 ### 专利返回字段
 
-| 字段 | 说明 |
-|------|------|
-| `data[].patentId` | 专利 ID（如 `US2022327730A1`） |
-| `data[].publicationNumber` | 公开号 |
-| `data[].publicationDate` | 公开日 |
-| `data[].language` | 语种 |
-| `data[].assignees` | 专利权人列表 |
-| `data[].status` | 状态（Active / Pending 等） |
-| `data[].title` | 标题 `{enName, zhName, originName}` |
-| `data[].abstracts` | 摘要 `{enName, zhName, originName}` |
-| `data[].ipcs` | IPC 分类列表 |
-| `data[].publicationYear` | 发布年份 |
-| `data[].filingYear` | 申请年份 |
-| `data[].applicationKind` | 专利类型（A=申请公开, B=授权, U=实用新型, D=外观设计等） |
-| `data[].pieces` | 相关语料 |
+返回数组格式，每个元素为专利信息对象。
 
 ---
 
@@ -206,7 +170,7 @@ words = ["science", "research"]
 
 ### 结合 question 提升相关性
 
-`words` 用于精确关键词匹配，`question` 用于语义理解。两者结合效果最佳：
+`words` 用于精确关键词匹配，`question` 用于语义理解。两者结合效果最佳（仅适用于英文文献搜索）：
 
 ```python
 {

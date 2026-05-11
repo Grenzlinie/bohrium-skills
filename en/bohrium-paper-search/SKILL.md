@@ -131,64 +131,28 @@ r = requests.post(f"{BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{BASE}/rag/pass/patent", headers=HEADERS_JSON, json={
-    "words": ["neural network", "training"],
-    "question": "neural network training optimization",
-    "type": 3,                              # 0=basic, 1=enhanced, 2=pro, 3=premium
-    "rerank": 1,                            # 0=no rerank, 1=rerank
-    "assignees": [],                        # Assignees (multiple = AND)
-    "examiners": [],                        # Examiners
-    "publicationDateRange": {               # Publication date range
-        "start": "2020-01-01",
-        "end": "2025-01-01"
-    },
+    "keyword": "neural network training optimization",
+    "page": 1,
     "pageSize": 10
 })
 data = r.json()
-for p in data["data"]:
-    title = p.get("title", {})
-    print(f"  [{p['patentId']}] {title.get('enName', '')}")
-    print(f"    Status: {p['status']}, Assignees: {p.get('assignees', [])}")
-    print(f"    IPC: {p.get('ipcs', [])}, Year: {p.get('publicationYear')}")
+for p in data:
+    print(f"  Patent: {p}")
 ```
+
+**Note**: Patent search API uses simple parameters. Advanced parameters like `rerank`, `type`, `words`, `question` are not supported (will cause backend errors).
 
 ### Patent Request Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `words` | string[] | Yes | Keywords |
-| `question` | string | Yes | Search question |
-| `type` | integer | No | 0=basic, 1=enhanced, 2=pro, 3=premium |
-| `rerank` | integer | No | 0=no rerank, 1=rerank |
-| `assignees` | string[] | No | Patent assignees (multiple = AND) |
-| `currentAssignees` | string[] | No | Current assignees |
-| `examiners` | string[] | No | Examiners |
-| `uspcs` | string[] | No | US patent classification (multiple = OR) |
-| `ipcs` | string[] | No | International patent classification (multiple = OR) |
-| `cpcs` | string[] | No | Cooperative patent classification (multiple = OR) |
-| `fis` | string[] | No | FI classification |
-| `fterms` | string[] | No | F-term classification |
-| `locarnos` | string[] | No | Locarno classification |
-| `publicationDateRange` | object | No | Date range `{start, end}` (YYYY-MM-DD) |
-| `publicationYearRange` | object | No | Year range `{start, end}` (integer) |
-| `pageSize` | integer | Yes | Result count |
+| `keyword` | string | Yes | Search keyword |
+| `page` | integer | Yes | Page number |
+| `pageSize` | integer | Yes | Results per page |
 
 ### Patent Response Fields
 
-| Field | Description |
-|-------|-------------|
-| `data[].patentId` | Patent ID (e.g. `US2022327730A1`) |
-| `data[].publicationNumber` | Publication number |
-| `data[].publicationDate` | Publication date |
-| `data[].language` | Language |
-| `data[].assignees` | Assignee list |
-| `data[].status` | Status (Active / Pending etc.) |
-| `data[].title` | Title `{enName, zhName, originName}` |
-| `data[].abstracts` | Abstract `{enName, zhName, originName}` |
-| `data[].ipcs` | IPC classification list |
-| `data[].publicationYear` | Publication year |
-| `data[].filingYear` | Filing year |
-| `data[].applicationKind` | Patent type (A=published app, B=granted, U=utility model, D=design etc.) |
-| `data[].pieces` | Related corpus |
+Returns array format with patent information objects.
 
 ---
 
@@ -206,7 +170,7 @@ words = ["science", "research"]
 
 ### Combine question for Better Relevance
 
-`words` is for exact keyword matching, `question` is for semantic understanding. Best results come from combining both:
+`words` is for exact keyword matching, `question` is for semantic understanding. Best results come from combining both (for paper search only):
 
 ```python
 {

@@ -15,9 +15,9 @@
 
 | 状态 | Skill | 说明 |
 |------|-------|------|
-| ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node, bohrium-knowledge-base, bohrium-image, bohrium-scholar-search, bohrium-wiki, bohrium-lkm | 所有文档端点/CLI 均正常 |
-| ✅ 核心可用 | bohrium-dataset, bohrium-paper-search, bohrium-matmaster | 主要功能正常，部分端点有问题 |
-| ❌ 已移除 | bohrium-file, bohrium-viking-memory, bohrium-scholar, diagnose-agent, proposal-agent, preparation-agent, scoring-agent | 冗余或后端不可用 |
+| ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node, bohrium-knowledge-base, bohrium-image, bohrium-scholar-search, bohrium-wiki, bohrium-lkm, bohrium-paper-search | 所有文档端点/CLI 均正常 |
+| ✅ 核心可用 | bohrium-dataset | 主要功能正常，创建需用 openapi.dp.tech |
+| ❌ 已移除 | bohrium-file, bohrium-viking-memory, bohrium-scholar, bohrium-matmaster, diagnose-agent, proposal-agent, preparation-agent, scoring-agent | 冗余或后端不可用 |
 
 ---
 
@@ -202,9 +202,8 @@ if pathParam == "/" {
 | `/v1/paper/rag/pass/keyword` (基础搜索) | POST | ✅ | 正常 |
 | `/v1/paper/rag/pass/keyword` (高级: type/time/JCR) | POST | ✅ | 正常 |
 | `/v1/paper/rag/pass/patent` (基础) | POST | ✅ | 正常 |
-| `/v1/paper/rag/pass/patent` (rerank=true) | POST | ❌ | **code=-102 "servlet请求异常"** |
 
-**结论**: 论文搜索完全正常；专利搜索基础功能正常，但 `rerank:true` 参数导致后端异常。
+**结论**: 论文搜索完全正常；专利搜索基础功能正常（仅支持 keyword/page/pageSize 参数）。
 
 ---
 
@@ -266,17 +265,6 @@ if pathParam == "/" {
 | `/v1/lkm/papers/ocr/batch` | POST | ❌ | **290007 权限不足** |
 
 **结论**: 核心功能（搜索/匹配/证据/变量）全部正常；OCR 批处理需要更高权限。
-
----
-
-### bohrium-matmaster (材料大师)
-
-| 端点 | 方法 | 状态 | 备注 |
-|------|------|------|------|
-| `/v1/matmaster/users/{userId}/skills` | GET | ✅ | 51 个 skills |
-| `/v1/matmaster/integrations/feishu/send` | POST | ❌ 404 | **端点不存在** |
-
-**结论**: 查询用户 skills 正常；飞书集成端点不可用。
 
 ---
 
@@ -343,13 +331,12 @@ if pathParam == "/" {
 | 4 | bohrium-dataset | `open.bohrium.com` 的 `POST /ds/` 307→404 | 中 | 创建需用 `OPENAPI_HOST=https://openapi.dp.tech`，CLI 亦然 |
 | 5 | bohrium-image | API `POST /v2/image/private` 参数解析失败 | 中 | 文档中 buildType/device 参数格式需更新 |
 | 6 | bohrium-knowledge-base | ~~delete/file-list/literature-list/search 四个端点 404~~ | ~~高~~ | **已修正**: 之前测试路径错误，正确路径全部可用 |
-| 7 | bohrium-paper-search | patent `rerank:true` 导致 -102 异常 | 低 | 文档应注明不传 rerank 或修复后端 |
+| 7 | bohrium-paper-search | ~~patent `rerank:true` 导致 -102 异常~~ | ~~低~~ | **已修正**: 文档已移除不支持的参数 |
 | 8 | bohrium-wiki | article 端点返回 250002 "Article not found" | 低 | 索引存在但文章内容可能按需生成 |
-| 9 | bohrium-matmaster | `/integrations/feishu/send` 返回 404 | 中 | 飞书集成端点未注册 |
-| 10 | bohrium-file | 全部端点不可用 (DB 表缺失) | **高** | 后端需修复 `bohrium.file_download_list` 表 |
-| 11 | bohrium-lkm | `/papers/ocr/batch` 返回 290007 权限不足 | 低 | 需更高权限 AK 或开通权限 |
-| 12 | bohrium-viking-memory | Bohrium AK 不能用于 Viking 鉴权 | 中 | 需单独申请 OPENVIKING_API_KEY |
-| 13 | bohr CLI | `bohr machine list --json` 报 JSON 反序列化错误 | 低 | CLI bug: discountRate 字段 int/float 不匹配 |
+| 9 | bohrium-file | 全部端点不可用 (DB 表缺失) | **高** | 后端需修复 `bohrium.file_download_list` 表 |
+| 10 | bohrium-lkm | `/papers/ocr/batch` 返回 290007 权限不足 | 低 | 需更高权限 AK 或开通权限 |
+| 11 | bohrium-viking-memory | Bohrium AK 不能用于 Viking 鉴权 | 中 | 需单独申请 OPENVIKING_API_KEY |
+| 12 | bohr CLI | `bohr machine list --json` 报 JSON 反序列化错误 | 低 | CLI bug: discountRate 字段 int/float 不匹配 |
 
 ## CLI 环境配置说明
 

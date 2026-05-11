@@ -62,7 +62,6 @@ bohrium-skill-hub/
 | [bohrium-web-search](zh/bohrium-web-search/SKILL.md) | 网页搜索 — 代理 searchapi.io 做开放互联网检索 |
 | [bohrium-sandbox](zh/bohrium-sandbox/SKILL.md) | 云沙箱 — 按需创建临时云 VM，运行 shell/Python |
 | [bohrium-lkm](zh/bohrium-lkm/SKILL.md) | 大知识模型 — 知识图谱搜索、论断验证、变量关系、批量 OCR |
-| [bohrium-matmaster](zh/bohrium-matmaster/SKILL.md) | 材料大师 — MatMaster 用户 skill 查询与飞书集成 |
 
 ### 认证配置
 
@@ -122,7 +121,6 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 | [bohrium-web-search](en/bohrium-web-search/SKILL.md) | Web search — proxy to searchapi.io for open internet search |
 | [bohrium-sandbox](en/bohrium-sandbox/SKILL.md) | Cloud sandbox — on-demand temp VM for running shell/Python |
 | [bohrium-lkm](en/bohrium-lkm/SKILL.md) | Large Knowledge Model — knowledge graph search, claim verification, variable relationships, batch OCR |
-| [bohrium-matmaster](en/bohrium-matmaster/SKILL.md) | Materials Master — MatMaster user skills and Feishu integration |
 
 ### Authentication
 
