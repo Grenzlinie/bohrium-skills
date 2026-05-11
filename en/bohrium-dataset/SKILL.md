@@ -171,7 +171,9 @@ r = requests.get(f"{BASE}/{dataset_id}/version", headers=HEADERS)
 r = requests.get(f"{BASE}/{dataset_id}/version/{version_id}", headers=HEADERS)
 
 # Create via API
-r = requests.post(f"{BASE}/", headers=HEADERS_JSON, json={
+# Note: create must use openapi.dp.tech (open.bohrium.com has a 307 redirect bug)
+CREATE_BASE = "https://openapi.dp.tech/openapi/v1/ds"
+r = requests.post(f"{CREATE_BASE}/", headers=HEADERS_JSON, json={
     "title": "my-dataset", "projectId": 154,
     "identifier": "my-dataset",  # Required, unique ID
 })

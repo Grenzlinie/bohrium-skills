@@ -173,24 +173,31 @@ r = requests.get(f"https://openapi.dp.tech/openapi/v2/image/public/{image_id}/ve
 ```python
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
+# Note: dockerfile field must be base64-encoded
+import base64
+dockerfile_content = "FROM ubuntu:22.04\nRUN apt-get update && apt-get install -y python3"
+dockerfile_b64 = base64.b64encode(dockerfile_content.encode()).decode()
+
 r = requests.post("https://openapi.dp.tech/openapi/v2/image/private",
     headers=HEADERS_JSON, json={
         "name": "my-image", "projectId": 154, "device": "container",
         "desc": "Custom training image", "buildType": 1,
-        "dockerfile": "FROM ubuntu:22.04\nRUN apt-get update && apt-get install -y python3",
+        "dockerfile": dockerfile_b64,
     })
 
-# Validate Dockerfile
+# Validate Dockerfile (also requires base64)
+check_b64 = base64.b64encode(b"FROM ubuntu:22.04\nRUN apt-get update").decode()
 requests.post("https://openapi.dp.tech/openapi/v2/image/dockerfile/check",
-    headers=HEADERS_JSON, json={"dockerfile": "FROM ubuntu:22.04\nRUN apt-get update"})
+    headers=HEADERS_JSON, json={"dockerfile": check_b64})
 ```
 
 ### Private Image Management
 
 ```python
-# List (must include device and type)
+# List (must include device and type parameters)
 r = requests.get("https://openapi.dp.tech/openapi/v2/image/private",
     headers=HEADERS, params={"device": "container", "type": "private", "page": 1, "pageSize": 10})
+# Returns: {items: [{id, name, url, status, buildType, creatorName, projectName, ...}]}
 
 # Share / unshare
 requests.post(f"https://openapi.dp.tech/openapi/v2/image/{image_id}/share", headers=HEADERS_JSON)
@@ -223,9 +230,10 @@ After installing software on a container node, save the environment as a custom 
 | Problem | Cause | Solution |
 |---------|-------|----------|
 | `bohr image pull` fails | Docker not running | Start Docker Desktop |
-| v2 private param error | Missing required params | Add `?device=container&type=private` |
+| v2 private param error | Missing required params | Add `device=container&type=private` parameters |
 | `no permission` | Not image creator | Can only manage own images |
 | v1 `/public` parse error | Route conflict | Use v2 endpoints |
 | Wrong image address | Used name, not full URL | Must use `registry.dp.tech/dptech/xxx:tag` |
 | Slow custom image cache | Cache takes 10-30 min | Wait 30 min after build |
 | No Docker in container | Security restriction | Use VM image `LBG_Common_v2` |
+| Create returns decode err | dockerfile not base64 encoded | Use `base64.b64encode(content.encode()).decode()` |

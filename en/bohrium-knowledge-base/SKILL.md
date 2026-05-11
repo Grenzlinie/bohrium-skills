@@ -976,7 +976,7 @@ r = requests.get(f"{BASE}/account/user_knowledge_base_role", headers=HEADERS,
 | `code` is non-zero | API call error | Check `error.msg` or `message` in the response for details |
 | 401 Unauthorized | Invalid or expired accessKey | Verify ACCESS_KEY is correct |
 | Knowledge base not found | Wrong ID used | `nodesId` (node ID) and `id` (KB ID) are different. Permission and folder endpoints all use `nodesId`; list endpoints return both. |
-| 404 page not found | Called a `/v2/*` path | The open-platform gateway hard-forces `/api/v1` prefix — `/v2/recall`, `/v2/box/*`, etc. are **not reachable** through this gateway |
+| 404 page not found | Called a `/v2/*` path | Gateway only proxies to `/api/v1/*`; all examples in this document use v1 paths and work correctly |
 | `code=230606 keywords is required` | `recall/hybrid` `keywords` is empty | Provide at least one `keyword: weight` pair |
 | `code=230105` | Wrong file-endpoint field name | Use `userResourceId` (not `resourceId`/`name`/`targetFolderId`); see examples above |
 | Literature search returns empty | Literature not yet indexed | Newly imported literature needs time for backend parsing and indexing |
@@ -986,5 +986,5 @@ r = requests.get(f"{BASE}/account/user_knowledge_base_role", headers=HEADERS,
 ## Gateway Limitations
 
 - Any `/openapi/v1/knowledge/<path>` request is proxied to literature-sage `/api/v1/<path>`.
-- Therefore literature-sage's `/api/v2/*` routes (e.g. `/v2/box/search_by_md5_paper_id`, `/v2/recall`) **cannot be reached** through this gateway and will return 404.
+- literature-sage's `/api/v2/*` routes cannot be reached through this gateway. However, all examples in this document use v1 paths and work correctly.
 - There is no dedicated KB delete endpoint; use `POST /folder/delete {nodesId: <KB_nodesID>}`.

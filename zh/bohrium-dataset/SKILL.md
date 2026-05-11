@@ -205,7 +205,9 @@ r = requests.get(f"{BASE}/{dataset_id}/version", headers=HEADERS)
 r = requests.get(f"{BASE}/{dataset_id}/version/{version_id}", headers=HEADERS)
 
 # ── 通过 API 创建数据集（程序化） ──
-r = requests.post(f"{BASE}/", headers=HEADERS_JSON, json={
+# 注意：创建操作必须用 openapi.dp.tech（open.bohrium.com 有 307 重定向 bug）
+CREATE_BASE = "https://openapi.dp.tech/openapi/v1/ds"
+r = requests.post(f"{CREATE_BASE}/", headers=HEADERS_JSON, json={
     "title": "my-dataset",
     "projectId": 154,
     "identifier": "my-dataset",  # 必填，唯一标识（英文+数字）

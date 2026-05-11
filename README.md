@@ -15,7 +15,7 @@ Bohrium 平台 AI 技能集合，为 [OpenClaw](https://github.com/openclaw) 和
 /plugin install bohrium-skills@bohrium
 ```
 
-装完会得到 21 个 Bohrium skill（英文版）。认证：
+装完会得到 15 个 Bohrium skill（英文版）。认证：
 
 ```bash
 export ACCESS_KEY="YOUR_BOHRIUM_ACCESS_KEY"
@@ -58,28 +58,11 @@ bohrium-skill-hub/
 | [bohrium-paper-search](zh/bohrium-paper-search/SKILL.md) | 论文与专利搜索 — RAG 引擎关键词+语义检索 |
 | [bohrium-pdf-parser](zh/bohrium-pdf-parser/SKILL.md) | PDF 解析 — 提取文本、表格、图表、公式 |
 | [bohrium-scholar-search](zh/bohrium-scholar-search/SKILL.md) | 学者搜索与画像 — 按姓名/机构检索，查看发文/引用/h-index/研究方向 |
-| [bohrium-scholar](zh/bohrium-scholar/SKILL.md) | 学者检索 — 按姓名/机构/标签搜索学者信息 |
 | [bohrium-wiki](zh/bohrium-wiki/SKILL.md) | 科学百科 — 按层级浏览科学词条 |
 | [bohrium-web-search](zh/bohrium-web-search/SKILL.md) | 网页搜索 — 代理 searchapi.io 做开放互联网检索 |
 | [bohrium-sandbox](zh/bohrium-sandbox/SKILL.md) | 云沙箱 — 按需创建临时云 VM，运行 shell/Python |
 | [bohrium-lkm](zh/bohrium-lkm/SKILL.md) | 大知识模型 — 知识图谱搜索、论断验证、变量关系、批量 OCR |
 | [bohrium-matmaster](zh/bohrium-matmaster/SKILL.md) | 材料大师 — MatMaster 用户 skill 查询与飞书集成 |
-
-#### 论文复现 Agent Skills
-
-论文复现工作流中的四个阶段性 Agent，按顺序配合使用：
-
-```
-diagnose → proposal → preparation → scoring
-  诊断        规划        准备          评分
-```
-
-| Skill | 说明 |
-|-------|------|
-| [diagnose-agent](zh/diagnose-agent/SKILL.md) | 复现可行性诊断 — 评估可复现性、成本、风险，输出诊断报告 |
-| [proposal-agent](zh/proposal-agent/SKILL.md) | 复现方案规划 — 拆解 R0/R1/R2 三级复现计划 |
-| [preparation-agent](zh/preparation-agent/SKILL.md) | 环境准备 — 下载代码、数据、模型，安装依赖 |
-| [scoring-agent](zh/scoring-agent/SKILL.md) | 复现评分 — 4C 维度系统化评分（完整性/正确性/清晰度/成本） |
 
 ### 认证配置
 
@@ -135,27 +118,11 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 | [bohrium-paper-search](en/bohrium-paper-search/SKILL.md) | Paper & patent search — RAG engine keyword + semantic retrieval |
 | [bohrium-pdf-parser](en/bohrium-pdf-parser/SKILL.md) | PDF parsing — extract text, tables, charts, formulas |
 | [bohrium-scholar-search](en/bohrium-scholar-search/SKILL.md) | Scholar search & profile — find scholars by name/affiliation, view papers/citations/h-index/research directions |
-| [bohrium-scholar](en/bohrium-scholar/SKILL.md) | Scholar lookup — search researchers by name/affiliation/tags |
 | [bohrium-wiki](en/bohrium-wiki/SKILL.md) | SciencePedia — browse scientific topics by hierarchy |
 | [bohrium-web-search](en/bohrium-web-search/SKILL.md) | Web search — proxy to searchapi.io for open internet search |
 | [bohrium-sandbox](en/bohrium-sandbox/SKILL.md) | Cloud sandbox — on-demand temp VM for running shell/Python |
 | [bohrium-lkm](en/bohrium-lkm/SKILL.md) | Large Knowledge Model — knowledge graph search, claim verification, variable relationships, batch OCR |
 | [bohrium-matmaster](en/bohrium-matmaster/SKILL.md) | Materials Master — MatMaster user skills and Feishu integration |
-
-#### Paper Reproduction Agent Skills
-
-Four sequential agents in the paper reproduction workflow:
-
-```
-diagnose → proposal → preparation → scoring
-```
-
-| Skill | Description |
-|-------|------------|
-| [diagnose-agent](en/diagnose-agent/SKILL.md) | Reproducibility diagnosis — assess feasibility, cost, risks |
-| [proposal-agent](en/proposal-agent/SKILL.md) | Reproduction planning — break down R0/R1/R2 plans |
-| [preparation-agent](en/preparation-agent/SKILL.md) | Environment preparation — download code, data, models, install deps |
-| [scoring-agent](en/scoring-agent/SKILL.md) | Reproduction scoring — 4C dimension scoring (completeness/correctness/clarity/cost) |
 
 ### Authentication
 

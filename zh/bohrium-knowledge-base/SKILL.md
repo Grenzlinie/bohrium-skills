@@ -976,7 +976,7 @@ r = requests.get(f"{BASE}/account/user_knowledge_base_role", headers=HEADERS,
 | `code` 非 0 | API 调用错误 | 检查返回的 `error.msg` 或 `message` 字段获取具体错误信息 |
 | 401 Unauthorized | accessKey 无效或过期 | 确认 ACCESS_KEY 正确 |
 | 找不到知识库 | 使用了错误的 ID | `nodesId`（节点 ID）和 `id`（知识库 ID）是不同概念；权限/文件夹端点统一用 `nodesId`，列表端点也会同时返回二者 |
-| 404 page not found | 调用了 `/v2/*` 路径 | open-platform 网关强制 `/api/v1` 前缀，`/v2/recall`、`/v2/box/*` 等 v2 路径目前**不可直接访问** |
+| 404 page not found | 调用了 `/v2/*` 路径 | 网关只转发到 `/api/v1/*`；本文档中的所有示例均使用 v1 路径，可正常使用 |
 | `code=230606 keywords is required` | `recall/hybrid` 的 `keywords` 为空 | 至少传一个 `keyword: weight` 键值对 |
 | `code=230105` | 文件相关端点参数名错 | `userResourceId`（不是 `resourceId`/`name`/`targetFolderId`）；详见上文示例 |
 | 文献搜索无结果 | 文献尚未完成索引 | 新导入的文献需要等待后台解析和索引完成 |
@@ -985,6 +985,6 @@ r = requests.get(f"{BASE}/account/user_knowledge_base_role", headers=HEADERS,
 
 ## 网关限制说明
 
-- 所有 `/openapi/v1/knowledge/<path>` 请求会被强制转发到 literature-sage `/api/v1/<path>`。
-- 因此 literature-sage 内部的 `/api/v2/*` 路径（如 `/v2/box/search_by_md5_paper_id`、`/v2/recall`）**通过本网关不可达**，会返回 404。
+- 所有 `/openapi/v1/knowledge/<path>` 请求会被转发到 literature-sage `/api/v1/<path>`。
+- literature-sage 的 `/api/v2/*` 路径（如 v2 版的 recall）通过本网关不可达。但本文档中的所有示例均使用 v1 路径，可正常使用。
 - 知识库本身没有专用 delete 端点，删除等同于 `POST /folder/delete {nodesId: <KB_nodesID>}`。

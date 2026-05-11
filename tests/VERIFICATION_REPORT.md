@@ -15,10 +15,9 @@
 
 | 状态 | Skill | 说明 |
 |------|-------|------|
-| ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node | 所有文档端点/CLI 均正常 |
-| ✅ 核心可用 | bohrium-dataset, bohrium-image, bohrium-knowledge-base, bohrium-paper-search, bohrium-scholar, bohrium-scholar-search, bohrium-wiki, bohrium-lkm, bohrium-matmaster | 主要功能正常，部分端点有问题 |
-| ❌ 已移除 | bohrium-file | 后端 DB 表缺失，skill 已删除 |
-| ❌ 已移除 | bohrium-viking-memory | 需独立 OPENVIKING_API_KEY，skill 已删除 |
+| ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node, bohrium-knowledge-base, bohrium-image, bohrium-scholar-search, bohrium-wiki, bohrium-lkm | 所有文档端点/CLI 均正常 |
+| ✅ 核心可用 | bohrium-dataset, bohrium-paper-search, bohrium-matmaster | 主要功能正常，部分端点有问题 |
+| ❌ 已移除 | bohrium-file, bohrium-viking-memory, bohrium-scholar, diagnose-agent, proposal-agent, preparation-agent, scoring-agent | 冗余或后端不可用 |
 
 ---
 
@@ -114,8 +113,23 @@
 |------|------|------|------|------|
 | `/v1/ds/?keyword=&pageSize=&pageNum=` | GET | open.bohrium.com | ✅ | 列表+搜索 |
 | `/v1/ds/{id}` | GET | open.bohrium.com | ✅ | 详情 |
-| `/v1/ds/` | POST | open.bohrium.com | ❌ | 307→404（网关 bug） |
+| `/v1/ds/` | POST | open.bohrium.com | ❌ | 307→404（网关 bug，已修复代码但未部署） |
 | `/v1/ds/` | POST | openapi.dp.tech | ✅ | 创建成功 |
+
+**307 Bug 根因**: open-platform 的 `internal/proxy/handler.go` 在 `c.Param("path")=="/"` 时会拼接出 `/api/v1/ds/`（带尾部斜杠），后端 Gin 框架的 `RedirectTrailingSlash` 中间件将其 307 重定向到 `/api/v1/ds`，但 location header 是相对路径导致客户端请求到错误地址。
+
+**修复方案**: 已在 `handler.go:197` 和 `handler.go:688` 添加特殊处理（参考 openapi 仓库的实现）：
+```go
+pathParam := c.Param("path")
+if pathParam == "/" {
+    targetPath = config.PathPrefix
+} else {
+    targetPath = config.PathPrefix + pathParam
+}
+```
+此修复确保 `POST /openapi/v1/ds/` 转发到 `/api/v1/ds`（无尾部斜杠），避免 307 重定向。
+
+**当前状态**: 代码已修复但 open.bohrium.com 生产环境未部署，因此 SKILL.md 中仍建议使用 `openapi.dp.tech` 作为 workaround。
 
 **结论**: CLI 全功能可用。创建数据集时必须使用 `OPENAPI_HOST=https://openapi.dp.tech`；list/delete 可用 `open.bohrium.com`。
 
@@ -136,12 +150,12 @@
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
 | `/v2/image/public/version/search?keyword=` | GET | ✅ | 74478 个版本 |
-| `/v2/image/public` | GET | ✅ | 20 个基础镜像分类 |
+| `/v2/image/public?page=1&pageSize=5` | GET | ✅ | 20 个基础镜像分类 |
 | `/v2/image/public/{imageId}/version` | GET | ✅ | 指定镜像的版本列表 |
-| `/v2/image/private` | GET | ⚠️ | 需要 device 参数，参数格式不明确 |
-| `/v2/image/private` | POST (创建) | ❌ | decode err，参数序列化问题 |
+| `/v2/image/private?device=container&type=private` | GET | ✅ | 私有镜像列表（需 device 和 type 参数） |
+| `/v2/image/private` | POST (创建) | ✅ | dockerfile 字段需 base64 编码 |
 
-**结论**: CLI 列出自定义镜像正常；公共镜像 API 查询完全正常；私有镜像创建 API 参数格式与文档不符。
+**结论**: 所有 API 端点正常。私有镜像列表需要 `device=container&type=private` 参数；创建镜像时 dockerfile 字段必须 base64 编码（已在 SKILL.md 中修复）。
 
 ---
 
@@ -162,19 +176,22 @@
 
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
-| `/v1/knowledge/knowledge_base/list` | GET | ✅ | 14 个知识库 |
+| `/v1/knowledge/knowledge_base/list` | GET | ✅ | 知识库列表 |
 | `/v1/knowledge/knowledge_base/create` | POST | ✅ | 创建成功 |
 | `/v1/knowledge/knowledge_base/update` | POST | ✅ | 更新成功（需传 NodesId） |
 | `/v1/knowledge/knowledge_base/{nodeId}` | GET | ✅ | 详情正常 |
-| `/v1/knowledge/knowledge_base/discover` | GET | ✅ | 365 个公开知识库 |
+| `/v1/knowledge/knowledge_base/discover` | GET | ✅ | 公开知识库 |
 | `/v1/knowledge/knowledge_base/recommendation` | GET | ✅ | 推荐正常 |
-| `/v1/knowledge/file/submit` | POST | ✅ | 端点可用（业务验证正常） |
-| `/v1/knowledge/knowledge_base/delete` | POST | ❌ 404 | **删除端点不存在** |
-| `/v1/knowledge/file/list` | GET | ❌ 404 | **文件列表端点不存在** |
-| `/v1/knowledge/literature/list` | GET | ❌ 404 | **文献列表端点不存在** |
-| `/v1/knowledge/search` | POST | ❌ 404 | **RAG 搜索端点不存在** |
+| `/v1/knowledge/knowledge_base/search/name` | POST | ✅ | 按名称搜索知识库内容 |
+| `/v1/knowledge/file` | GET | ✅ | 文献列表（parentId 参数） |
+| `/v1/knowledge/file/submit` | POST | ✅ | 文件注册到知识库 |
+| `/v1/knowledge/file/search` | POST | ✅ | 文献内容搜索 |
+| `/v1/knowledge/file/delete_literature` | POST | ✅ | 删除文献（业务校验正常） |
+| `/v1/knowledge/recall/papers` | POST | ✅ | 指定文献语义召回 |
+| `/v1/knowledge/recall/hybrid` | POST | ✅ | 知识库级混合召回 |
+| `/v1/knowledge/folder/delete` | POST | ✅ | 删除知识库/文件夹 |
 
-**结论**: 创建/更新/列表/详情/发现/推荐正常；删除、文件列表、文献列表、内容搜索四个端点 404。
+**结论**: 全部端点正常。之前的 404 是因为测试时使用了错误的路径（`/knowledge_base/delete`、`/file/list`、`/literature/list`、`/search`），实际正确路径是 `/folder/delete`、`/file`（无 `/list` 后缀）、`/file/search`、`/recall/hybrid`。
 
 ---
 
@@ -325,7 +342,7 @@
 | 3 | bohrium-node | API `/node/start/{id}` 返回 404 | 低 | CLI `bohr node create` 可重建；stop API 正常 |
 | 4 | bohrium-dataset | `open.bohrium.com` 的 `POST /ds/` 307→404 | 中 | 创建需用 `OPENAPI_HOST=https://openapi.dp.tech`，CLI 亦然 |
 | 5 | bohrium-image | API `POST /v2/image/private` 参数解析失败 | 中 | 文档中 buildType/device 参数格式需更新 |
-| 6 | bohrium-knowledge-base | delete/file-list/literature-list/search 四个端点 404 | 高 | 网关路由缺失，需后端注册 |
+| 6 | bohrium-knowledge-base | ~~delete/file-list/literature-list/search 四个端点 404~~ | ~~高~~ | **已修正**: 之前测试路径错误，正确路径全部可用 |
 | 7 | bohrium-paper-search | patent `rerank:true` 导致 -102 异常 | 低 | 文档应注明不传 rerank 或修复后端 |
 | 8 | bohrium-wiki | article 端点返回 250002 "Article not found" | 低 | 索引存在但文章内容可能按需生成 |
 | 9 | bohrium-matmaster | `/integrations/feishu/send` 返回 404 | 中 | 飞书集成端点未注册 |

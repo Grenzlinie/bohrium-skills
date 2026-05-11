@@ -203,6 +203,11 @@ r = requests.get(f"https://openapi.dp.tech/openapi/v2/image/public/{image_id}/ve
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
 # 创建私有镜像（Dockerfile 构建）
+# 注意：dockerfile 字段必须是 base64 编码的字符串
+import base64
+dockerfile_content = "FROM ubuntu:22.04\nRUN apt-get update && apt-get install -y python3"
+dockerfile_b64 = base64.b64encode(dockerfile_content.encode()).decode()
+
 r = requests.post("https://openapi.dp.tech/openapi/v2/image/private",
     headers=HEADERS_JSON, json={
         "name": "my-image",
@@ -210,16 +215,17 @@ r = requests.post("https://openapi.dp.tech/openapi/v2/image/private",
         "device": "container",
         "desc": "Custom training image",
         "buildType": 1,
-        "dockerfile": "FROM ubuntu:22.04\nRUN apt-get update && apt-get install -y python3",
+        "dockerfile": dockerfile_b64,
     })
 
 # 修改镜像描述
 requests.put(f"https://openapi.dp.tech/openapi/v2/image/private/{image_id}",
     headers=HEADERS_JSON, json={"desc": "updated"})
 
-# 检查 Dockerfile 合法性
+# 检查 Dockerfile 合法性（同样需要 base64 编码）
+check_b64 = base64.b64encode(b"FROM ubuntu:22.04\nRUN apt-get update").decode()
 requests.post("https://openapi.dp.tech/openapi/v2/image/dockerfile/check",
-    headers=HEADERS_JSON, json={"dockerfile": "FROM ubuntu:22.04\nRUN apt-get update"})
+    headers=HEADERS_JSON, json={"dockerfile": check_b64})
 
 # 获取上次使用的镜像
 r = requests.get("https://openapi.dp.tech/openapi/v2/image/last_used",
@@ -229,10 +235,11 @@ r = requests.get("https://openapi.dp.tech/openapi/v2/image/last_used",
 ### 私有镜像管理
 
 ```python
-# 私有镜像列表（必须传 device 和 type）
+# 私有镜像列表（必须传 device 和 type 参数）
 r = requests.get("https://openapi.dp.tech/openapi/v2/image/private",
     headers=HEADERS,
     params={"device": "container", "type": "private", "page": 1, "pageSize": 10})
+# 返回: {items: [{id, name, url, status, buildType, creatorName, projectName, ...}]}
 
 # 私有镜像详情
 r = requests.get(f"https://openapi.dp.tech/openapi/v2/image/private/{image_id}",
@@ -278,9 +285,10 @@ requests.delete(f"https://openapi.dp.tech/openapi/v2/image/{image_id}/share?devi
 | 问题 | 原因 | 解决 |
 |------|------|------|
 | `bohr image pull` 失败 | Docker 未启动 | 先启动 Docker Desktop |
-| v2 private 返回参数错误 | 缺少必填参数 | 加上 `?device=container&type=private` |
+| v2 private 返回参数错误 | 缺少必填参数 | 加上 `device=container&type=private` 参数 |
 | `no permission` | 非镜像创建者 | 只能操作自己创建的镜像 |
 | v1 `/public` 返回解析错误 | 路由冲突 | 改用 v2 接口 |
 | 镜像地址不对 | 用了镜像名而非完整地址 | 必须用 `registry.dp.tech/dptech/xxx:tag` 格式 |
 | 自定义镜像缓存慢 | 缓存需 10-30 分钟生成 | 构建后等待 30 分钟再使用 |
 | 容器节点不支持 Docker | 安全限制 | 如需 Docker 开发，用 VM 镜像 `LBG_Common_v2` |
+| 创建镜像返回 decode err | dockerfile 未 base64 编码 | 使用 `base64.b64encode(content.encode()).decode()` 编码 |
