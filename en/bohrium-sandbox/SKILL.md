@@ -353,5 +353,4 @@ lbg sdbx kill $SID
 
 - **sandbox** validates a script → **bohrium-job** scales it out
 - **sandbox** preprocesses data → upload to **bohrium-dataset**
-- **sandbox** runs experiments → persist results to **bohrium-viking-memory**
 - **sandbox** debugs an image → `lbg image ls`, then `lbg sdbx template create` for a reusable template

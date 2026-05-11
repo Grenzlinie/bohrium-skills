@@ -15,11 +15,10 @@ Bohrium 平台 AI 技能集合，为 [OpenClaw](https://github.com/openclaw) 和
 /plugin install bohrium-skills@bohrium
 ```
 
-装完会得到 23 个 Bohrium skill（英文版）。认证：
+装完会得到 21 个 Bohrium skill（英文版）。认证：
 
 ```bash
 export ACCESS_KEY="YOUR_BOHRIUM_ACCESS_KEY"
-# sandbox 需要 E2B_API_KEY；viking-memory 需要 OPENVIKING_API_KEY 等
 ```
 
 ---
@@ -62,10 +61,8 @@ bohrium-skill-hub/
 | [bohrium-scholar](zh/bohrium-scholar/SKILL.md) | 学者检索 — 按姓名/机构/标签搜索学者信息 |
 | [bohrium-wiki](zh/bohrium-wiki/SKILL.md) | 科学百科 — 按层级浏览科学词条 |
 | [bohrium-web-search](zh/bohrium-web-search/SKILL.md) | 网页搜索 — 代理 searchapi.io 做开放互联网检索 |
-| [bohrium-sandbox](zh/bohrium-sandbox/SKILL.md) | 云沙箱 — 在隔离 E2B 虚拟机中运行 shell/Python |
-| [bohrium-viking-memory](zh/bohrium-viking-memory/SKILL.md) | 长期记忆 — 跨会话持久化存取记忆 |
+| [bohrium-sandbox](zh/bohrium-sandbox/SKILL.md) | 云沙箱 — 按需创建临时云 VM，运行 shell/Python |
 | [bohrium-lkm](zh/bohrium-lkm/SKILL.md) | 大知识模型 — 知识图谱搜索、论断验证、变量关系、批量 OCR |
-| [bohrium-file](zh/bohrium-file/SKILL.md) | 文件管理 — 文件列表、下载、分享、传输、批量任务文件操作 |
 | [bohrium-matmaster](zh/bohrium-matmaster/SKILL.md) | 材料大师 — MatMaster 用户 skill 查询与飞书集成 |
 
 #### 论文复现 Agent Skills
@@ -141,10 +138,8 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 | [bohrium-scholar](en/bohrium-scholar/SKILL.md) | Scholar lookup — search researchers by name/affiliation/tags |
 | [bohrium-wiki](en/bohrium-wiki/SKILL.md) | SciencePedia — browse scientific topics by hierarchy |
 | [bohrium-web-search](en/bohrium-web-search/SKILL.md) | Web search — proxy to searchapi.io for open internet search |
-| [bohrium-sandbox](en/bohrium-sandbox/SKILL.md) | Cloud sandbox — run shell/Python in isolated E2B VM |
-| [bohrium-viking-memory](en/bohrium-viking-memory/SKILL.md) | Long-term memory — persist and recall memories across sessions |
+| [bohrium-sandbox](en/bohrium-sandbox/SKILL.md) | Cloud sandbox — on-demand temp VM for running shell/Python |
 | [bohrium-lkm](en/bohrium-lkm/SKILL.md) | Large Knowledge Model — knowledge graph search, claim verification, variable relationships, batch OCR |
-| [bohrium-file](en/bohrium-file/SKILL.md) | File management — list, download, share, transfer, bulk job file operations |
 | [bohrium-matmaster](en/bohrium-matmaster/SKILL.md) | Materials Master — MatMaster user skills and Feishu integration |
 
 #### Paper Reproduction Agent Skills

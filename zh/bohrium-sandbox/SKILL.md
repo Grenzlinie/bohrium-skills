@@ -353,5 +353,4 @@ lbg sdbx kill $SID
 
 - **sandbox** 验证脚本可行 → **bohrium-job** 提交批处理
 - **sandbox** 预处理数据 → 上传到 **bohrium-dataset**
-- **sandbox** 跑实验结果 → 持久化到 **bohrium-viking-memory**
 - **sandbox** 调试镜像 → `lbg image ls` 找镜像；`lbg sdbx template create` 出新模板
