@@ -90,15 +90,30 @@ r = requests.post(f"{BASE}/scholar/search", headers=HEADERS_JSON, json={
 
 | Param | Type | Required | Notes |
 |-------|------|----------|-------|
-| `name` | string | yes | Scholar name (1–99 chars) |
+| `name` | string | yes | Scholar name (1–99 chars; outside range returns empty) |
 | `school` | string | no | School / institution |
 | `tags` | string | no | Research interest tag |
 | `affiliation` | string | no | English affiliation name |
 | `affiliationZh` | string | no | Chinese affiliation name |
 | `page` | int | no | Default 1 |
-| `pageSize` | int | no | Default 10 |
+| `pageSize` | int | no | Default 10 (recommend ≤ 20) |
+| `source` | string | no | Exposure source tag (e.g. `mix_search`) |
+| `searchSource` | string | no | Search-origin tag (e.g. `scholar_tab_search`) |
+| `searchName` | string | no | Search-name tag (for log attribution) |
+| `isNewPaper` | bool | no | Only scholars with new papers |
 
-### Response key fields (`data.items[]`)
+> **Constraint**: A 24-char no-space `name` is interpreted as an internal ID format and returns empty `items`.
+
+### Response fields (`data`)
+
+| Field | Meaning |
+|-------|---------|
+| `total` | Total count |
+| `page` / `pageSize` | Pagination echo |
+| `searchId` | Per-call id (useful for telemetry / debugging) |
+| `items[]` | Scholar list |
+
+### `items[]` key fields (verified)
 
 | Field | Meaning |
 |-------|---------|
@@ -108,7 +123,17 @@ r = requests.post(f"{BASE}/scholar/search", headers=HEADERS_JSON, json={
 | `citationNums` | Citations total |
 | `hIndex` | h-index |
 | `scholarOrgNameEn` / `scholarOrgNameZh` | Affiliation |
+| `discipline` / `major` | Discipline / major |
+| `researchDirection` | Research direction list |
+| `educationBackground` / `educationBackgroundEn` / `educationBackgroundZh` | Education history |
+| `workExperience` / `workExperienceEn` / `workExperienceZh` | Work history |
+| `avatar` | Avatar URL |
+| `orcid` | ORCID |
+| `email` / `RawEmail` | Email |
+| `source` | Data source (e.g. `google`) |
 | `isHighCited` | Highly-cited flag |
+| `mergeScholarId` | Merged-into id (if any) |
+| `userExtId` / `userId` | Linked Bohrium platform user id (if claimed) |
 
 ---
 
@@ -118,7 +143,7 @@ r = requests.post(f"{BASE}/scholar/search", headers=HEADERS_JSON, json={
 r = requests.get(
     f"{BASE}/scholar/info",
     headers=HEADERS,
-    params={"scholarId": scholar_id},
+    params={"scholarId": scholar_id, "viewType": "detail"},  # viewType optional
 )
 info = r.json()["data"]
 print(info.get("nameEn"), "|", info.get("nameZh"))
@@ -127,13 +152,22 @@ print("Education:", info.get("educationBackgroundEn") or info.get("educationBack
 print("Work:", info.get("workExperienceEn") or info.get("workExperience"))
 ```
 
-### Extra fields (vs search)
+### Parameters
+
+| Param | Type | Required | Notes |
+|-------|------|----------|-------|
+| `scholarId` | string | yes | Unique scholar id (query) |
+| `viewType` | string | no | Access tag for log attribution (e.g. `detail`) |
+
+### Notable response fields (in addition to those above)
 
 | Field | Meaning |
 |-------|---------|
 | `researchDirection` | Research direction list |
-| `educationBackground` / `educationBackgroundEn` / `educationBackgroundZh` | Education history |
-| `workExperience` / `workExperienceEn` / `workExperienceZh` | Work history |
+| `educationBackground` / `educationBackgroundEn` / `educationBackgroundZh` | Education history (localized) |
+| `workExperience` / `workExperienceEn` / `workExperienceZh` | Work history (localized) |
+| `discipline` / `major` | Discipline / major |
+| `email` / `RawEmail` | Email (if public) |
 
 ---
 
@@ -176,8 +210,20 @@ curl -s -G "$BASE/scholar/info" \
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `search` returns empty `items` | Spelling / no match | Try common English spelling; add `school` to narrow down |
+| `search` empty for a known scholar | `name` is 24 chars no-space — treated as internal id | Insert a space or break the name |
+| `search` returns empty under load | Per-user rate limit returns empty (not an error) | Back off; reduce QPS |
 | `401` / `AccessKey is required` | Wrong header name | Use `accessKey` (lowercase first letter), not `Authorization` |
+| `code=10001` | Bad params (`name` length, missing `scholarId`) | Check required fields and 1-99 length |
 | `info` missing fields | Scholar hasn't filled profile | Render only fields that exist; don't assume completeness |
+
+## Error codes
+
+| code | Meaning |
+|------|---------|
+| 0 | Success |
+| -1 | Unknown error |
+| 10001 | Parameter error |
+| 10002 | Business error |
 
 ## Pairs well with
 

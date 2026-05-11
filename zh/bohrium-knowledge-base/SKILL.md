@@ -91,6 +91,8 @@ for kb in data["list"]:
 | `keyword` | string | 否 | 搜索关键字 |
 | `pageSize` | integer | 否 | 每页条数（默认 10） |
 | `pageNum` | integer | 否 | 页码（默认 1） |
+| `orderBy` | integer | 否 | 1=favoriteCount, 2=docCount, 3=sessionCount, 4=releaseTime |
+| `order` | integer | 否 | 1=asc, 2=desc |
 
 **返回字段：**
 
@@ -138,19 +140,66 @@ r = requests.get(f"{BASE}/knowledge_base/discover", headers=HEADERS,
     params={"pageSize": 10, "pageNum": 1})
 ```
 
+### 推荐知识库
+
+```python
+r = requests.get(f"{BASE}/knowledge_base/recommendation", headers=HEADERS)
+# data: {list, total, config_reason}
+```
+
+### 收藏 / 取消收藏
+
+```python
+requests.post(f"{BASE}/knowledge_base/favorite",   headers=HEADERS_JSON, json={"nodesId": 11743137})
+requests.post(f"{BASE}/knowledge_base/unfavorite", headers=HEADERS_JSON, json={"nodesId": 11743137})
+
+# 查看我收藏的知识库
+r = requests.get(f"{BASE}/knowledge_base/favorite", headers=HEADERS,
+    params={"pageNum": 1, "pageSize": 10})
+```
+
+### 浏览历史 / 搜索历史
+
+```python
+# 记录浏览
+requests.post(f"{BASE}/knowledge_base/browse/add", headers=HEADERS_JSON, json={
+    "fileId": 12345,
+    "fileType": 1,
+    "parentId": 11743137,
+    "rootFolderId": 11743137,
+    "nodesId": 11743137
+})
+
+# 查询浏览/搜索历史
+requests.post(f"{BASE}/knowledge_base/browse/query",  headers=HEADERS_JSON, json={"pageNum":1,"pageSize":10})
+requests.post(f"{BASE}/knowledge_base/history/query", headers=HEADERS_JSON, json={"pageNum":1,"pageSize":10})
+```
+
 ### 搜索知识库
 
 ```python
-r = requests.get(f"{BASE}/knowledge_base/search", headers=HEADERS,
-    params={"keyword": "molecular dynamics"})
+r = requests.post(f"{BASE}/knowledge_base/search/name", headers=HEADERS_JSON, json={
+    "nodesId": 456,              # 知识库 nodesId；0 表示搜索所有有权限的知识库
+    "searchText": "molecular dynamics",
+    "searchType": 0,             # 0=全部, 1=只搜文件夹, 2=只搜文件
+    "pageNum": 1,
+    "pageSize": 10
+})
+data = r.json()["data"]
+print(f"共 {data['total']} 条")
+for f in data["folders"]: print("[DIR]", f["name"])
+for f in data["files"]:   print("[FILE]", f["fileName"])
 ```
 
-### 转存知识库
+### 删除知识库
+
+知识库本身没有专用的 `delete` 端点，删除知识库 = 删除其根 `nodesId`（因为知识库本质上就是一个根文件夹）：
 
 ```python
-r = requests.post(f"{BASE}/knowledge_base/copy", headers=HEADERS_JSON, json={
-    "knowledgeBaseId": 123
+r = requests.post(f"{BASE}/folder/delete", headers=HEADERS_JSON, json={
+    "nodesId": 11743137   # 知识库的 nodesID
 })
+# 只有 Owner 角色 (role=1) 才能删除
 ```
 
 ---
@@ -191,8 +240,8 @@ for p in data["path"]:
     print(f"  {'>' * p['depth']} {p['name']} (id={p['nodesId']})")
 
 # 子文件夹
-for f in data["subFolders"]:
-    print(f"  [DIR] {f['name']} ({f['docCount']} 篇)")
+for f in data["folders"]:
+    print(f"  [DIR] {f['name']} ({f['docCount']} 篇, id={f['id']})")
 
 # 文献
 for f in data["files"]:
@@ -204,7 +253,7 @@ for f in data["files"]:
 | 字段 | 说明 |
 |------|------|
 | `path[]` | 路径面包屑 `{nodesId, name, depth}` |
-| `subFolders[]` | 子文件夹 `{nodesId, name, docCount, createdTime}` |
+| `folders[]` | 子文件夹 `{id, name, docCount, createdTime}` |
 | `files[]` | 文献列表 |
 | `files[].nodesId` | 文献节点 ID |
 | `files[].paperId` | 论文 ID |
@@ -222,7 +271,11 @@ for f in data["files"]:
 ```python
 r = requests.get(f"{BASE}/folder/directory", headers=HEADERS,
     params={"folderId": 456})
-# 递归树结构: [{nodesId, name, subFolders: [{nodesId, name, subFolders: [...]}]}]
+# 递归树结构: {result: [{nodesId, name, subFolders: [...]}]}
+
+# 文件树（含文献）：
+r = requests.get(f"{BASE}/folder/file_tree", headers=HEADERS,
+    params={"folderId": 456})
 ```
 
 ### 创建文件夹
@@ -273,8 +326,8 @@ r = requests.get(f"{BASE}/file", headers=HEADERS,
         "parentId": 456,        # 文件夹 ID
         "pageNum": 1,
         "pageSize": 20,
-        "order": "desc",        # asc / desc
-        "orderBy": "createdTime",
+        "order": 1,             # 1=asc, 2=desc（整数，不是字符串）
+        "orderBy": 1,           # 1=createdTime, 2=updatedTime, etc.
         "noTag": False          # True 只看未打标签的
     })
 ```
@@ -315,9 +368,9 @@ print(f"摘要: {detail.get('enAbstract', '')}")
 
 ```python
 r = requests.post(f"{BASE}/file/read", headers=HEADERS_JSON, json={
-    "resourceId": 12345
+    "userResourceId": [12345]    # 注意是数组，参数名是 userResourceId
 })
-# 返回下载链接
+# 返回每个 resource 的下载链接列表
 ```
 
 ### 上传文件
@@ -602,7 +655,7 @@ r = requests.post(f"{BASE}/file/edit", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{BASE}/file/delete_literature", headers=HEADERS_JSON, json={
-    "resourceId": 12345
+    "userResourceId": 12345     # 参数名是 userResourceId
 })
 ```
 
@@ -610,8 +663,8 @@ r = requests.post(f"{BASE}/file/delete_literature", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{BASE}/file/update_literature", headers=HEADERS_JSON, json={
-    "resourceId": 12345,
-    "name": "New Literature Name"
+    "userResourceId": 12345,    # 参数名是 userResourceId
+    "fileName": "New Literature Name"   # 参数名是 fileName
 })
 ```
 
@@ -619,8 +672,8 @@ r = requests.post(f"{BASE}/file/update_literature", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{BASE}/file/move", headers=HEADERS_JSON, json={
-    "resourceId": 12345,
-    "targetFolderId": 789
+    "fileNodesIdList": [12345, 12346],   # 文献节点 ID 列表（注意是数组）
+    "folderNodesId": 789                 # 目标文件夹 nodesId
 })
 ```
 
@@ -648,6 +701,26 @@ for f in data["Files"]:
 | `Files[].content` | 匹配内容片段 |
 | `Files[].knowledgeBaseName` | 所属知识库名称 |
 
+### 文献元信息 / 辅助端点
+
+```python
+# 按 userResourceId 获取文献元信息（md5/paperId/publicationId 等）
+requests.post(f"{BASE}/file/fileinfo", headers=HEADERS_JSON, json={
+    "userResourceId": 12345,
+    # 或用 "enclosureId": 67890
+})
+
+# 拿某文件夹下所有文献的 ID 列表（分页不需要）
+requests.post(f"{BASE}/file/ids", headers=HEADERS_JSON, json={"parentId": 456})
+
+# 单个文献的标签信息
+requests.get(f"{BASE}/file/tagInfo", headers=HEADERS, params={"resourceId": 12345})
+
+# 上传记录 / 容量
+requests.get(f"{BASE}/file/upload/record", headers=HEADERS, params={"pageNum":1,"pageSize":10})
+requests.get(f"{BASE}/file/capacity",      headers=HEADERS)   # {remainingCapacity, totalCapacity, usedCapacity}
+```
+
 ---
 
 ## 标签管理
@@ -668,7 +741,7 @@ for tag in data["list"]:
 r = requests.post(f"{BASE}/tag", headers=HEADERS_JSON, json={
     "name": "Machine Learning"
 })
-tag = r.json()["data"]  # 注意：API 返回字段名可能为 "daya"
+tag = r.json()["data"]
 print(f"Created tag: {tag['id']} - {tag['name']}")
 ```
 
@@ -765,25 +838,29 @@ r = requests.post(f"{BASE}/box/search_by_md5_paper_id", headers=HEADERS_JSON, js
 
 ### 指定文献召回
 
-在指定文献中进行语义召回：
+在指定文献中进行语义召回。**注意：upstream 字段名是 `papers`/`text`/`k`，不是 `query`/`paperIds`/`topK`。**
 
 ```python
 r = requests.post(f"{BASE}/recall/papers", headers=HEADERS_JSON, json={
-    "query": "molecular dynamics force field",
-    "paperIds": ["paper_001", "paper_002"],
-    "topK": 5
+    "papers": [
+        {"paperId": "paper_001", "md5": ""},
+        {"paperId": "", "md5": "abc123..."}
+    ],
+    "text": "molecular dynamics force field",
+    "k": 5
 })
 ```
 
 ### 混合召回（知识库级）
 
-在整个知识库中进行混合语义搜索：
+在整个知识库中进行混合语义搜索。**注意：字段名用蛇形 (`knowledge_base_id`)；`keywords` 必填（不能为空字典）。**
 
 ```python
 r = requests.post(f"{BASE}/recall/hybrid", headers=HEADERS_JSON, json={
-    "query": "deep potential energy surface",
-    "knowledgeBaseId": 123,
-    "topK": 10
+    "knowledge_base_id": 456,                # 知识库 nodesId
+    "text": "deep potential energy surface",
+    "k": 10,
+    "keywords": {"deep potential": 1.0, "energy surface": 0.5}   # 必填、非空
 })
 ```
 
@@ -791,19 +868,23 @@ r = requests.post(f"{BASE}/recall/hybrid", headers=HEADERS_JSON, json={
 
 ## 权限管理
 
+> **重要：** 所有 `/account/*` 端点用 `nodesId`（知识库的节点 ID），**不是** `knowledgeBaseId`。
+
 ### 权限列表
 
 ```python
 r = requests.get(f"{BASE}/account/acl", headers=HEADERS,
-    params={"knowledgeBaseId": 123})
+    params={"nodesId": 11743137})
+# data: {privilege, shareMode, userList: [{id, role, isCreator, userName, ...}]}
 ```
 
 ### 设置分享状态
 
 ```python
 r = requests.post(f"{BASE}/account/share_status", headers=HEADERS_JSON, json={
-    "knowledgeBaseId": 123,
-    "shareStatus": 1  # 1=开启分享, 0=关闭
+    "nodesId": 11743137,
+    "privilege": 1,    # 1=公开, 2=私密
+    "shareMode": 1     # 1=不分享, 2=链接分享
 })
 ```
 
@@ -811,9 +892,9 @@ r = requests.post(f"{BASE}/account/share_status", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{BASE}/account/user_role", headers=HEADERS_JSON, json={
-    "knowledgeBaseId": 123,
+    "nodesId": 11743137,
     "userId": 456,
-    "role": 2  # 见下方角色说明
+    "role": 67801    # 见下方"角色值"说明
 })
 ```
 
@@ -821,7 +902,7 @@ r = requests.post(f"{BASE}/account/user_role", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.delete(f"{BASE}/account/user_role", headers=HEADERS_JSON, json={
-    "knowledgeBaseId": 123,
+    "nodesId": 11743137,
     "userId": 456
 })
 ```
@@ -830,8 +911,13 @@ r = requests.delete(f"{BASE}/account/user_role", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{BASE}/account/batch_add_readers", headers=HEADERS_JSON, json={
-    "knowledgeBaseId": 123,
-    "userIds": [456, 789, 1011]
+    "nodesId": 11743137,
+    "userList": [
+        {"id": 456, "role": 67801},
+        {"id": 789, "role": 67801}
+    ]
+    # 或用 phones / emails / userNos 三选一：
+    # "phones": ["13800000000"]
 })
 ```
 
@@ -839,7 +925,7 @@ r = requests.post(f"{BASE}/account/batch_add_readers", headers=HEADERS_JSON, jso
 
 ```python
 r = requests.post(f"{BASE}/account/join_request", headers=HEADERS_JSON, json={
-    "knowledgeBaseId": 123
+    "nodesId": 11743137
 })
 ```
 
@@ -847,8 +933,22 @@ r = requests.post(f"{BASE}/account/join_request", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.get(f"{BASE}/account/user_knowledge_base_role", headers=HEADERS,
-    params={"knowledgeBaseId": 123})
+    params={"nodesId": 11743137})
+# data: {roles: [int, ...]}
 ```
+
+### 其他权限端点
+
+| 端点 | 方法 | 用途 |
+|------|------|------|
+| `/account/knowledge_base/join/tree` | GET | 当前用户加入的所有知识库（树形） |
+| `/account/knowledge_base/join/detail` | POST | 查询某知识库加入详情 `{nodesId}` |
+| `/account/knowledge_base/exit` | POST | 主动退出知识库 `{nodesId}` |
+| `/account/user_pending_join_req` | GET | 用户在某 KB 的待审申请 `?nodesId=` |
+| `/account/join_request` | GET / PUT | 查询/审批加入申请 |
+| `/account/join_request/personal` | GET | 自己提交的加入申请列表 |
+| `/account/join_request/manageable` | GET | 自己可审批的加入申请 |
+| `/account/feishu_bot/send_message` | POST | 飞书机器人发消息 `{type, msg}` |
 
 ---
 
@@ -873,10 +973,18 @@ r = requests.get(f"{BASE}/account/user_knowledge_base_role", headers=HEADERS,
 
 | 问题 | 原因 | 解决 |
 |------|------|------|
-| `code` 非 0 | API 调用错误 | 检查返回的 `message` 字段获取具体错误信息 |
+| `code` 非 0 | API 调用错误 | 检查返回的 `error.msg` 或 `message` 字段获取具体错误信息 |
 | 401 Unauthorized | accessKey 无效或过期 | 确认 ACCESS_KEY 正确 |
-| 找不到知识库 | 使用了错误的 ID | `nodeId`（节点 ID）和 `id`（知识库 ID）是不同概念，根据 API 要求使用正确的 ID |
+| 找不到知识库 | 使用了错误的 ID | `nodesId`（节点 ID）和 `id`（知识库 ID）是不同概念；权限/文件夹端点统一用 `nodesId`，列表端点也会同时返回二者 |
+| 404 page not found | 调用了 `/v2/*` 路径 | open-platform 网关强制 `/api/v1` 前缀，`/v2/recall`、`/v2/box/*` 等 v2 路径目前**不可直接访问** |
+| `code=230606 keywords is required` | `recall/hybrid` 的 `keywords` 为空 | 至少传一个 `keyword: weight` 键值对 |
+| `code=230105` | 文件相关端点参数名错 | `userResourceId`（不是 `resourceId`/`name`/`targetFolderId`）；详见上文示例 |
 | 文献搜索无结果 | 文献尚未完成索引 | 新导入的文献需要等待后台解析和索引完成 |
 | 编辑文献 name/abstract 格式错误 | 需要 JSON 字符串 | `name` 和 `abstract` 字段需要传 JSON 字符串如 `'{"cn":"...","en":"..."}'` |
-| 创建标签返回 `daya` | API 已知 typo | 返回中 `daya` 等同于 `data`，可直接使用 |
-| 文件夹操作报权限错误 | 角色权限不足 | 需要编辑者(2)或拥有者(1)角色才能修改 |
+| 文件夹操作报权限错误 | 角色权限不足 | 需要编辑者或拥有者角色才能修改；删除知识库（folder/delete 根 nodesId）需要 Owner |
+
+## 网关限制说明
+
+- 所有 `/openapi/v1/knowledge/<path>` 请求会被强制转发到 literature-sage `/api/v1/<path>`。
+- 因此 literature-sage 内部的 `/api/v2/*` 路径（如 `/v2/box/search_by_md5_paper_id`、`/v2/recall`）**通过本网关不可达**，会返回 404。
+- 知识库本身没有专用 delete 端点，删除等同于 `POST /folder/delete {nodesId: <KB_nodesID>}`。

@@ -90,15 +90,30 @@ r = requests.post(f"{BASE}/scholar/search", headers=HEADERS_JSON, json={
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `name` | string | 是 | 学者姓名关键词（1~99 字符） |
+| `name` | string | 是 | 学者姓名关键词（1~99 字符，超出范围直接返回空） |
 | `school` | string | 否 | 学校 / 机构 |
 | `tags` | string | 否 | 研究兴趣标签 |
 | `affiliation` | string | 否 | 机构英文名 |
 | `affiliationZh` | string | 否 | 机构中文名 |
 | `page` | int | 否 | 页码，默认 1 |
-| `pageSize` | int | 否 | 每页条数，默认 10 |
+| `pageSize` | int | 否 | 每页条数，默认 10（建议 ≤ 20） |
+| `source` | string | 否 | 曝光来源标识（如 `mix_search`） |
+| `searchSource` | string | 否 | 搜索来源标识（如 `scholar_tab_search`） |
+| `searchName` | string | 否 | 搜索名称（用于日志归因） |
+| `isNewPaper` | bool | 否 | 仅搜索有新论文的学者 |
 
-### 响应关键字段（`data.items[]`）
+> **限制**：如果 `name` 是 24 位无空格字符串，网关会判为内部 ID 格式而返回空 items。
+
+### 响应字段（`data`）
+
+| 字段 | 说明 |
+|------|------|
+| `total` | 总条数 |
+| `page` / `pageSize` | 当前分页 |
+| `searchId` | 本次搜索标识（可用于上报 / 排查） |
+| `items[]` | 学者列表 |
+
+### `items[]` 关键字段（实测）
 
 | 字段 | 说明 |
 |------|------|
@@ -108,7 +123,17 @@ r = requests.post(f"{BASE}/scholar/search", headers=HEADERS_JSON, json={
 | `citationNums` | 引用量 |
 | `hIndex` | h-index |
 | `scholarOrgNameEn` / `scholarOrgNameZh` | 所属机构 |
+| `discipline` / `major` | 学科 / 专业 |
+| `researchDirection` | 研究方向数组 |
+| `educationBackground` / `educationBackgroundEn` / `educationBackgroundZh` | 教育经历 |
+| `workExperience` / `workExperienceEn` / `workExperienceZh` | 工作经历 |
+| `avatar` | 头像 URL |
+| `orcid` | ORCID 号 |
+| `email` / `RawEmail` | 邮箱 |
+| `source` | 数据来源（如 `google`） |
 | `isHighCited` | 是否高被引学者 |
+| `mergeScholarId` | 已合并的 ID（如有） |
+| `userExtId` / `userId` | Bohrium 平台对应用户 ID（如已认领） |
 
 ---
 
@@ -120,7 +145,7 @@ r = requests.post(f"{BASE}/scholar/search", headers=HEADERS_JSON, json={
 r = requests.get(
     f"{BASE}/scholar/info",
     headers=HEADERS,
-    params={"scholarId": scholar_id},
+    params={"scholarId": scholar_id, "viewType": "detail"},  # viewType 可选
 )
 info = r.json()["data"]
 print(info.get("nameEn"), "|", info.get("nameZh"))
@@ -129,13 +154,22 @@ print("Education:", info.get("educationBackgroundZh") or info.get("educationBack
 print("Work:", info.get("workExperienceZh") or info.get("workExperience"))
 ```
 
-### 额外返回字段（相对搜索）
+### 请求参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `scholarId` | string | 是 | 学者唯一标识（query 参数） |
+| `viewType` | string | 否 | 访问类型，用于日志归因（如 `detail`） |
+
+### 响应字段（除 search 已覆盖的之外，info 还包含）
 
 | 字段 | 说明 |
 |------|------|
 | `researchDirection` | 研究方向数组 |
-| `educationBackground` / `educationBackgroundZh` | 教育经历 |
-| `workExperience` / `workExperienceZh` | 工作经历 |
+| `educationBackground` / `educationBackgroundEn` / `educationBackgroundZh` | 教育经历（多语言） |
+| `workExperience` / `workExperienceEn` / `workExperienceZh` | 工作经历（多语言） |
+| `discipline` / `major` | 学科 / 专业 |
+| `email` / `RawEmail` | 邮箱（如已公开） |
 
 ---
 
@@ -180,8 +214,20 @@ curl -s -G "$BASE/scholar/info" \
 | 问题 | 原因 | 解决 |
 |------|------|------|
 | `search` 返回空 `items` | 姓名写法不匹配或真无此人 | 换英文名常见拼写；或加 `school` 缩小范围 |
+| `search` 返回空但确定有此人 | `name` 是 24 位无空格字符串，被判为内部 ID | 加空格或拆分姓名 |
+| `search` 高频请求返回空 | 接口有用户级限流，触发后返空而非报错 | 降低 QPS，加退避重试 |
 | `401` / `AccessKey is required` | Header 名字写错 | 用 `accessKey`（首字母小写），不是 `Authorization` |
+| `code=10001` | 参数错误（如 `name` 越界、`scholarId` 为空） | 校验必填、长度 1-99 |
 | `info` 返回字段不全 | 学者本人未补全 | 尊重已有字段；前端按字段可选展示 |
+
+## 错误码
+
+| code | 说明 |
+|------|------|
+| 0 | 成功 |
+| -1 | 未知错误 |
+| 10001 | 参数错误 |
+| 10002 | 业务错误 |
 
 ## 搭配使用
 

@@ -138,19 +138,66 @@ r = requests.get(f"{BASE}/knowledge_base/discover", headers=HEADERS,
     params={"pageSize": 10, "pageNum": 1})
 ```
 
+### Recommended Knowledge Bases
+
+```python
+r = requests.get(f"{BASE}/knowledge_base/recommendation", headers=HEADERS)
+# data: {list, total, config_reason}
+```
+
+### Favorite / Unfavorite
+
+```python
+requests.post(f"{BASE}/knowledge_base/favorite",   headers=HEADERS_JSON, json={"nodesId": 11743137})
+requests.post(f"{BASE}/knowledge_base/unfavorite", headers=HEADERS_JSON, json={"nodesId": 11743137})
+
+# List my favorited KBs
+r = requests.get(f"{BASE}/knowledge_base/favorite", headers=HEADERS,
+    params={"pageNum": 1, "pageSize": 10})
+```
+
+### Browse History / Search History
+
+```python
+# Record a browse event
+requests.post(f"{BASE}/knowledge_base/browse/add", headers=HEADERS_JSON, json={
+    "fileId": 12345,
+    "fileType": 1,
+    "parentId": 11743137,
+    "rootFolderId": 11743137,
+    "nodesId": 11743137
+})
+
+# Query browse / search history
+requests.post(f"{BASE}/knowledge_base/browse/query",  headers=HEADERS_JSON, json={"pageNum":1,"pageSize":10})
+requests.post(f"{BASE}/knowledge_base/history/query", headers=HEADERS_JSON, json={"pageNum":1,"pageSize":10})
+```
+
 ### Search Knowledge Bases
 
 ```python
-r = requests.get(f"{BASE}/knowledge_base/search", headers=HEADERS,
-    params={"keyword": "molecular dynamics"})
+r = requests.post(f"{BASE}/knowledge_base/search/name", headers=HEADERS_JSON, json={
+    "nodesId": 456,              # KB nodesId; 0 = search across all KBs you can access
+    "searchText": "molecular dynamics",
+    "searchType": 0,             # 0=all, 1=folders only, 2=files only
+    "pageNum": 1,
+    "pageSize": 10
+})
+data = r.json()["data"]
+print(f"total: {data['total']}")
+for f in data["folders"]: print("[DIR]", f["name"])
+for f in data["files"]:   print("[FILE]", f["fileName"])
 ```
 
-### Copy Knowledge Base
+### Delete Knowledge Base
+
+There is no dedicated `knowledge_base/delete` endpoint. Deleting a KB = deleting its root `nodesId` (a KB is essentially a root folder):
 
 ```python
-r = requests.post(f"{BASE}/knowledge_base/copy", headers=HEADERS_JSON, json={
-    "knowledgeBaseId": 123
+r = requests.post(f"{BASE}/folder/delete", headers=HEADERS_JSON, json={
+    "nodesId": 11743137   # KB's nodesID
 })
+# Only Owner role can delete.
 ```
 
 ---
@@ -191,8 +238,8 @@ for p in data["path"]:
     print(f"  {'>' * p['depth']} {p['name']} (id={p['nodesId']})")
 
 # Subfolders
-for f in data["subFolders"]:
-    print(f"  [DIR] {f['name']} ({f['docCount']} docs)")
+for f in data["folders"]:
+    print(f"  [DIR] {f['name']} ({f['docCount']} docs, id={f['id']})")
 
 # Files
 for f in data["files"]:
@@ -204,7 +251,7 @@ for f in data["files"]:
 | Field | Description |
 |-------|-------------|
 | `path[]` | Breadcrumb path `{nodesId, name, depth}` |
-| `subFolders[]` | Subfolders `{nodesId, name, docCount, createdTime}` |
+| `folders[]` | Subfolders `{id, name, docCount, createdTime}` |
 | `files[]` | Literature list |
 | `files[].nodesId` | Literature node ID |
 | `files[].paperId` | Paper ID |
@@ -222,7 +269,11 @@ for f in data["files"]:
 ```python
 r = requests.get(f"{BASE}/folder/directory", headers=HEADERS,
     params={"folderId": 456})
-# Recursive tree: [{nodesId, name, subFolders: [{nodesId, name, subFolders: [...]}]}]
+# Recursive tree: {result: [{nodesId, name, subFolders: [...]}]}
+
+# Full file tree (includes literature):
+r = requests.get(f"{BASE}/folder/file_tree", headers=HEADERS,
+    params={"folderId": 456})
 ```
 
 ### Create Folder
@@ -273,8 +324,8 @@ r = requests.get(f"{BASE}/file", headers=HEADERS,
         "parentId": 456,        # Folder ID
         "pageNum": 1,
         "pageSize": 20,
-        "order": "desc",        # asc / desc
-        "orderBy": "createdTime",
+        "order": 1,             # 1=asc, 2=desc (integer, not string)
+        "orderBy": 1,           # 1=createdTime, 2=updatedTime, etc.
         "noTag": False          # True = only untagged items
     })
 ```
@@ -315,9 +366,9 @@ print(f"Abstract: {detail.get('enAbstract', '')}")
 
 ```python
 r = requests.post(f"{BASE}/file/read", headers=HEADERS_JSON, json={
-    "resourceId": 12345
+    "userResourceId": [12345]    # Array; parameter name is userResourceId
 })
-# Returns download URL
+# Returns a list of download URLs, one per resource.
 ```
 
 ### Upload File
@@ -602,7 +653,7 @@ r = requests.post(f"{BASE}/file/edit", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{BASE}/file/delete_literature", headers=HEADERS_JSON, json={
-    "resourceId": 12345
+    "userResourceId": 12345    # Parameter name is userResourceId
 })
 ```
 
@@ -610,8 +661,8 @@ r = requests.post(f"{BASE}/file/delete_literature", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{BASE}/file/update_literature", headers=HEADERS_JSON, json={
-    "resourceId": 12345,
-    "name": "New Literature Name"
+    "userResourceId": 12345,   # Parameter name is userResourceId
+    "fileName": "New Literature Name"   # Parameter name is fileName
 })
 ```
 
@@ -619,8 +670,8 @@ r = requests.post(f"{BASE}/file/update_literature", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{BASE}/file/move", headers=HEADERS_JSON, json={
-    "resourceId": 12345,
-    "targetFolderId": 789
+    "fileNodesIdList": [12345, 12346],   # Array of file nodesIds
+    "folderNodesId": 789                 # Target folder nodesId
 })
 ```
 
@@ -650,6 +701,28 @@ for f in data["Files"]:
 
 ---
 
+### File Metadata / Auxiliary Endpoints
+
+```python
+# Metadata by userResourceId (md5 / paperId / publicationId etc.)
+requests.post(f"{BASE}/file/fileinfo", headers=HEADERS_JSON, json={
+    "userResourceId": 12345,
+    # or use "enclosureId": 67890
+})
+
+# Get all file IDs under a folder (no pagination needed)
+requests.post(f"{BASE}/file/ids", headers=HEADERS_JSON, json={"parentId": 456})
+
+# Tag info for a single literature
+requests.get(f"{BASE}/file/tagInfo", headers=HEADERS, params={"resourceId": 12345})
+
+# Upload history / capacity
+requests.get(f"{BASE}/file/upload/record", headers=HEADERS, params={"pageNum":1,"pageSize":10})
+requests.get(f"{BASE}/file/capacity",      headers=HEADERS)   # {remainingCapacity, totalCapacity, usedCapacity}
+```
+
+---
+
 ## Tag Management
 
 ### List Tags
@@ -668,7 +741,7 @@ for tag in data["list"]:
 r = requests.post(f"{BASE}/tag", headers=HEADERS_JSON, json={
     "name": "Machine Learning"
 })
-tag = r.json()["data"]  # Note: API response field may be "daya" (known typo)
+tag = r.json()["data"]
 print(f"Created tag: {tag['id']} - {tag['name']}")
 ```
 
@@ -765,25 +838,29 @@ r = requests.post(f"{BASE}/box/search_by_md5_paper_id", headers=HEADERS_JSON, js
 
 ### Recall from Specific Papers
 
-Perform semantic recall within specified papers:
+Perform semantic recall within specified papers. **Note: upstream field names are `papers`/`text`/`k`, not `query`/`paperIds`/`topK`.**
 
 ```python
 r = requests.post(f"{BASE}/recall/papers", headers=HEADERS_JSON, json={
-    "query": "molecular dynamics force field",
-    "paperIds": ["paper_001", "paper_002"],
-    "topK": 5
+    "papers": [
+        {"paperId": "paper_001", "md5": ""},
+        {"paperId": "", "md5": "abc123..."}
+    ],
+    "text": "molecular dynamics force field",
+    "k": 5
 })
 ```
 
 ### Hybrid Recall (Knowledge Base Level)
 
-Perform hybrid semantic search across an entire knowledge base:
+Perform hybrid semantic search across an entire knowledge base. **Note: snake_case field names (`knowledge_base_id`); `keywords` is required and must be non-empty.**
 
 ```python
 r = requests.post(f"{BASE}/recall/hybrid", headers=HEADERS_JSON, json={
-    "query": "deep potential energy surface",
-    "knowledgeBaseId": 123,
-    "topK": 10
+    "knowledge_base_id": 456,                # KB nodesId
+    "text": "deep potential energy surface",
+    "k": 10,
+    "keywords": {"deep potential": 1.0, "energy surface": 0.5}   # required, non-empty
 })
 ```
 
@@ -791,19 +868,23 @@ r = requests.post(f"{BASE}/recall/hybrid", headers=HEADERS_JSON, json={
 
 ## Permission Management
 
+> **Important:** All `/account/*` endpoints use `nodesId` (the KB's node ID), **not** `knowledgeBaseId`.
+
 ### List Permissions
 
 ```python
 r = requests.get(f"{BASE}/account/acl", headers=HEADERS,
-    params={"knowledgeBaseId": 123})
+    params={"nodesId": 11743137})
+# data: {privilege, shareMode, userList: [{id, role, isCreator, userName, ...}]}
 ```
 
 ### Set Share Status
 
 ```python
 r = requests.post(f"{BASE}/account/share_status", headers=HEADERS_JSON, json={
-    "knowledgeBaseId": 123,
-    "shareStatus": 1  # 1=enable sharing, 0=disable
+    "nodesId": 11743137,
+    "privilege": 1,    # 1=public, 2=private
+    "shareMode": 1     # 1=no share, 2=link share
 })
 ```
 
@@ -811,9 +892,9 @@ r = requests.post(f"{BASE}/account/share_status", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{BASE}/account/user_role", headers=HEADERS_JSON, json={
-    "knowledgeBaseId": 123,
+    "nodesId": 11743137,
     "userId": 456,
-    "role": 2  # See role reference below
+    "role": 67801    # See role reference below
 })
 ```
 
@@ -821,7 +902,7 @@ r = requests.post(f"{BASE}/account/user_role", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.delete(f"{BASE}/account/user_role", headers=HEADERS_JSON, json={
-    "knowledgeBaseId": 123,
+    "nodesId": 11743137,
     "userId": 456
 })
 ```
@@ -830,8 +911,13 @@ r = requests.delete(f"{BASE}/account/user_role", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{BASE}/account/batch_add_readers", headers=HEADERS_JSON, json={
-    "knowledgeBaseId": 123,
-    "userIds": [456, 789, 1011]
+    "nodesId": 11743137,
+    "userList": [
+        {"id": 456, "role": 67801},
+        {"id": 789, "role": 67801}
+    ]
+    # Or use one of: phones / emails / userNos
+    # "phones": ["13800000000"]
 })
 ```
 
@@ -839,7 +925,7 @@ r = requests.post(f"{BASE}/account/batch_add_readers", headers=HEADERS_JSON, jso
 
 ```python
 r = requests.post(f"{BASE}/account/join_request", headers=HEADERS_JSON, json={
-    "knowledgeBaseId": 123
+    "nodesId": 11743137
 })
 ```
 
@@ -847,8 +933,22 @@ r = requests.post(f"{BASE}/account/join_request", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.get(f"{BASE}/account/user_knowledge_base_role", headers=HEADERS,
-    params={"knowledgeBaseId": 123})
+    params={"nodesId": 11743137})
+# data: {roles: [int, ...]}
 ```
+
+### Other Permission Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/account/knowledge_base/join/tree` | GET | Tree of all KBs the current user has joined |
+| `/account/knowledge_base/join/detail` | POST | Join detail for a KB: `{nodesId}` |
+| `/account/knowledge_base/exit` | POST | Voluntarily leave a KB: `{nodesId}` |
+| `/account/user_pending_join_req` | GET | User's pending join request for a KB: `?nodesId=` |
+| `/account/join_request` | GET / PUT | Query / approve join requests |
+| `/account/join_request/personal` | GET | Join requests you submitted |
+| `/account/join_request/manageable` | GET | Join requests you can approve |
+| `/account/feishu_bot/send_message` | POST | Send via Feishu bot: `{type, msg}` |
 
 ---
 
@@ -873,10 +973,18 @@ r = requests.get(f"{BASE}/account/user_knowledge_base_role", headers=HEADERS,
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| `code` is non-zero | API call error | Check the `message` field in the response for details |
+| `code` is non-zero | API call error | Check `error.msg` or `message` in the response for details |
 | 401 Unauthorized | Invalid or expired accessKey | Verify ACCESS_KEY is correct |
-| Knowledge base not found | Wrong ID used | `nodeId` (node ID) and `id` (knowledge base ID) are different; use the correct one per API |
+| Knowledge base not found | Wrong ID used | `nodesId` (node ID) and `id` (KB ID) are different. Permission and folder endpoints all use `nodesId`; list endpoints return both. |
+| 404 page not found | Called a `/v2/*` path | The open-platform gateway hard-forces `/api/v1` prefix — `/v2/recall`, `/v2/box/*`, etc. are **not reachable** through this gateway |
+| `code=230606 keywords is required` | `recall/hybrid` `keywords` is empty | Provide at least one `keyword: weight` pair |
+| `code=230105` | Wrong file-endpoint field name | Use `userResourceId` (not `resourceId`/`name`/`targetFolderId`); see examples above |
 | Literature search returns empty | Literature not yet indexed | Newly imported literature needs time for backend parsing and indexing |
 | Edit literature name/abstract format error | JSON string required | `name` and `abstract` fields require JSON strings like `'{"cn":"...","en":"..."}'` |
-| Create tag returns `daya` | Known API typo | `daya` in response equals `data`; use it directly |
-| Folder operation permission error | Insufficient role | Requires Editor (2) or Owner (1) role to modify |
+| Folder operation permission error | Insufficient role | Requires Editor or Owner role; deleting a KB (folder/delete on root nodesId) requires Owner |
+
+## Gateway Limitations
+
+- Any `/openapi/v1/knowledge/<path>` request is proxied to literature-sage `/api/v1/<path>`.
+- Therefore literature-sage's `/api/v2/*` routes (e.g. `/v2/box/search_by_md5_paper_id`, `/v2/recall`) **cannot be reached** through this gateway and will return 404.
+- There is no dedicated KB delete endpoint; use `POST /folder/delete {nodesId: <KB_nodesID>}`.

@@ -15,7 +15,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-BASE = "https://openapi.dp.tech/openapi/v1/knowledge"
+BASE = "https://open.bohrium.com/openapi/v1/knowledge"
 
 
 def load_access_key_from_openclaw_config() -> str:
@@ -57,7 +57,12 @@ def main(argv: list[str]) -> int:
         return 2
 
     url = f"{BASE}/knowledge_base/create"
-    obj = _http_json(url, access_key, {"knowledgeBaseName": name, "description": desc})
+    obj = _http_json(url, access_key, {
+        "knowledgeBaseName": name,
+        "introduction": desc,
+        "cover": "",
+        "privilege": 1,
+    })
     print(json.dumps(obj, ensure_ascii=False, indent=2))
 
     if obj.get("code") != 0:
