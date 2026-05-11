@@ -15,8 +15,7 @@
 
 | 状态 | Skill | 说明 |
 |------|-------|------|
-| ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node, bohrium-knowledge-base, bohrium-image, bohrium-scholar-search, bohrium-wiki, bohrium-lkm, bohrium-paper-search | 所有文档端点/CLI 均正常 |
-| ✅ 核心可用 | bohrium-dataset | 主要功能正常，创建需用 openapi.dp.tech |
+| ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node, bohrium-knowledge-base, bohrium-image, bohrium-scholar-search, bohrium-wiki, bohrium-lkm, bohrium-paper-search, bohrium-dataset | 所有文档端点/CLI 均正常 |
 | ❌ 已移除 | bohrium-file, bohrium-viking-memory, bohrium-scholar, bohrium-matmaster, diagnose-agent, proposal-agent, preparation-agent, scoring-agent | 冗余或后端不可用 |
 
 ---
@@ -113,8 +112,7 @@
 |------|------|------|------|------|
 | `/v1/ds/?keyword=&pageSize=&pageNum=` | GET | open.bohrium.com | ✅ | 列表+搜索 |
 | `/v1/ds/{id}` | GET | open.bohrium.com | ✅ | 详情 |
-| `/v1/ds/` | POST | open.bohrium.com | ❌ | 307→404（网关 bug，已修复代码但未部署） |
-| `/v1/ds/` | POST | openapi.dp.tech | ✅ | 创建成功 |
+| `/v1/ds/` | POST | open.bohrium.com | ✅ | **已修复**: 307 bug 已部署到生产环境 |
 
 **307 Bug 根因**: open-platform 的 `internal/proxy/handler.go` 在 `c.Param("path")=="/"` 时会拼接出 `/api/v1/ds/`（带尾部斜杠），后端 Gin 框架的 `RedirectTrailingSlash` 中间件将其 307 重定向到 `/api/v1/ds`，但 location header 是相对路径导致客户端请求到错误地址。
 
@@ -129,9 +127,9 @@ if pathParam == "/" {
 ```
 此修复确保 `POST /openapi/v1/ds/` 转发到 `/api/v1/ds`（无尾部斜杠），避免 307 重定向。
 
-**当前状态**: 代码已修复但 open.bohrium.com 生产环境未部署，因此 SKILL.md 中仍建议使用 `openapi.dp.tech` 作为 workaround。
+**当前状态**: 代码已修复并部署到 open.bohrium.com 生产环境（tag: b_open-platform_2.0.7_202605112056）。
 
-**结论**: CLI 全功能可用。创建数据集时必须使用 `OPENAPI_HOST=https://openapi.dp.tech`；list/delete 可用 `open.bohrium.com`。
+**结论**: CLI 和 API 全功能可用，可直接使用 `open.bohrium.com`。
 
 ---
 
@@ -328,7 +326,7 @@ if pathParam == "/" {
 | 1 | bohrium-job | API `POST /job/submit` 返回 404 | 不影响 | CLI `bohr job submit` 正常，文档已说明优先 CLI |
 | 2 | bohrium-job | API `GET /job_group/list` 返回 404 | 不影响 | CLI `bohr job_group list` 正常 |
 | 3 | bohrium-node | API `/node/start/{id}` 返回 404 | 低 | CLI `bohr node create` 可重建；stop API 正常 |
-| 4 | bohrium-dataset | `open.bohrium.com` 的 `POST /ds/` 307→404 | 中 | 创建需用 `OPENAPI_HOST=https://openapi.dp.tech`，CLI 亦然 |
+| 4 | ~~bohrium-dataset~~ | ~~`open.bohrium.com` 的 `POST /ds/` 307→404~~ | ~~中~~ | **已修复**: open-platform 已部署 307 修复，现可直接用 open.bohrium.com |
 | 5 | bohrium-image | API `POST /v2/image/private` 参数解析失败 | 中 | 文档中 buildType/device 参数格式需更新 |
 | 6 | bohrium-knowledge-base | ~~delete/file-list/literature-list/search 四个端点 404~~ | ~~高~~ | **已修正**: 之前测试路径错误，正确路径全部可用 |
 | 7 | bohrium-paper-search | ~~patent `rerank:true` 导致 -102 异常~~ | ~~低~~ | **已修正**: 文档已移除不支持的参数 |
@@ -351,9 +349,6 @@ export PATH="$HOME/.bohrium:$PATH"
 export OPENAPI_HOST=https://open.bohrium.com
 export TIEFBLUE_HOST=https://tiefblue.dp.tech
 export ACCESS_KEY=<your_access_key>
-
-# ⚠️ dataset create 需要切换到旧网关:
-# export OPENAPI_HOST=https://openapi.dp.tech  (仅创建时)
 
 # 安装 Python lbg CLI（sandbox）
 pip install --pre lbg   # 必须 prerelease 版本

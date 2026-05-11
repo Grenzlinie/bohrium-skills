@@ -34,6 +34,7 @@ Datasets solve common pain points:
 # Linux
 /bin/bash -c "$(curl -fsSL https://dp-public.oss-cn-beijing.aliyuncs.com/bohrctl/1.0.0/install_bohr_linux_curl.sh)"
 source ~/.bashrc && export PATH="$HOME/.bohrium:$PATH"
+export OPENAPI_HOST=https://open.bohrium.com
 ```
 
 ---
@@ -171,9 +172,7 @@ r = requests.get(f"{BASE}/{dataset_id}/version", headers=HEADERS)
 r = requests.get(f"{BASE}/{dataset_id}/version/{version_id}", headers=HEADERS)
 
 # Create via API
-# Note: create must use openapi.dp.tech (open.bohrium.com has a 307 redirect bug)
-CREATE_BASE = "https://openapi.dp.tech/openapi/v1/ds"
-r = requests.post(f"{CREATE_BASE}/", headers=HEADERS_JSON, json={
+r = requests.post(f"{BASE}/", headers=HEADERS_JSON, json={
     "title": "my-dataset", "projectId": 154,
     "identifier": "my-dataset",  # Required, unique ID
 })
