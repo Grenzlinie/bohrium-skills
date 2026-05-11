@@ -287,17 +287,6 @@ record(
 )
 
 # ---------------------------------------------------------------------------
-# bohrium-mol-search
-# ---------------------------------------------------------------------------
-print("\n[bohrium-mol-search]")
-record(
-    "mol-search",
-    "/v1/mol-search/paper/search",
-    "POST",
-    body={"smiles": "c1ccccc1", "search_type": "similarity", "limit": 3},
-)
-
-# ---------------------------------------------------------------------------
 # bohrium-sandbox (external, skipped)
 # ---------------------------------------------------------------------------
 print("\n[bohrium-sandbox]")

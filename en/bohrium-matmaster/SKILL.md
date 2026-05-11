@@ -1,6 +1,6 @@
 ---
 name: bohrium-matmaster
-description: "MatMaster (Materials Master) integration via open.bohrium.com. Use when: user asks about querying MatMaster user skills, managing material science tools, or interacting with MatMaster via Feishu/Lark integration. NOT for: general paper search (use bohrium-paper-search), material structure query (use bohrium-database)."
+description: "MatMaster (Materials Master) integration via open.bohrium.com. Use when: user asks about querying MatMaster user skills, managing material science tools, or interacting with MatMaster via Feishu/Lark integration. NOT for: general paper search (use bohrium-paper-search)."
 ---
 
 # SKILL: Bohrium MatMaster (Materials Master)
@@ -25,8 +25,7 @@ Manage MatMaster platform user skills (tools/capabilities) and Feishu integratio
 **Don't use for:**
 
 - Paper search → `bohrium-paper-search`
-- Material structure queries → `bohrium-database`
-- Molecule search → `bohrium-mol-search`
+- Knowledge graph / scientific claims → `bohrium-lkm`
 
 **No CLI support** — HTTP API only.
 
