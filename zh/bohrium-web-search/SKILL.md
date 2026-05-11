@@ -1,6 +1,6 @@
 ---
 name: bohrium-web-search
-description: "Web search via Bohrium's open-platform proxy (backed by searchapi.io). Use when: user needs to search the open web for research papers, documentation, tutorials, news, or general information. NOT for: academic database search (use bohrium-paper-search / bohrium-scholar), Bohrium knowledge base search."
+description: "Web search via Bohrium's open-platform proxy (backed by searchapi.io). Use when: user needs to search the open web for research papers, documentation, tutorials, news, or general information. NOT for: academic database search (use bohrium-paper-search / bohrium-scholar-search), Bohrium knowledge base search."
 ---
 
 # SKILL: Bohrium Web 搜索
@@ -13,7 +13,7 @@ description: "Web search via Bohrium's open-platform proxy (backed by searchapi.
 
 **不适用**：
 
-- 学术论文检索 → 用 `bohrium-paper-search` 或 `bohrium-scholar`
+- 学术论文检索 → 用 `bohrium-paper-search` 或 `bohrium-scholar-search`
 - Bohrium 知识库内搜索 → 用 `bohrium-knowledge-base`
 
 **无 CLI 支持** — 通过 HTTP API 操作；`bohr` CLI 内置了对应的 `BohrWebSearch` 工具，会自动走这个端点。

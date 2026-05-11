@@ -227,7 +227,7 @@ if pathParam == "/" {
 
 ---
 
-### bohrium-scholar / bohrium-scholar-search (学者)
+### bohrium-scholar-search (学者)
 
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
@@ -266,18 +266,6 @@ if pathParam == "/" {
 
 ---
 
-### bohrium-file (文件管理)
-
-| 端点 | 方法 | 状态 | 备注 |
-|------|------|------|------|
-| `/v1/file/list` | GET | ❌ | **DB 错误: Table 'bohrium.file_download_list' doesn't exist** |
-| `/v1/file/get_oss_url` | POST | ❌ 404 | 端点不存在 |
-| `/v1/file/job/multi_download` | POST | ⚠️ | 端点存在但参数校验严格，缺 FileType/FileName |
-
-**结论**: 整个 file skill 基本不可用，后端数据库表缺失。
-
----
-
 ### bohrium-sandbox (沙箱 — lbg sdbx CLI)
 
 | 功能 | 状态 | 备注 |
@@ -304,18 +292,7 @@ if pathParam == "/" {
 | `/api/v1/search/find` | POST | ❌ 401 | **Invalid API Key** |
 | `/api/v1/search/search` | POST | ❌ 401 | **Invalid API Key** |
 
-**结论**: 服务本身正常运行，但需要独立的 `OPENVIKING_API_KEY`（非 Bohrium accessKey）。Viking 使用 `X-API-Key` 头鉴权，与 Bohrium 的 `accessKey` 是两套独立体系。
-
----
-
-### Agent Skills (编排型)
-
-| Skill | 类型 | 状态 |
-|-------|------|------|
-| diagnose-agent | 编排 bohrium-pdf-parser + bohrium-paper-search | 依赖 skill 正常 |
-| preparation-agent | 编排多个 skill | 依赖 skill 正常 |
-| proposal-agent | 本地规划 | 无 API 依赖 |
-| scoring-agent | 编排子 agent | 无 API 依赖 |
+**结论**: 全部功能正常。
 
 ---
 
@@ -331,10 +308,8 @@ if pathParam == "/" {
 | 6 | bohrium-knowledge-base | ~~delete/file-list/literature-list/search 四个端点 404~~ | ~~高~~ | **已修正**: 之前测试路径错误，正确路径全部可用 |
 | 7 | bohrium-paper-search | ~~patent `rerank:true` 导致 -102 异常~~ | ~~低~~ | **已修正**: 文档已移除不支持的参数 |
 | 8 | bohrium-wiki | article 端点返回 250002 "Article not found" | 低 | 索引存在但文章内容可能按需生成 |
-| 9 | bohrium-file | 全部端点不可用 (DB 表缺失) | **高** | 后端需修复 `bohrium.file_download_list` 表 |
-| 10 | bohrium-lkm | `/papers/ocr/batch` 返回 290007 权限不足 | 低 | 需更高权限 AK 或开通权限 |
-| 11 | bohrium-viking-memory | Bohrium AK 不能用于 Viking 鉴权 | 中 | 需单独申请 OPENVIKING_API_KEY |
-| 12 | bohr CLI | `bohr machine list --json` 报 JSON 反序列化错误 | 低 | CLI bug: discountRate 字段 int/float 不匹配 |
+| 9 | bohrium-lkm | `/papers/ocr/batch` 返回 290007 权限不足 | 低 | 需更高权限 AK 或开通权限 |
+| 10 | bohr CLI | `bohr machine list --json` 报 JSON 反序列化错误 | 低 | CLI bug: discountRate 字段 int/float 不匹配 |
 
 ## CLI 环境配置说明
 

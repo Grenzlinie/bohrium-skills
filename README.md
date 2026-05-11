@@ -32,12 +32,10 @@ bohrium-skill-hub/
 ├── zh/                          # 中文版
 │   ├── bohrium-job/SKILL.md
 │   ├── bohrium-node/SKILL.md
-│   ├── ...
-│   └── scoring-agent/SKILL.md
+│   └── ...
 ├── en/                          # English version
 │   ├── bohrium-job/SKILL.md
-│   ├── ...
-│   └── scoring-agent/SKILL.md
+│   └── ...
 └── README.md
 ```
 

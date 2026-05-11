@@ -1,6 +1,6 @@
 ---
 name: bohrium-web-search
-description: "Web search via Bohrium's open-platform proxy (backed by searchapi.io). Use when: user needs to search the open web for research papers, documentation, tutorials, news, or general information. NOT for: academic database search (use bohrium-paper-search / bohrium-scholar), Bohrium knowledge base search."
+description: "Web search via Bohrium's open-platform proxy (backed by searchapi.io). Use when: user needs to search the open web for research papers, documentation, tutorials, news, or general information. NOT for: academic database search (use bohrium-paper-search / bohrium-scholar-search), Bohrium knowledge base search."
 ---
 
 # SKILL: Bohrium Web Search
@@ -13,7 +13,7 @@ Proxy to searchapi.io via `open.bohrium.com`'s `/v1/search/web` endpoint. Issues
 
 **Don't use for**:
 
-- Academic paper search → use `bohrium-paper-search` or `bohrium-scholar`
+- Academic paper search → use `bohrium-paper-search` or `bohrium-scholar-search`
 - Bohrium knowledge-base search → use `bohrium-knowledge-base`
 
 **No CLI support** — HTTP API only. The `bohr` CLI ships a built-in `BohrWebSearch` tool that calls this endpoint automatically.
