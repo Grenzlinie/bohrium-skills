@@ -61,6 +61,14 @@ bohrium-skill-hub/
 | [bohrium-sandbox](zh/bohrium-sandbox/SKILL.md) | 云沙箱 — 按需创建临时云 VM，运行 shell/Python |
 | [bohrium-lkm](zh/bohrium-lkm/SKILL.md) | 大知识模型 — 知识图谱搜索、论断验证、变量关系、批量 OCR |
 
+#### 数据库 Skills
+
+通过 `open.bohrium.com` 数据库 API 检索科学数据。
+
+| Skill | 说明 |
+|-------|------|
+| [polymer-db](zh/polymer-db/SKILL.md) | 高分子数据库 — 查询 28 万+ 条聚合物记录（Tg/Td/透光率/力学/电学性能等） |
+
 ### 认证配置
 
 API Skills 需要 ACCESS_KEY，在 `~/.openclaw/openclaw.json` 中配置：
@@ -119,6 +127,14 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 | [bohrium-web-search](en/bohrium-web-search/SKILL.md) | Web search — proxy to searchapi.io for open internet search |
 | [bohrium-sandbox](en/bohrium-sandbox/SKILL.md) | Cloud sandbox — on-demand temp VM for running shell/Python |
 | [bohrium-lkm](en/bohrium-lkm/SKILL.md) | Large Knowledge Model — knowledge graph search, claim verification, variable relationships, batch OCR |
+
+#### Database Skills
+
+Query scientific databases via `open.bohrium.com` database API.
+
+| Skill | Description |
+|-------|------------|
+| [polymer-db](en/polymer-db/SKILL.md) | Polymer database — query 280k+ polymer records (Tg/Td/transmittance/mechanical/electrical properties) |
 
 ### Authentication
 
