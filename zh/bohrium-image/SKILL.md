@@ -1,6 +1,6 @@
 ---
 name: bohrium-image
-description: "Manage Bohrium container images via bohr CLI or openapi.dp.tech API. Use when: user asks about listing/pulling/creating/deleting Docker images on Bohrium, or finding available public images. NOT for: node management, job submission, or project management."
+description: "Manage Bohrium container images via bohr CLI or open.bohrium.com API. Use when: user asks about listing/pulling/creating/deleting Docker images on Bohrium, or finding available public images. NOT for: node management, job submission, or project management."
 ---
 
 # SKILL: Bohrium 镜像 (Image) 管理
@@ -179,7 +179,7 @@ AK = os.environ.get("ACCESS_KEY", "")
 HEADERS = {"accessKey": AK}
 
 # 搜索公共镜像版本（关键词）
-r = requests.get("https://openapi.dp.tech/openapi/v2/image/public/version/search",
+r = requests.get("https://open.bohrium.com/openapi/v2/image/public/version/search",
     headers=HEADERS,
     params={"keyword": "deepmd", "page": 1, "pageSize": 5})
 # 返回: {items: [{version, resourceType, size, url, imageName}, ...]}
@@ -189,11 +189,11 @@ r = requests.get("https://openapi.dp.tech/openapi/v2/image/public/version/search
 
 ```python
 # 公共镜像分类列表
-r = requests.get("https://openapi.dp.tech/openapi/v2/image/public",
+r = requests.get("https://open.bohrium.com/openapi/v2/image/public",
     headers=HEADERS, params={"page": 1, "pageSize": 10})
 
 # 公共镜像版本列表
-r = requests.get(f"https://openapi.dp.tech/openapi/v2/image/public/{image_id}/version",
+r = requests.get(f"https://open.bohrium.com/openapi/v2/image/public/{image_id}/version",
     headers=HEADERS, params={"page": 1, "pageSize": 10})
 ```
 
@@ -208,7 +208,7 @@ import base64
 dockerfile_content = "FROM ubuntu:22.04\nRUN apt-get update && apt-get install -y python3"
 dockerfile_b64 = base64.b64encode(dockerfile_content.encode()).decode()
 
-r = requests.post("https://openapi.dp.tech/openapi/v2/image/private",
+r = requests.post("https://open.bohrium.com/openapi/v2/image/private",
     headers=HEADERS_JSON, json={
         "name": "my-image",
         "projectId": 154,
@@ -219,16 +219,16 @@ r = requests.post("https://openapi.dp.tech/openapi/v2/image/private",
     })
 
 # 修改镜像描述
-requests.put(f"https://openapi.dp.tech/openapi/v2/image/private/{image_id}",
+requests.put(f"https://open.bohrium.com/openapi/v2/image/private/{image_id}",
     headers=HEADERS_JSON, json={"desc": "updated"})
 
 # 检查 Dockerfile 合法性（同样需要 base64 编码）
 check_b64 = base64.b64encode(b"FROM ubuntu:22.04\nRUN apt-get update").decode()
-requests.post("https://openapi.dp.tech/openapi/v2/image/dockerfile/check",
+requests.post("https://open.bohrium.com/openapi/v2/image/dockerfile/check",
     headers=HEADERS_JSON, json={"dockerfile": check_b64})
 
 # 获取上次使用的镜像
-r = requests.get("https://openapi.dp.tech/openapi/v2/image/last_used",
+r = requests.get("https://open.bohrium.com/openapi/v2/image/last_used",
     headers=HEADERS, params={"type": "public"})
 ```
 
@@ -236,19 +236,19 @@ r = requests.get("https://openapi.dp.tech/openapi/v2/image/last_used",
 
 ```python
 # 私有镜像列表（必须传 device 和 type 参数）
-r = requests.get("https://openapi.dp.tech/openapi/v2/image/private",
+r = requests.get("https://open.bohrium.com/openapi/v2/image/private",
     headers=HEADERS,
     params={"device": "container", "type": "private", "page": 1, "pageSize": 10})
 # 返回: {items: [{id, name, url, status, buildType, creatorName, projectName, ...}]}
 
 # 私有镜像详情
-r = requests.get(f"https://openapi.dp.tech/openapi/v2/image/private/{image_id}",
+r = requests.get(f"https://open.bohrium.com/openapi/v2/image/private/{image_id}",
     headers=HEADERS)
 
 # 分享/取消分享（项目成员可见）
-requests.post(f"https://openapi.dp.tech/openapi/v2/image/{image_id}/share",
+requests.post(f"https://open.bohrium.com/openapi/v2/image/{image_id}/share",
     headers=HEADERS_JSON)
-requests.delete(f"https://openapi.dp.tech/openapi/v2/image/{image_id}/share?device=container",
+requests.delete(f"https://open.bohrium.com/openapi/v2/image/{image_id}/share?device=container",
     headers=HEADERS)
 ```
 
