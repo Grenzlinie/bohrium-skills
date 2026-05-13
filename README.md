@@ -71,21 +71,31 @@ bohrium-skill-hub/
 
 ### 认证配置
 
-API Skills 需要 ACCESS_KEY，在 `~/.openclaw/openclaw.json` 中配置：
+API Skills 需要 ACCESS_KEY 作为鉴权凭证。
 
-```json
-{
-  "skills": {
-    "<skill-name>": {
-      "enabled": true,
-      "apiKey": "YOUR_ACCESS_KEY",
-      "env": {
-        "ACCESS_KEY": "YOUR_ACCESS_KEY"
-      }
-    }
-  }
-}
-```
+**获取 AccessKey**：注册 [Bohrium](https://www.bohrium.com/)，在 [用户设置页面](https://www.bohrium.com/settings/account) 获取。机构用户请联系深势科技商务（bd@dp.tech）开通机构账号。
+
+**配置方式**（根据运行环境选择其一）：
+
+1. **环境变量**（Claude Code / 通用）：
+   ```bash
+   export ACCESS_KEY="your_access_key_here"
+   ```
+
+2. **OpenClaw 配置文件** `~/.openclaw/openclaw.json`：
+   ```json
+   {
+     "skills": {
+       "<skill-name>": {
+         "enabled": true,
+         "apiKey": "YOUR_ACCESS_KEY",
+         "env": {
+           "ACCESS_KEY": "YOUR_ACCESS_KEY"
+         }
+       }
+     }
+   }
+   ```
 
 ### SKILL.md 格式规范
 
@@ -138,21 +148,31 @@ Query scientific databases via `open.bohrium.com` database API.
 
 ### Authentication
 
-API Skills require ACCESS_KEY, configured in `~/.openclaw/openclaw.json`:
+API Skills require an ACCESS_KEY for authentication.
 
-```json
-{
-  "skills": {
-    "<skill-name>": {
-      "enabled": true,
-      "apiKey": "YOUR_ACCESS_KEY",
-      "env": {
-        "ACCESS_KEY": "YOUR_ACCESS_KEY"
-      }
-    }
-  }
-}
-```
+**Get your AccessKey**: Register on [Bohrium](https://www.bohrium.com/), then find it on the [Account Settings page](https://www.bohrium.com/settings/account). Enterprise users should contact DP Technology sales (bd@dp.tech) to set up an organization account.
+
+**Configuration** (choose one based on your runtime):
+
+1. **Environment variable** (Claude Code / general):
+   ```bash
+   export ACCESS_KEY="your_access_key_here"
+   ```
+
+2. **OpenClaw config** `~/.openclaw/openclaw.json`:
+   ```json
+   {
+     "skills": {
+       "<skill-name>": {
+         "enabled": true,
+         "apiKey": "YOUR_ACCESS_KEY",
+         "env": {
+           "ACCESS_KEY": "YOUR_ACCESS_KEY"
+         }
+       }
+     }
+   }
+   ```
 
 ### SKILL.md Format
 
