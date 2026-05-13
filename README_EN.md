@@ -79,13 +79,6 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 | [bohrium-web-search](en/bohrium-web-search/SKILL.md) | Web search — proxy to searchapi.io for open internet search |
 | [bohrium-sandbox](en/bohrium-sandbox/SKILL.md) | Cloud sandbox — on-demand temp VM for running shell/Python |
 | [bohrium-lkm](en/bohrium-lkm/SKILL.md) | Large Knowledge Model — knowledge graph search, claim verification, variable relationships, batch OCR |
-
-### Database Skills
-
-Query scientific databases via `open.bohrium.com` database API.
-
-| Skill | Description |
-|-------|------------|
 | [polymer-db](en/polymer-db/SKILL.md) | Polymer database — query 280k+ polymer records (Tg/Td/transmittance/mechanical/electrical properties) |
 
 ---
