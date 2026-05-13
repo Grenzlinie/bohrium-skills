@@ -2,46 +2,65 @@
 
 Bohrium 平台 AI 技能集合，为 [OpenClaw](https://github.com/openclaw) 和 [Claude Code](https://claude.com/claude-code) 提供结构化的 SKILL.md 文件。每个 skill 描述一个独立能力（API 调用、Agent 工作流等），供 AI 编码助手在对话中按需加载。
 
-[English](#english) | [中文](#中文)
+[English](README_EN.md)
+
+---
+
+## 认证配置
+
+所有 API Skills 需要 Bohrium AccessKey 作为鉴权凭证。
+
+### 获取 AccessKey
+
+1. 注册 [Bohrium](https://www.bohrium.com/)（机构用户请联系深势科技商务 bd@dp.tech 开通机构账号）
+2. 登录后进入 [用户设置 → 账号页面](https://www.bohrium.com/settings/account)，复制 AccessKey
+
+![获取 AccessKey](docs/images/access-key-settings.png)
+
+### 配置方式
+
+根据运行环境选择其一：
+
+**环境变量**（Claude Code / 通用）：
+
+```bash
+export ACCESS_KEY="your_access_key_here"
+```
+
+**OpenClaw 配置文件** `~/.openclaw/openclaw.json`：
+
+```json
+{
+  "skills": {
+    "<skill-name>": {
+      "enabled": true,
+      "apiKey": "YOUR_ACCESS_KEY",
+      "env": {
+        "ACCESS_KEY": "YOUR_ACCESS_KEY"
+      }
+    }
+  }
+}
+```
 
 ---
 
 ## Claude Code 插件安装
 
-本仓库同时是一个 Claude Code plugin marketplace。在 Claude Code 中：
+本仓库同时是一个 Claude Code plugin marketplace：
 
 ```
 /plugin marketplace add dptech-corp/bohrium-skills
 /plugin install bohrium-skills@bohrium
 ```
 
-装完会得到 15 个 Bohrium skill（英文版）。认证：
-
-```bash
-export ACCESS_KEY="YOUR_BOHRIUM_ACCESS_KEY"
-```
+装完会得到 15 个 Bohrium skill（英文版）。
 
 ---
 
-## 中文
+## Skill 列表
 
-### 目录结构
-
-```
-bohrium-skill-hub/
-├── zh/                          # 中文版
-│   ├── bohrium-job/SKILL.md
-│   ├── bohrium-node/SKILL.md
-│   └── ...
-├── en/                          # English version
-│   ├── bohrium-job/SKILL.md
-│   └── ...
-└── README.md
-```
-
-### Skill 列表
-
-#### 平台 API Skills
+### 平台 API Skills
 
 通过 `bohr` CLI 或 `open.bohrium.com` HTTP API 操作 Bohrium 平台资源。
 
@@ -61,7 +80,7 @@ bohrium-skill-hub/
 | [bohrium-sandbox](zh/bohrium-sandbox/SKILL.md) | 云沙箱 — 按需创建临时云 VM，运行 shell/Python |
 | [bohrium-lkm](zh/bohrium-lkm/SKILL.md) | 大知识模型 — 知识图谱搜索、论断验证、变量关系、批量 OCR |
 
-#### 数据库 Skills
+### 数据库 Skills
 
 通过 `open.bohrium.com` 数据库 API 检索科学数据。
 
@@ -69,118 +88,42 @@ bohrium-skill-hub/
 |-------|------|
 | [polymer-db](zh/polymer-db/SKILL.md) | 高分子数据库 — 查询 28 万+ 条聚合物记录（Tg/Td/透光率/力学/电学性能等） |
 
-### 认证配置
+---
 
-API Skills 需要 ACCESS_KEY 作为鉴权凭证。
+## 目录结构
 
-**获取 AccessKey**：注册 [Bohrium](https://www.bohrium.com/)，在 [用户设置页面](https://www.bohrium.com/settings/account) 获取。机构用户请联系深势科技商务（bd@dp.tech）开通机构账号。
+```
+bohrium-skill-hub/
+├── zh/                          # 中文版
+│   ├── bohrium-job/SKILL.md
+│   ├── bohrium-node/SKILL.md
+│   └── ...
+├── en/                          # English version
+│   ├── bohrium-job/SKILL.md
+│   └── ...
+├── docs/images/                 # 文档图片
+├── README.md                    # 中文说明（本文件）
+└── README_EN.md                 # English README
+```
 
-**配置方式**（根据运行环境选择其一）：
-
-1. **环境变量**（Claude Code / 通用）：
-   ```bash
-   export ACCESS_KEY="your_access_key_here"
-   ```
-
-2. **OpenClaw 配置文件** `~/.openclaw/openclaw.json`：
-   ```json
-   {
-     "skills": {
-       "<skill-name>": {
-         "enabled": true,
-         "apiKey": "YOUR_ACCESS_KEY",
-         "env": {
-           "ACCESS_KEY": "YOUR_ACCESS_KEY"
-         }
-       }
-     }
-   }
-   ```
-
-### SKILL.md 格式规范
+## SKILL.md 格式规范
 
 每个 SKILL.md 包含：
 
 ```yaml
 ---
 name: skill-name
+version: 1.0.0
 description: "一行描述。Use when: ... NOT for: ..."
+metadata:
+  openclaw:
+    primaryEnv: ACCESS_KEY
 ---
 ```
 
-- **Frontmatter** — `name` + `description`（含使用场景和排除场景）
+- **Frontmatter** — `name` + `description`（含使用场景和排除场景）+ `metadata.openclaw.primaryEnv`（声明所需环境变量）
 - **正文** — 功能说明、API 端点、参数表、返回字段、代码示例、错误处理
-- **代码示例** — 使用 Python `requests` 风格，不硬编码密钥
-
----
-
-## English
-
-### Skill List
-
-#### Platform API Skills
-
-Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API.
-
-| Skill | Description |
-|-------|------------|
-| [bohrium-job](en/bohrium-job/SKILL.md) | Compute job management — submit, list, kill, delete jobs |
-| [bohrium-node](en/bohrium-node/SKILL.md) | Dev node management — create, start, stop, delete containers/VMs |
-| [bohrium-dataset](en/bohrium-dataset/SKILL.md) | Dataset management — create, upload, download, version control |
-| [bohrium-image](en/bohrium-image/SKILL.md) | Container image management — list, pull, create, delete images |
-| [bohrium-project](en/bohrium-project/SKILL.md) | Project management — create projects, manage members, set budgets |
-| [bohrium-knowledge-base](en/bohrium-knowledge-base/SKILL.md) | Knowledge base management — literature, tags, notes, recall search |
-| [bohrium-paper-search](en/bohrium-paper-search/SKILL.md) | Paper & patent search — RAG engine keyword + semantic retrieval |
-| [bohrium-pdf-parser](en/bohrium-pdf-parser/SKILL.md) | PDF parsing — extract text, tables, charts, formulas |
-| [bohrium-scholar-search](en/bohrium-scholar-search/SKILL.md) | Scholar search & profile — find scholars by name/affiliation, view papers/citations/h-index/research directions |
-| [bohrium-wiki](en/bohrium-wiki/SKILL.md) | SciencePedia — browse scientific topics by hierarchy |
-| [bohrium-web-search](en/bohrium-web-search/SKILL.md) | Web search — proxy to searchapi.io for open internet search |
-| [bohrium-sandbox](en/bohrium-sandbox/SKILL.md) | Cloud sandbox — on-demand temp VM for running shell/Python |
-| [bohrium-lkm](en/bohrium-lkm/SKILL.md) | Large Knowledge Model — knowledge graph search, claim verification, variable relationships, batch OCR |
-
-#### Database Skills
-
-Query scientific databases via `open.bohrium.com` database API.
-
-| Skill | Description |
-|-------|------------|
-| [polymer-db](en/polymer-db/SKILL.md) | Polymer database — query 280k+ polymer records (Tg/Td/transmittance/mechanical/electrical properties) |
-
-### Authentication
-
-API Skills require an ACCESS_KEY for authentication.
-
-**Get your AccessKey**: Register on [Bohrium](https://www.bohrium.com/), then find it on the [Account Settings page](https://www.bohrium.com/settings/account). Enterprise users should contact DP Technology sales (bd@dp.tech) to set up an organization account.
-
-**Configuration** (choose one based on your runtime):
-
-1. **Environment variable** (Claude Code / general):
-   ```bash
-   export ACCESS_KEY="your_access_key_here"
-   ```
-
-2. **OpenClaw config** `~/.openclaw/openclaw.json`:
-   ```json
-   {
-     "skills": {
-       "<skill-name>": {
-         "enabled": true,
-         "apiKey": "YOUR_ACCESS_KEY",
-         "env": {
-           "ACCESS_KEY": "YOUR_ACCESS_KEY"
-         }
-       }
-     }
-   }
-   ```
-
-### SKILL.md Format
-
-Each SKILL.md contains:
-
-- **Frontmatter** — `name` + `description` (with "Use when" / "NOT for" guidance)
-- **Body** — Feature description, API endpoints, parameter tables, response fields, code examples, error handling
-- **Code examples** — Python `requests` style, no hardcoded secrets
+- **代码示例** — 使用 Python `requests` 风格，通过 `os.environ.get("ACCESS_KEY")` 读取密钥，不硬编码
 
 ---
 
