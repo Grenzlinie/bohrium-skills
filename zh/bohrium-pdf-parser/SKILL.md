@@ -165,7 +165,7 @@ r = requests.post(f"{BASE}/get-result", headers=HEADERS_JSON, json={
     "token": token,
     "content": True,        # 返回解析出的文本
     "objects": False,       # 返回解析出的对象（表格、图等）
-    "pages_dict": False     # 按页返回结果
+    "pages_dict": False     # 是否返回按页结果；true 时返回列表结构
 })
 data = r.json()
 print(f"Status: {data['status']}, Content length: {len(data.get('content', ''))}")
@@ -178,7 +178,7 @@ print(f"Status: {data['status']}, Content length: {len(data.get('content', ''))}
 | `status` | `success` / `undefined`（排队中）/ `processing` / `failed` |
 | `token` | 任务标识 |
 | `content` | 解析出的文本（LaTeX 标记格式） |
-| `pages_dict` | 按页的解析结果字典 |
+| `pages_dict` | 按页的解析结果列表（当前接口返回 list，不要假设为 dict） |
 | `lang` | 检测到的语言（`en` / `zh` 等） |
 | `proc_page` / `total_page` | 已处理/总页数 |
 | `proc_textual` / `total_textual` | 已处理/总文本块数 |
