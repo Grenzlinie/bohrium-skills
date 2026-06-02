@@ -11,10 +11,12 @@ description: "Search academic papers and patents via open.bohrium.com RAG engine
 
 **支持的搜索类型：**
 
-| 类型 | 端点 | 语料库 |
-|------|------|--------|
-| 英文文献 | `/paper/rag/pass/keyword` | 英文学术论文（题目、摘要、语料、图片） |
-| 专利 | `/paper/rag/pass/patent` | 全球专利（含分类号、专利权人筛选） |
+| 类型 | 版本 | 端点 | 语料库 |
+|------|------|------|--------|
+| 英文文献 | v1 | `/openapi/v1/paper/rag/pass/keyword` | 英文学术论文（题目、摘要、语料、图片） |
+| 专利 | v1 | `/openapi/v1/paper/rag/pass/patent` | 全球专利（含分类号、专利权人筛选） |
+| 英文文献 | v2 | `/openapi/v2/paper/rag/pass/keyword` | 英文学术论文（题目、摘要、语料、图片） |
+| 专利 | v2 | `/openapi/v2/paper/rag/pass/patent` | 全球专利（含分类号、专利权人筛选） |
 
 **适用场景：** 文献综述、技术调研、方法对比、趋势分析。
 
@@ -42,18 +44,22 @@ OpenClaw 会自动将 `env.ACCESS_KEY` 注入到运行环境。
 import os, requests
 
 AK = os.environ.get("ACCESS_KEY", "")
-BASE = "https://open.bohrium.com/openapi/v1/paper"
+BASE = "https://open.bohrium.com"
+PAPER_V1_BASE = f"{BASE}/openapi/v1/paper"
+PAPER_V2_BASE = f"{BASE}/openapi/v2/paper"
 HEADERS_JSON = {"accessKey": AK, "Content-Type": "application/json"}
 ```
 
 ---
 
-## 英文文献搜索
+## V1 接口
 
-### 基本搜索
+### 英文文献搜索
+
+#### 基本搜索
 
 ```python
-r = requests.post(f"{BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
+r = requests.post(f"{PAPER_V1_BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
     "words": ["deep learning", "molecular dynamics"],
     "question": "How to use deep learning for molecular dynamics simulation?",
     "startTime": "",
@@ -68,10 +74,10 @@ for p in data["data"]:
     print(f"    Date: {p['coverDateStart']}, Citations: {p['citationNums']}")
 ```
 
-### 高级搜索（时间范围 + JCR 分区 + 数据库 + type）
+#### 高级搜索（时间范围 + JCR 分区 + 数据库 + type）
 
 ```python
-r = requests.post(f"{BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
+r = requests.post(f"{PAPER_V1_BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
     "words": ["deep learning", "protein structure"],
     "question": "deep learning protein structure prediction",
     "type": 5,                          # 搜索版本（见下方说明）
@@ -85,13 +91,13 @@ r = requests.post(f"{BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
 })
 ```
 
-### 请求参数
+#### 请求参数
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `words` | string[] | 是 | 关键词列表，建议 3-8 个英文术语 |
 | `question` | string | 是 | 研究问题的自然语言描述 |
-| `type` | integer | 否 | 搜索版本：0=普通, 1=加强版, 2=专业版, 3=pro2.0, 4=图片, 5=题目摘要语料图片靶点 |
+| `type` | integer | 否 | keyword 接口搜索版本，最大为 5：0=普通, 1=加强版, 2=专业版, 3=pro2.0, 4=图片, 5=题目摘要语料图片靶点 |
 | `startTime` | string | 否 | 起始日期 `YYYY-MM-DD`，空字符串表示不限 |
 | `endTime` | string | 否 | 截止日期 `YYYY-MM-DD` |
 | `jcrZones` | string[] | 否 | JCR 分区筛选，如 `["Q1","Q2"]` |
@@ -101,7 +107,7 @@ r = requests.post(f"{BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
 | `subjectIds` | number[] | 否 | 主题 ID |
 | `pageSize` | integer | 是 | 返回数量，1-100，默认 50 |
 
-### 返回字段
+#### 返回字段
 
 | 字段 | 说明 |
 |------|------|
@@ -127,32 +133,66 @@ r = requests.post(f"{BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
 
 ---
 
-## 专利搜索
+### 专利搜索
 
 ```python
-r = requests.post(f"{BASE}/rag/pass/patent", headers=HEADERS_JSON, json={
-    "keyword": "neural network training optimization",
-    "page": 1,
-    "pageSize": 10
+r = requests.post(f"{PAPER_V1_BASE}/rag/pass/patent", headers=HEADERS_JSON, json={
+    "type": 3,
+    "words": ["neural network"],
+    "question": "neural network",
+    "pageSize": 5
 })
 data = r.json()
 for p in data:
     print(f"  Patent: {p}")
 ```
 
-**注意**: 专利搜索 API 参数格式较简单，不支持 `rerank`、`type`、`words`、`question` 等高级参数（传入会导致后端异常）。
+**注意**: 专利搜索的 `type` 最大为 3；英文文献 keyword 搜索的 `type` 最大为 5。
 
-### 专利请求参数
+#### 专利请求参数
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `keyword` | string | 是 | 搜索关键词 |
-| `page` | integer | 是 | 页码 |
+| `type` | integer | 否 | 专利搜索版本，最大为 3 |
+| `words` | string[] | 是 | 关键词列表 |
+| `question` | string | 是 | 检索问题或关键词描述 |
 | `pageSize` | integer | 是 | 每页数量 |
 
-### 专利返回字段
+#### 专利返回字段
 
 返回数组格式，每个元素为专利信息对象。
+
+---
+
+## V2 接口
+
+v2 与 v1 的请求参数和返回字段保持一致，只需把 base 切换到 `/openapi/v2/paper`。
+
+### V2 英文文献搜索
+
+```python
+r = requests.post(f"{PAPER_V2_BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
+    "words": ["deep learning", "molecular dynamics"],
+    "question": "How to use deep learning for molecular dynamics simulation?",
+    "type": 5,
+    "startTime": "",
+    "endTime": "",
+    "pageSize": 10
+})
+data = r.json()
+```
+
+### V2 专利搜索
+
+```python
+r = requests.post(f"{PAPER_V2_BASE}/rag/pass/patent", headers=HEADERS_JSON, json={
+    "type": 3,
+    "words": ["neural network"],
+    "question": "neural network",
+    "pageSize": 5
+})
+data = r.json()
+```
 
 ---
 
@@ -170,7 +210,7 @@ words = ["science", "research"]
 
 ### 结合 question 提升相关性
 
-`words` 用于精确关键词匹配，`question` 用于语义理解。两者结合效果最佳（仅适用于英文文献搜索）：
+`words` 用于精确关键词匹配，`question` 用于语义理解。两者结合效果最佳，英文文献 keyword 搜索和专利搜索都适用：
 
 ```python
 {
@@ -199,19 +239,33 @@ words = ["science", "research"]
 
 ```bash
 AK="YOUR_ACCESS_KEY"
-BASE="https://open.bohrium.com/openapi/v1/paper"
+BASE="https://open.bohrium.com"
+PAPER_V1_BASE="$BASE/openapi/v1/paper"
+PAPER_V2_BASE="$BASE/openapi/v2/paper"
 
-# 英文文献搜索
-curl -s -X POST "$BASE/rag/pass/keyword" \
+# v1 英文文献搜索
+curl -s -X POST "$PAPER_V1_BASE/rag/pass/keyword" \
   -H "Content-Type: application/json" \
   -H "accessKey: $AK" \
   -d '{"words":["deep learning","protein"],"question":"deep learning protein structure prediction","type":5,"startTime":"2024-01-01","endTime":"2025-01-01","jcrZones":["Q1"],"pageSize":5}'
 
-# 专利搜索
-curl -s -X POST "$BASE/rag/pass/patent" \
+# v1 专利搜索
+curl -s -X POST "$PAPER_V1_BASE/rag/pass/patent" \
   -H "Content-Type: application/json" \
   -H "accessKey: $AK" \
-  -d '{"words":["neural network"],"question":"neural network training","type":3,"rerank":1,"pageSize":5}'
+  -d '{"type":3,"words":["neural network"],"question":"neural network","pageSize":5}'
+
+# v2 英文文献搜索
+curl -s -X POST "$PAPER_V2_BASE/rag/pass/keyword" \
+  -H "Content-Type: application/json" \
+  -H "accessKey: $AK" \
+  -d '{"words":["deep learning","protein"],"question":"deep learning protein structure prediction","type":5,"startTime":"2024-01-01","endTime":"2025-01-01","jcrZones":["Q1"],"pageSize":5}'
+
+# v2 专利搜索
+curl -s -X POST "$PAPER_V2_BASE/rag/pass/patent" \
+  -H "Content-Type: application/json" \
+  -H "accessKey: $AK" \
+  -d '{"type":3,"words":["neural network"],"question":"neural network","pageSize":5}'
 ```
 
 ---
