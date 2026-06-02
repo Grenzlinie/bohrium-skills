@@ -11,12 +11,10 @@ Search academic papers and patents using the Bohrium RAG search engine. Combines
 
 **Supported Search Types:**
 
-| Type | Version | Endpoint | Corpus |
-|------|---------|----------|--------|
-| English papers | v1 | `/openapi/v1/paper/rag/pass/keyword` | English academic papers (title, abstract, corpus, figures) |
-| Patents | v1 | `/openapi/v1/paper/rag/pass/patent` | Global patents (with classification, assignee filtering) |
-| English papers | v2 | `/openapi/v2/paper/rag/pass/keyword` | English academic papers (title, abstract, corpus, figures) |
-| Patents | v2 | `/openapi/v2/paper/rag/pass/patent` | Global patents (with classification, assignee filtering) |
+| Type | Endpoint | Corpus |
+|------|----------|--------|
+| English papers | `/openapi/v2/paper/rag/pass/keyword` | English academic papers (title, abstract, corpus, figures) |
+| Patents | `/openapi/v2/paper/rag/pass/patent` | Global patents (with classification, assignee filtering) |
 
 **Use cases:** Literature review, technical survey, method comparison, trend analysis.
 
@@ -45,21 +43,18 @@ import os, requests
 
 AK = os.environ.get("ACCESS_KEY", "")
 BASE = "https://open.bohrium.com"
-PAPER_V1_BASE = f"{BASE}/openapi/v1/paper"
-PAPER_V2_BASE = f"{BASE}/openapi/v2/paper"
+PAPER_BASE = f"{BASE}/openapi/v2/paper"
 HEADERS_JSON = {"accessKey": AK, "Content-Type": "application/json"}
 ```
 
 ---
 
-## V1 APIs
+## English Paper Search
 
-### English Paper Search
-
-#### Basic Search
+### Basic Search
 
 ```python
-r = requests.post(f"{PAPER_V1_BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
+r = requests.post(f"{PAPER_BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
     "words": ["deep learning", "molecular dynamics"],
     "question": "How to use deep learning for molecular dynamics simulation?",
     "startTime": "",
@@ -74,10 +69,10 @@ for p in data["data"]:
     print(f"    Date: {p['coverDateStart']}, Citations: {p['citationNums']}")
 ```
 
-#### Advanced Search (Date Range + JCR Zone + Database + Type)
+### Advanced Search (Date Range + JCR Zone + Database + Type)
 
 ```python
-r = requests.post(f"{PAPER_V1_BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
+r = requests.post(f"{PAPER_BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
     "words": ["deep learning", "protein structure"],
     "question": "deep learning protein structure prediction",
     "type": 5,                          # Search version (see below)
@@ -91,7 +86,7 @@ r = requests.post(f"{PAPER_V1_BASE}/rag/pass/keyword", headers=HEADERS_JSON, jso
 })
 ```
 
-#### Request Parameters
+### Request Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -107,7 +102,7 @@ r = requests.post(f"{PAPER_V1_BASE}/rag/pass/keyword", headers=HEADERS_JSON, jso
 | `subjectIds` | number[] | No | Subject IDs |
 | `pageSize` | integer | Yes | Result count, 1-100, default 50 |
 
-#### Response Fields
+### Response Fields
 
 | Field | Description |
 |-------|-------------|
@@ -133,10 +128,10 @@ r = requests.post(f"{PAPER_V1_BASE}/rag/pass/keyword", headers=HEADERS_JSON, jso
 
 ---
 
-### Patent Search
+## Patent Search
 
 ```python
-r = requests.post(f"{PAPER_V1_BASE}/rag/pass/patent", headers=HEADERS_JSON, json={
+r = requests.post(f"{PAPER_BASE}/rag/pass/patent", headers=HEADERS_JSON, json={
     "type": 3,
     "words": ["neural network"],
     "question": "neural network",
@@ -149,7 +144,7 @@ for p in data:
 
 **Note**: Patent search `type` is capped at 3; English paper keyword search `type` is capped at 5.
 
-#### Patent Request Parameters
+### Patent Request Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -158,41 +153,9 @@ for p in data:
 | `question` | string | Yes | Search question or keyword description |
 | `pageSize` | integer | Yes | Results per page |
 
-#### Patent Response Fields
+### Patent Response Fields
 
 Returns array format with patent information objects.
-
----
-
-## V2 APIs
-
-v2 uses the same request parameters and response fields as v1. Switch the base to `/openapi/v2/paper`.
-
-### V2 English Paper Search
-
-```python
-r = requests.post(f"{PAPER_V2_BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
-    "words": ["deep learning", "molecular dynamics"],
-    "question": "How to use deep learning for molecular dynamics simulation?",
-    "type": 5,
-    "startTime": "",
-    "endTime": "",
-    "pageSize": 10
-})
-data = r.json()
-```
-
-### V2 Patent Search
-
-```python
-r = requests.post(f"{PAPER_V2_BASE}/rag/pass/patent", headers=HEADERS_JSON, json={
-    "type": 3,
-    "words": ["neural network"],
-    "question": "neural network",
-    "pageSize": 5
-})
-data = r.json()
-```
 
 ---
 
@@ -240,29 +203,16 @@ words = ["science", "research"]
 ```bash
 AK="YOUR_ACCESS_KEY"
 BASE="https://open.bohrium.com"
-PAPER_V1_BASE="$BASE/openapi/v1/paper"
-PAPER_V2_BASE="$BASE/openapi/v2/paper"
+PAPER_BASE="$BASE/openapi/v2/paper"
 
-# v1 English paper search
-curl -s -X POST "$PAPER_V1_BASE/rag/pass/keyword" \
+# English paper search
+curl -s -X POST "$PAPER_BASE/rag/pass/keyword" \
   -H "Content-Type: application/json" \
   -H "accessKey: $AK" \
   -d '{"words":["deep learning","protein"],"question":"deep learning protein structure prediction","type":5,"startTime":"2024-01-01","endTime":"2025-01-01","jcrZones":["Q1"],"pageSize":5}'
 
-# v1 Patent search
-curl -s -X POST "$PAPER_V1_BASE/rag/pass/patent" \
-  -H "Content-Type: application/json" \
-  -H "accessKey: $AK" \
-  -d '{"type":3,"words":["neural network"],"question":"neural network","pageSize":5}'
-
-# v2 English paper search
-curl -s -X POST "$PAPER_V2_BASE/rag/pass/keyword" \
-  -H "Content-Type: application/json" \
-  -H "accessKey: $AK" \
-  -d '{"words":["deep learning","protein"],"question":"deep learning protein structure prediction","type":5,"startTime":"2024-01-01","endTime":"2025-01-01","jcrZones":["Q1"],"pageSize":5}'
-
-# v2 Patent search
-curl -s -X POST "$PAPER_V2_BASE/rag/pass/patent" \
+# Patent search
+curl -s -X POST "$PAPER_BASE/rag/pass/patent" \
   -H "Content-Type: application/json" \
   -H "accessKey: $AK" \
   -d '{"type":3,"words":["neural network"],"question":"neural network","pageSize":5}'
