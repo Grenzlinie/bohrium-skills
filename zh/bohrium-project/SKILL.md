@@ -197,7 +197,7 @@ import os, requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/project"
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
 # ── 获取详细项目列表（含费用、成员数等） ──
@@ -249,13 +249,13 @@ requests.put(f"{BASE}/154/recovery_user", headers=HEADERS_JSON,
 
 ## 不可用端点
 
-以下端点通过 openapi accessKey 方式**无法访问**（返回 404）：
+以下端点通过 openapi auth 方式**无法访问**（返回 404）：
 
 | 端点 | 原因 |
 |------|------|
 | `POST /project/join` | 路由转发路径不匹配 |
 | `POST /project/share_status` | 同上 |
-| `GET /project/available` | 注册在 AK v2 Group，v1 accessKey 不可达 |
+| `GET /project/available` | 注册在 AK v2 Group，v1 auth 不可达 |
 
 ## 常见问题
 

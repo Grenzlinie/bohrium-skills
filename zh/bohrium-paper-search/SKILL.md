@@ -44,7 +44,7 @@ import os, requests
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com"
 PAPER_BASE = f"{BASE}/openapi/v2/paper"
-HEADERS_JSON = {"accessKey": AK, "Content-Type": "application/json"}
+HEADERS_JSON = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
 ```
 
 ---
@@ -208,13 +208,13 @@ PAPER_BASE="$BASE/openapi/v2/paper"
 # 英文文献搜索
 curl -s -X POST "$PAPER_BASE/rag/pass/keyword" \
   -H "Content-Type: application/json" \
-  -H "accessKey: $AK" \
+  -H "Authorization: Bearer $AK" \
   -d '{"words":["deep learning","protein"],"question":"deep learning protein structure prediction","type":5,"startTime":"2024-01-01","endTime":"2025-01-01","jcrZones":["Q1"],"pageSize":5}'
 
 # 专利搜索
 curl -s -X POST "$PAPER_BASE/rag/pass/patent" \
   -H "Content-Type: application/json" \
-  -H "accessKey: $AK" \
+  -H "Authorization: Bearer $AK" \
   -d '{"type":3,"words":["neural network"],"question":"neural network","pageSize":5}'
 ```
 
@@ -225,7 +225,7 @@ curl -s -X POST "$PAPER_BASE/rag/pass/patent" \
 | 问题 | 原因 | 解决 |
 |------|------|------|
 | `code` 非 0 | 请求参数错误 | 检查 `message` 字段获取错误详情 |
-| 401 Unauthorized | accessKey 无效 | 确认 BOHR_ACCESS_KEY 正确 |
+| 401 Unauthorized | 鉴权无效 | 确认 BOHR_ACCESS_KEY 正确 |
 | 结果不相关 | 关键词太泛或 question 不够具体 | 使用 3-8 个专业术语 + 清晰的 question |
 | 返回为空 | 时间范围太窄或筛选条件过严 | 放宽 startTime/endTime 或去掉 jcrZones 限制 |
 | 响应含多行 JSON | 正常行为（streaming） | 取第一行解析即可，或用 `json.loads(response.text.split('\n')[0])` |

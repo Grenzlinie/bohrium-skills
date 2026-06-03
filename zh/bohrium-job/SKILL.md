@@ -315,7 +315,7 @@ import os, requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1"
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 
 # 按状态过滤任务列表 (0=等待, 1=运行中, 2=完成, 3=调度中, -1=失败)
 r = requests.get(f"{BASE}/job/list", headers=HEADERS,

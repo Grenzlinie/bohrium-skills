@@ -65,7 +65,7 @@ This skill uses:
 | 2 | SSE stream | `GET /v1/sigma-search/api/v3/sse/ai_search/v1/{sessionId}/stream` | Receive streamed reasoning and answer events |
 | 3 | Session detail | `GET /v1/sigma-search/api/v4/ai_search/sessions/{sessionId}` | Recover or replay session output |
 
-Authentication uses the URL query parameter `accessKey=<KEY>`.
+Authentication uses the `Authorization: Bearer <BOHR_ACCESS_KEY>` header.
 
 ## Inputs
 
@@ -200,9 +200,9 @@ def create_session(query, discipline, journal_type, model):
         },
     }
 
-    url = f"{BASE}/api/v4/ai_search/sessions?accessKey={AK}"
+    url = f"{BASE}/api/v4/ai_search/sessions"
     try:
-        response = requests.post(url, json=payload, timeout=30)
+        response = requests.post(url, headers={"Authorization": f"Bearer {AK}"}, json=payload, timeout=30)
         response.raise_for_status()
     except requests.exceptions.Timeout:
         print("  Error: create session timeout")
@@ -225,11 +225,11 @@ def subscribe_sse(session_id):
     """Subscribe to the SSE stream, merge events, and return accumulated state."""
     print("\n[Step 2/2] Subscribing to SSE stream...")
 
-    url = f"{BASE}/api/v3/sse/ai_search/v1/{session_id}/stream?accessKey={AK}"
+    url = f"{BASE}/api/v3/sse/ai_search/v1/{session_id}/stream"
     state = {}
 
     try:
-        with requests.get(url, stream=True, timeout=180) as response:
+        with requests.get(url, headers={"Authorization": f"Bearer {AK}"}, stream=True, timeout=180) as response:
             response.raise_for_status()
             buf = b""
             event_count = 0

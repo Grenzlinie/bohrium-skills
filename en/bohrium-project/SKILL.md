@@ -195,7 +195,7 @@ import os, requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/project"
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
 # Detailed project list (with cost, member count, etc.)
@@ -247,13 +247,13 @@ requests.put(f"{BASE}/154/recovery_user", headers=HEADERS_JSON,
 
 ## Unavailable Endpoints
 
-The following endpoints are **not accessible** via openapi accessKey (return 404):
+The following endpoints are **not accessible** via openapi auth (return 404):
 
 | Endpoint | Reason |
 |----------|--------|
 | `POST /project/join` | Route forwarding path mismatch |
 | `POST /project/share_status` | Same |
-| `GET /project/available` | Registered in AK v2 Group; unreachable via v1 accessKey |
+| `GET /project/available` | Registered in AK v2 Group; unreachable via v1 auth |
 
 ## Troubleshooting
 

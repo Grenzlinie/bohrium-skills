@@ -53,7 +53,7 @@ import os, requests
 
 AK = os.environ["BOHR_ACCESS_KEY"]
 BASE = "https://open.bohrium.com/openapi/v1/lkm"
-H = {"accessKey": AK, "Content-Type": "application/json"}
+H = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
 ```
 
 ---
@@ -188,26 +188,26 @@ AK="$BOHR_ACCESS_KEY"
 
 # Knowledge graph search
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/search" \
-  -H "accessKey: $AK" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
   -d '{"query":"lithium battery degradation mechanism","limit":10}' | jq .
 
 # Claim matching
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/claims/match" \
-  -H "accessKey: $AK" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
   -d '{"text":"MoS2 is a promising catalyst for hydrogen evolution","limit":5}' | jq .
 
 # Evidence chain
 curl -s -X GET "https://open.bohrium.com/openapi/v1/lkm/claims/abc123/evidence" \
-  -H "accessKey: $AK" | jq .
+  -H "Authorization: Bearer $AK" | jq .
 
 # Variable batch query (IDs from search/claims results)
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/variables/batch" \
-  -H "accessKey: $AK" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
   -d '{"ids":["gcn_b2bf079b541a4fa0","gcn_5cecd02c3d8a4e61"]}' | jq .
 
 # Batch OCR
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/papers/ocr/batch" \
-  -H "accessKey: $AK" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
   -d '{"paper_ids":["doi:10.1038/s41586-021-03819-2"]}' | jq .
 ```
 

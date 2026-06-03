@@ -67,8 +67,8 @@ if not AK:
     )
 
 BASE = "https://open.bohrium.com/openapi/v1/paper-server"
-HEADERS_JSON = {"accessKey": AK, "Content-Type": "application/json"}
-HEADERS = {"accessKey": AK}
+HEADERS_JSON = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 ```
 
 ---
@@ -196,13 +196,13 @@ BASE="https://open.bohrium.com/openapi/v1/paper-server"
 
 # Step 1: Scholar search
 curl -s -X POST "$BASE/scholar/search" \
-  -H "accessKey: $AK" \
+  -H "Authorization: Bearer $AK" \
   -H "Content-Type: application/json" \
   -d '{"name":"Yann LeCun","page":1,"pageSize":3}'
 
 # Step 2: Fetch profile
 curl -s "$BASE/scholar/info?scholarId=RETURNED_ID" \
-  -H "accessKey: $AK"
+  -H "Authorization: Bearer $AK"
 ```
 
 ---

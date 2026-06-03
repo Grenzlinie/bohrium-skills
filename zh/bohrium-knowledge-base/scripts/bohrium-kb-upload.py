@@ -7,11 +7,11 @@ Upload a local file into Bohrium Knowledge Base via OpenAPI multipart + binary u
 Flow (confirmed):
 0) (Optional) POST https://open.bohrium.com/openapi/v1/knowledge/knowledge_base/create
    body: {"knowledgeBaseName": "Daily Paper-YYMMDD", "introduction": "...", "cover": "", "privilege": 1}
-   header: accessKey
+   header: Authorization: Bearer <BOHR_ACCESS_KEY>
 
 1) GET https://open.bohrium.com/openapi/v1/knowledge/file/multipart
    query: fileName, md5, parentId(nodeId), size
-   header: accessKey
+   header: Authorization: Bearer <BOHR_ACCESS_KEY>
    -> returns data.host, data.path, data.token
 
 2) POST {host}/api/upload/binary
@@ -140,7 +140,7 @@ def get_multipart_info(access_key: str, file_name: str, md5: str, parent_id: int
         "size": size,
     })
     url = f"{OPENAPI_MULTIPART}?{qs}"
-    data = _http_json("GET", url, headers={"accessKey": access_key}, timeout=60)
+    data = _http_json("GET", url, headers={"Authorization": f"Bearer {access_key}"}, timeout=60)
     if data.get("code") != 0:
         raise RuntimeError(f"multipart failed: {data}")
     d = data.get("data") or {}
@@ -198,7 +198,7 @@ def submit_file(access_key: str, file_name: str, md5: str, parent_id: int, size:
         "POST",
         OPENAPI_SUBMIT,
         headers={
-            "accessKey": access_key,
+            "Authorization": f"Bearer {access_key}",
             "Content-Type": "application/json",
         },
         data=body,

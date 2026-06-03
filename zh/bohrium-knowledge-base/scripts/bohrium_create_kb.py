@@ -41,7 +41,7 @@ def _http_json(url: str, access_key: str, body: dict) -> dict:
     data = json.dumps(body, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(url, data=data, method="POST")
     req.add_header("content-type", "application/json")
-    req.add_header("accessKey", access_key)
+    req.add_header("Authorization", f"Bearer {access_key}")
     with urllib.request.urlopen(req, timeout=60) as resp:
         raw = resp.read().decode("utf-8", "replace")
     return json.loads(raw)

@@ -313,7 +313,7 @@ import os, requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1"
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 
 # Filter by status (0=pending, 1=running, 2=finished, 3=scheduling, -1=failed)
 r = requests.get(f"{BASE}/job/list", headers=HEADERS,

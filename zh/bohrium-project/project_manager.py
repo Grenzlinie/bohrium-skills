@@ -20,7 +20,7 @@ import requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://openapi.dp.tech/openapi/v1/project"
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
 ROLE_MAP = {1: "Creator/Admin", 3: "Member"}

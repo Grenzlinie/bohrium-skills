@@ -41,7 +41,7 @@ import os, requests
 
 AK = os.environ["BOHR_ACCESS_KEY"]
 BASE = "https://open.bohrium.com/openapi/v1/literature-sage/wiki_v2"
-H = {"accessKey": AK, "Content-Type": "application/json"}
+H = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
 
 # Optional global defaults
 DEFAULTS = {"language": "en-US", "style": "Feynman"}
@@ -68,7 +68,7 @@ DEFAULTS = {"language": "en-US", "style": "Feynman"}
 ## 1. Info — `info`
 
 ```python
-r = requests.get(f"{BASE}/info", headers={"accessKey": AK})
+r = requests.get(f"{BASE}/info", headers={"Authorization": f"Bearer {AK}"})
 print(r.json())
 ```
 
@@ -166,7 +166,7 @@ BASE="https://open.bohrium.com/openapi/v1/literature-sage/wiki_v2"
 
 # Search entries by keyword
 curl -s -X POST "$BASE/search_index_name" \
-  -H "accessKey: $AK" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
   -d '{"name":"graphene","node_types":["field"],"style":"Feynman"}' \
   | jq '.wiki_indices[] | {node_name, node_type, node_id}'
 ```

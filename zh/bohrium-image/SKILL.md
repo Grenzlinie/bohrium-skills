@@ -180,7 +180,7 @@ bohr image delete 121510 121395         # 批量删除
 import os, requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 
 # 搜索公共镜像版本（关键词）
 r = requests.get("https://open.bohrium.com/openapi/v2/image/public/version/search",

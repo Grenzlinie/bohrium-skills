@@ -55,7 +55,7 @@ def http(
     if params:
         url = url + "?" + urllib.parse.urlencode(params)
     data: bytes | None = None
-    headers = {"accessKey": AK}
+    headers = {"Authorization": f"Bearer {AK}"}
     if body is not None:
         data = json.dumps(body).encode()
         headers["Content-Type"] = "application/json"
@@ -158,15 +158,15 @@ print("\n[bohrium-dataset]")
 record("dataset", "/v1/ds/", "GET", params={"page": 1, "pageSize": 1})
 
 # ---------------------------------------------------------------------------
-# bohrium-image  — image v2 endpoints live on the LEGACY gateway
+# bohrium-image  — image v2 endpoints live on open-platform
 # ---------------------------------------------------------------------------
 print("\n[bohrium-image]")
-IMAGE_BASE = "https://openapi.dp.tech/openapi"
+IMAGE_BASE = "https://open.bohrium.com/openapi"
 
 
 def record_image() -> None:
     url = IMAGE_BASE + "/v2/image/public?page=1&pageSize=1"
-    req = urllib.request.Request(url, headers={"accessKey": AK})
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {AK}"})
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
             code = resp.status
@@ -181,7 +181,7 @@ def record_image() -> None:
         code = 0
         data = {"_err": repr(e)}
     status, note = classify(code, data)
-    note = (note + " (via openapi.dp.tech)").strip()
+    note = (note + " (via open.bohrium.com)").strip()
     results.append(Result("image", "/v2/image/public", status, code, note))
     print(f"  [{status}] GET  /v2/image/public  HTTP={code}  {note}")
 

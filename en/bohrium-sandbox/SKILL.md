@@ -7,7 +7,7 @@ description: "Bohrium platform sandbox (lbg sdbx CLI): on-demand cloud VMs for r
 
 ## Overview
 
-Bohrium Sandbox is an on-demand cloud VM driven by the `lbg sdbx` CLI. It is **not** the E2B SDK, does **not** need `E2B_API_KEY`, and does **not** call `api.e2b.dev` — everything runs on the Bohrium platform with the Bohrium accessKey.
+Bohrium Sandbox is an on-demand cloud VM driven by the `lbg sdbx` CLI. It is **not** the E2B SDK, does **not** need `E2B_API_KEY`, and does **not** call `api.e2b.dev` — everything runs on the Bohrium platform with the Bohrium AccessKey.
 
 **Core capabilities:**
 
@@ -44,7 +44,7 @@ See version history at <https://pypi.org/project/lbg/#history>. The current beta
 
 ## Configuration
 
-Requires a Bohrium accessKey (not an E2B key). Two ways:
+Requires a Bohrium AccessKey (not an E2B key). Two ways:
 
 ```bash
 # 1. Persistent login (writes local config)

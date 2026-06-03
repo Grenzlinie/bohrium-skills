@@ -9,7 +9,7 @@ description: "Polymer database search: query the Polymer-Data-Bank for polymer d
 ## API Information
 
 - **Endpoint**: `POST https://open.bohrium.com/openapi/v1/database/common_data/list`
-- **Authentication**: Header `accessKey: $BOHR_ACCESS_KEY`
+- **Authentication**: Header `Authorization: Bearer $BOHR_ACCESS_KEY`
 - **tableAk**: `123zl00` (Polymer-Data-Bank, 280k+ records)
 - **Data Source**: Bohrium Materials Database
 
@@ -18,7 +18,7 @@ description: "Polymer database search: query the Polymer-Data-Bank for polymer d
 ```bash
 curl -s -X POST 'https://open.bohrium.com/openapi/v1/database/common_data/list' \
   -H 'Content-Type: application/json' \
-  -H "accessKey: $BOHR_ACCESS_KEY" \
+  -H "Authorization: Bearer $BOHR_ACCESS_KEY" \
   -d '<JSON body>'
 ```
 

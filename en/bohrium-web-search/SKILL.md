@@ -38,7 +38,7 @@ OpenClaw injects `env.BOHR_ACCESS_KEY` into the runtime.
 
 ```
 GET https://open.bohrium.com/openapi/v1/search/web?q=QUERY&num=N
-Header: accessKey: $BOHR_ACCESS_KEY
+Header: Authorization: Bearer $BOHR_ACCESS_KEY
 ```
 
 | Param | Type | Default | Description |
@@ -55,7 +55,7 @@ AK = os.environ["BOHR_ACCESS_KEY"]
 BASE = "https://open.bohrium.com/openapi/v1/search/web"
 
 r = requests.get(BASE,
-    headers={"accessKey": AK},
+    headers={"Authorization": f"Bearer {AK}"},
     params={"q": "graphene synthesis CVD", "num": 5})
 data = r.json()
 
@@ -81,7 +81,7 @@ for i, hit in enumerate(data.get("organic_results", []), 1):
 ```bash
 AK="$BOHR_ACCESS_KEY"
 curl -s "https://open.bohrium.com/openapi/v1/search/web?q=deepmd-kit&num=5" \
-  -H "accessKey: $AK" | jq '.organic_results[] | {title, link, snippet}'
+  -H "Authorization: Bearer $AK" | jq '.organic_results[] | {title, link, snippet}'
 ```
 
 ## Troubleshooting
@@ -89,7 +89,7 @@ curl -s "https://open.bohrium.com/openapi/v1/search/web?q=deepmd-kit&num=5" \
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `No organic_results` | No matches for the query | Rephrase; English queries generally return more hits than Chinese |
-| `401` | Bad BOHR_ACCESS_KEY | Check `accessKey` header case; don't use `Authorization: Bearer` |
+| `401` | Bad BOHR_ACCESS_KEY | Use `Authorization: Bearer ` |
 | `num` ignored | Out of range | Must be `1-10`; values outside the range may be clamped or ignored |
 
 ## Pairs well with

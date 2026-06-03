@@ -44,7 +44,7 @@ import os, requests
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com"
 PAPER_BASE = f"{BASE}/openapi/v2/paper"
-HEADERS_JSON = {"accessKey": AK, "Content-Type": "application/json"}
+HEADERS_JSON = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
 ```
 
 ---
@@ -208,13 +208,13 @@ PAPER_BASE="$BASE/openapi/v2/paper"
 # English paper search
 curl -s -X POST "$PAPER_BASE/rag/pass/keyword" \
   -H "Content-Type: application/json" \
-  -H "accessKey: $AK" \
+  -H "Authorization: Bearer $AK" \
   -d '{"words":["deep learning","protein"],"question":"deep learning protein structure prediction","type":5,"startTime":"2024-01-01","endTime":"2025-01-01","jcrZones":["Q1"],"pageSize":5}'
 
 # Patent search
 curl -s -X POST "$PAPER_BASE/rag/pass/patent" \
   -H "Content-Type: application/json" \
-  -H "accessKey: $AK" \
+  -H "Authorization: Bearer $AK" \
   -d '{"type":3,"words":["neural network"],"question":"neural network","pageSize":5}'
 ```
 
@@ -225,7 +225,7 @@ curl -s -X POST "$PAPER_BASE/rag/pass/patent" \
 | Problem | Cause | Solution |
 |---------|-------|----------|
 | `code` is non-zero | Request parameter error | Check `message` field for details |
-| 401 Unauthorized | Invalid accessKey | Verify BOHR_ACCESS_KEY is correct |
+| 401 Unauthorized | Invalid auth | Verify BOHR_ACCESS_KEY is correct |
 | Irrelevant results | Keywords too generic or vague question | Use 3-8 professional terms + clear question |
 | Empty results | Date range too narrow or filters too strict | Widen startTime/endTime or remove jcrZones |
 | Response has multiple JSON lines | Normal behavior (streaming) | Parse first line only: `json.loads(response.text.split('\n')[0])` |

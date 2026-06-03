@@ -157,7 +157,7 @@ bohr image delete 121510 121395         # Batch
 ```python
 import os, requests
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 
 r = requests.get("https://open.bohrium.com/openapi/v2/image/public/version/search",
     headers=HEADERS, params={"keyword": "deepmd", "page": 1, "pageSize": 5})
