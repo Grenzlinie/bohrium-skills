@@ -11,6 +11,7 @@ Usage:
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -22,13 +23,30 @@ def bohr_env() -> dict:
     if ak:
         env["BOHR_ACCESS_KEY"] = ak
         env["ACCESS_KEY"] = ak
+    env.setdefault("OPENAPI_HOST", "https://open.bohrium.com")
+    env.setdefault("TIEFBLUE_HOST", "https://tiefblue.dp.tech")
     return env
+
+
+def bohr_cmd() -> str:
+    """Resolve the Bohrium resource CLI, preferring PATH then ~/.bohrium/bohr."""
+    found = shutil.which("bohr")
+    if found:
+        return found
+    fallback = Path.home() / ".bohrium" / "bohr"
+    if fallback.exists():
+        return str(fallback)
+    print(
+        "ERROR: bohr CLI not found. Install it with the command in bohrium-job/SKILL.md.",
+        file=sys.stderr,
+    )
+    sys.exit(2)
 
 
 def create_job_group(name: str, project_id: int) -> str | None:
     """Create a job group and return the group ID."""
     result = subprocess.run(
-        ["bohr", "job_group", "create", "-n", name, "-p", str(project_id)],
+        [bohr_cmd(), "job_group", "create", "-n", name, "-p", str(project_id)],
         capture_output=True,
         text=True,
         env=bohr_env(),
@@ -52,7 +70,7 @@ def submit_job(
     result_path: str | None = None,
 ) -> bool:
     """Submit a single job."""
-    cmd = ["bohr", "job", "submit", "-i", str(job_json), "-p", str(input_dir)]
+    cmd = [bohr_cmd(), "job", "submit", "-i", str(job_json), "-p", str(input_dir)]
     if job_name:
         cmd.extend(["-n", job_name])
     if group_id:
