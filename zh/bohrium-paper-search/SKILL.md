@@ -138,7 +138,7 @@ r = requests.post(f"{PAPER_BASE}/rag/pass/patent", headers=HEADERS_JSON, json={
     "pageSize": 5
 })
 data = r.json()
-for p in data:
+for p in data["data"]:
     print(f"  Patent: {p}")
 ```
 
@@ -155,7 +155,7 @@ for p in data:
 
 ### 专利返回字段
 
-返回数组格式，每个元素为专利信息对象。
+返回结构是 dict；专利结果列表在 `data[]`，顶层通常包含 `code`、`data`、`message`、`trace_id` 等字段。
 
 ---
 

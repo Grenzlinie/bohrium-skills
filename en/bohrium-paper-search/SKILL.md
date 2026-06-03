@@ -138,7 +138,7 @@ r = requests.post(f"{PAPER_BASE}/rag/pass/patent", headers=HEADERS_JSON, json={
     "pageSize": 5
 })
 data = r.json()
-for p in data:
+for p in data["data"]:
     print(f"  Patent: {p}")
 ```
 
@@ -155,7 +155,7 @@ for p in data:
 
 ### Patent Response Fields
 
-Returns array format with patent information objects.
+Returns a dict/object. Patent results are in `data[]`; top-level fields usually include `code`, `data`, `message`, and `trace_id`.
 
 ---
 
