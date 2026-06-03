@@ -39,9 +39,9 @@ LKM endpoints on `open.bohrium.com` provide scientific knowledge graph search, c
 ```json
 "bohrium-lkm": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
@@ -51,7 +51,7 @@ LKM endpoints on `open.bohrium.com` provide scientific knowledge graph search, c
 ```python
 import os, requests
 
-AK = os.environ["ACCESS_KEY"]
+AK = os.environ["BOHR_ACCESS_KEY"]
 BASE = "https://open.bohrium.com/openapi/v1/lkm"
 H = {"accessKey": AK, "Content-Type": "application/json"}
 ```
@@ -184,7 +184,7 @@ for paper in data.get("data", []):
 ## curl examples
 
 ```bash
-AK="YOUR_ACCESS_KEY"
+AK="$BOHR_ACCESS_KEY"
 
 # Knowledge graph search
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/search" \

@@ -11,20 +11,20 @@ Manage compute jobs on the Bohrium platform. **Prefer `bohr` CLI**; fall back to
 
 ## Authentication
 
-ACCESS_KEY and PROJECT_ID are read from the OpenClaw config `~/.openclaw/openclaw.json`:
+BOHR_ACCESS_KEY and PROJECT_ID are read from the OpenClaw config `~/.openclaw/openclaw.json`:
 
 ```json
 "bohrium-job": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY",
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY",
     "PROJECT_ID": "YOUR_PROJECT_ID"
   }
 }
 ```
 
-OpenClaw automatically injects `env` variables into the runtime. The `bohr` CLI authenticates via the `ACCESS_KEY` environment variable.
+OpenClaw automatically injects `env` variables into the runtime. The skill only requires `BOHR_ACCESS_KEY`; when invoking `bohr` CLI, map it for the CLI process with `export ACCESS_KEY="$BOHR_ACCESS_KEY"`.
 
 ## Prerequisites: Install bohr CLI
 
@@ -311,7 +311,7 @@ bohr job_group download -j 15954383 -o ./results/
 ```python
 import os, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1"
 HEADERS = {"accessKey": AK}
 
@@ -371,7 +371,7 @@ requests.post(f"{BASE}/job_group/{job_group_id}/modify",
 | `unsupported protocol scheme ""` | Missing env vars | Set `OPENAPI_HOST` and `TIEFBLUE_HOST` |
 | `(200, '/account/login', None)` | Old pip lbg | Use Go CLI (`~/.bohrium/bohr`) |
 | WAF 405 | Shell keywords in command | Write to script, use `bash run.sh` |
-| `Permission error` | Wrong user | Verify ACCESS_KEY |
+| `Permission error` | Wrong user | Verify BOHR_ACCESS_KEY |
 | `jobId` vs `jobGroupId` | Different concepts | CLI uses `jobId` for kill/terminate/delete |
 | No output after submit | Large hidden files in `-p` dir | Check dir size |
 | Variable performance | ~30% algorithm variance | Normal |

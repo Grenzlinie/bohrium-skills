@@ -20,28 +20,28 @@ description: "Search scholars and fetch scholar profile via open.bohrium.com. Us
 
 ## 认证配置
 
-ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
+BOHR_ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
 
 ```json
 "bohrium-scholar-search": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-OpenClaw 会自动将 `env.ACCESS_KEY` 注入到运行环境。
+OpenClaw 会自动将 `env.BOHR_ACCESS_KEY` 注入到运行环境。
 
 ### 获取流程（运行时）
 
 ```
-读取 os.environ["ACCESS_KEY"]
+读取 os.environ["BOHR_ACCESS_KEY"]
   ├─ 非空 → 直接使用
   └─ 为空 → 提示用户：
-           「未在 OpenClaw 配置中检测到 ACCESS_KEY，请在 ~/.openclaw/openclaw.json
-            的 bohrium-scholar-search.env.ACCESS_KEY 中填入从 https://bohrium.dp.tech
+           「未在 OpenClaw 配置中检测到 BOHR_ACCESS_KEY，请在 ~/.openclaw/openclaw.json
+            的 bohrium-scholar-search.env.BOHR_ACCESS_KEY 中填入从 https://bohrium.dp.tech
             个人设置页获取的 AccessKey，然后重启 OpenClaw 会话。」
 ```
 
@@ -51,18 +51,18 @@ OpenClaw 会自动将 `env.ACCESS_KEY` 注入到运行环境。
 
 若 API 返回 `Invalid AccessKey`（code 2000）或 HTTP 401：
 1. 说明 OpenClaw 配置中的 Key 已失效或错误
-2. 提示用户：「您的 AccessKey 已失效，请在 `~/.openclaw/openclaw.json` 中更新 `bohrium-scholar-search.env.ACCESS_KEY` 并重启 OpenClaw 会话。」
+2. 提示用户：「您的 AccessKey 已失效，请在 `~/.openclaw/openclaw.json` 中更新 `bohrium-scholar-search.env.BOHR_ACCESS_KEY` 并重启 OpenClaw 会话。」
 
 ## 通用代码模板
 
 ```python
 import os, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 if not AK:
     raise RuntimeError(
-        "ACCESS_KEY not found. Please configure it in ~/.openclaw/openclaw.json "
-        "under bohrium-scholar-search.env.ACCESS_KEY."
+        "BOHR_ACCESS_KEY not found. Please configure it in ~/.openclaw/openclaw.json "
+        "under bohrium-scholar-search.env.BOHR_ACCESS_KEY."
     )
 
 BASE = "https://open.bohrium.com/openapi/v1/paper-server"
@@ -190,7 +190,7 @@ print("Work:", info.get("workExperienceZh") or info.get("workExperience"))
 ## curl 示例
 
 ```bash
-AK="$ACCESS_KEY"
+AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com/openapi/v1/paper-server"
 
 # Step 1: 学者搜索
@@ -210,7 +210,7 @@ curl -s "$BASE/scholar/info?scholarId=RETURNED_ID" \
 
 | 问题 | 原因 | 解决 |
 |------|------|------|
-| `ACCESS_KEY` 为空 | OpenClaw 未注入环境变量 | 检查 `~/.openclaw/openclaw.json` 中 `bohrium-scholar-search.env.ACCESS_KEY` 是否填入 |
+| `BOHR_ACCESS_KEY` 为空 | OpenClaw 未注入环境变量 | 检查 `~/.openclaw/openclaw.json` 中 `bohrium-scholar-search.env.BOHR_ACCESS_KEY` 是否填入 |
 | `Invalid AccessKey` / 401 | Key 已失效或错误 | 更新 `~/.openclaw/openclaw.json` 中的 AccessKey 并重启会话 |
 | 搜索返回空列表 | 1) 24 位无空格字符串会被误识别为内部 ID；2) 上游用户级限流 | 使用自然姓名而非 ID；稍后重试 |
 | 详情接口参数错误 | 缺 `scholarId` | 先调搜索接口取 `data.items[].scholarId` |

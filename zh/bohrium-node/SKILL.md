@@ -13,19 +13,23 @@ description: "Manage Bohrium dev nodes (containers/VMs) via bohr CLI or open.boh
 
 ## 认证配置
 
-ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
+BOHR_ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
 
 ```json
 "bohrium-node": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-OpenClaw 会自动将 `env.ACCESS_KEY` 注入到运行环境。`bohr` CLI 通过 `ACCESS_KEY` 环境变量认证。
+OpenClaw 会自动将 `env.BOHR_ACCESS_KEY` 注入到运行环境。Skill 只需要配置 `BOHR_ACCESS_KEY`；如果直接运行原始 `bohr` CLI 命令，请在该进程临时映射：
+
+```bash
+ACCESS_KEY="$BOHR_ACCESS_KEY" bohr node list
+```
 
 ## 前置条件：安装 bohr CLI
 
@@ -170,7 +174,7 @@ bohr node delete 1431145        # 删除节点（不可逆）
 ```python
 import os, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/node"
 HEADERS = {"accessKey": AK}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}

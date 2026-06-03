@@ -16,11 +16,17 @@ Projects are the organizational containers for Nodes, Jobs, Images, and Datasets
 ```json
 "bohrium-project": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
+```
+
+Only configure `BOHR_ACCESS_KEY` for this skill. For raw `bohr` CLI commands, map it for that process:
+
+```bash
+ACCESS_KEY="$BOHR_ACCESS_KEY" bohr project list
 ```
 
 ## Prerequisites: Install bohr CLI
@@ -187,7 +193,7 @@ The following operations are not covered by the bohr CLI and require the API:
 ```python
 import os, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/project"
 HEADERS = {"accessKey": AK}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}

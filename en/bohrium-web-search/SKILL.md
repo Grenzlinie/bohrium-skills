@@ -20,25 +20,25 @@ Proxy to searchapi.io via `open.bohrium.com`'s `/v1/search/web` endpoint. Issues
 
 ## Auth configuration
 
-ACCESS_KEY comes from the OpenClaw config file `~/.openclaw/openclaw.json`:
+BOHR_ACCESS_KEY comes from the OpenClaw config file `~/.openclaw/openclaw.json`:
 
 ```json
 "bohrium-web-search": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-OpenClaw injects `env.ACCESS_KEY` into the runtime.
+OpenClaw injects `env.BOHR_ACCESS_KEY` into the runtime.
 
 ## API
 
 ```
 GET https://open.bohrium.com/openapi/v1/search/web?q=QUERY&num=N
-Header: accessKey: $ACCESS_KEY
+Header: accessKey: $BOHR_ACCESS_KEY
 ```
 
 | Param | Type | Default | Description |
@@ -51,7 +51,7 @@ Header: accessKey: $ACCESS_KEY
 ```python
 import os, requests
 
-AK = os.environ["ACCESS_KEY"]
+AK = os.environ["BOHR_ACCESS_KEY"]
 BASE = "https://open.bohrium.com/openapi/v1/search/web"
 
 r = requests.get(BASE,
@@ -79,7 +79,7 @@ for i, hit in enumerate(data.get("organic_results", []), 1):
 ## curl example
 
 ```bash
-AK="YOUR_ACCESS_KEY"
+AK="$BOHR_ACCESS_KEY"
 curl -s "https://open.bohrium.com/openapi/v1/search/web?q=deepmd-kit&num=5" \
   -H "accessKey: $AK" | jq '.organic_results[] | {title, link, snippet}'
 ```
@@ -89,7 +89,7 @@ curl -s "https://open.bohrium.com/openapi/v1/search/web?q=deepmd-kit&num=5" \
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `No organic_results` | No matches for the query | Rephrase; English queries generally return more hits than Chinese |
-| `401` | Bad ACCESS_KEY | Check `accessKey` header case; don't use `Authorization: Bearer` |
+| `401` | Bad BOHR_ACCESS_KEY | Check `accessKey` header case; don't use `Authorization: Bearer` |
 | `num` ignored | Out of range | Must be `1-10`; values outside the range may be clamped or ignored |
 
 ## Pairs well with

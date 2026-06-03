@@ -15,7 +15,7 @@ import sys
 
 import requests
 
-AK = os.environ.get("BOHR_ACCESS_KEY") or os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE_V2 = "https://openapi.dp.tech/openapi/v2/image"
 HEADERS = {"accessKey": AK}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
@@ -132,7 +132,7 @@ def main():
     args = parser.parse_args()
 
     if not AK:
-        print("ERROR: set BOHR_ACCESS_KEY (or ACCESS_KEY) environment variable")
+        print("ERROR: set BOHR_ACCESS_KEY environment variable")
         sys.exit(1)
 
     if args.cmd == "search":

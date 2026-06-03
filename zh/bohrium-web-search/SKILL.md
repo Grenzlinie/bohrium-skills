@@ -20,25 +20,25 @@ description: "Web search via Bohrium's open-platform proxy (backed by searchapi.
 
 ## 认证配置
 
-ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
+BOHR_ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
 
 ```json
 "bohrium-web-search": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-OpenClaw 会自动将 `env.ACCESS_KEY` 注入到运行环境。
+OpenClaw 会自动将 `env.BOHR_ACCESS_KEY` 注入到运行环境。
 
 ## API
 
 ```
 GET https://open.bohrium.com/openapi/v1/search/web?q=QUERY&num=N
-Header: accessKey: $ACCESS_KEY
+Header: accessKey: $BOHR_ACCESS_KEY
 ```
 
 | 参数 | 类型 | 默认 | 说明 |
@@ -51,7 +51,7 @@ Header: accessKey: $ACCESS_KEY
 ```python
 import os, requests
 
-AK = os.environ["ACCESS_KEY"]
+AK = os.environ["BOHR_ACCESS_KEY"]
 BASE = "https://open.bohrium.com/openapi/v1/search/web"
 
 r = requests.get(BASE,
@@ -79,7 +79,7 @@ for i, hit in enumerate(data.get("organic_results", []), 1):
 ## curl 示例
 
 ```bash
-AK="YOUR_ACCESS_KEY"
+AK="$BOHR_ACCESS_KEY"
 curl -s "https://open.bohrium.com/openapi/v1/search/web?q=deepmd-kit&num=5" \
   -H "accessKey: $AK" | jq '.organic_results[] | {title, link, snippet}'
 ```
@@ -89,7 +89,7 @@ curl -s "https://open.bohrium.com/openapi/v1/search/web?q=deepmd-kit&num=5" \
 | 问题 | 原因 | 解决 |
 |------|------|------|
 | `No organic_results` | 查询无结果 | 换关键词；英文一般比中文命中更多 |
-| `401` | ACCESS_KEY 错误 | 确认 `accessKey` 大小写正确；别用 `Authorization: Bearer` |
+| `401` | BOHR_ACCESS_KEY 错误 | 确认 `accessKey` 大小写正确；别用 `Authorization: Bearer` |
 | `num` 被忽略 | 超出范围 | `num` 限制在 `1-10`，超出上限会截断或忽略 |
 
 ## 搭配使用

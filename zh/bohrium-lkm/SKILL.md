@@ -39,9 +39,9 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com. Use when: user a
 ```json
 "bohrium-lkm": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
@@ -51,7 +51,7 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com. Use when: user a
 ```python
 import os, requests
 
-AK = os.environ["ACCESS_KEY"]
+AK = os.environ["BOHR_ACCESS_KEY"]
 BASE = "https://open.bohrium.com/openapi/v1/lkm"
 H = {"accessKey": AK, "Content-Type": "application/json"}
 ```
@@ -184,7 +184,7 @@ for paper in data.get("data", []):
 ## curl 示例
 
 ```bash
-AK="YOUR_ACCESS_KEY"
+AK="$BOHR_ACCESS_KEY"
 
 # 知识图谱搜索
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/search" \

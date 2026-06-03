@@ -46,14 +46,14 @@ Output: reasoning fragments + structured Markdown answer
 ```json
 "bohrium-mentor": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-The script reads `ACCESS_KEY` from the environment.
+The script reads `BOHR_ACCESS_KEY` from the environment.
 
 ## API Endpoints
 
@@ -124,9 +124,9 @@ import uuid
 import requests
 
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 if not AK:
-    print("ERROR: ACCESS_KEY is not configured.")
+    print("ERROR: BOHR_ACCESS_KEY is not configured.")
     sys.exit(1)
 
 BASE = "https://open.bohrium.com/openapi/v1/sigma-search"
@@ -345,7 +345,7 @@ if __name__ == "__main__":
 ## Examples
 
 ```bash
-export ACCESS_KEY="your_key"
+export BOHR_ACCESS_KEY="your_key"
 
 python3 science_navigator.py "Recent CRISPR-Cas9 progress in gene therapy"
 python3 science_navigator.py "Latest strategies for suppressing lithium dendrites in solid-state batteries" "Chemistry" "foreign"

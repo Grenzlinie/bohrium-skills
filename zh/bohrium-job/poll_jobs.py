@@ -18,7 +18,7 @@ from datetime import datetime
 
 def bohr_env() -> dict:
     env = os.environ.copy()
-    ak = env.get("BOHR_ACCESS_KEY") or env.get("ACCESS_KEY", "")
+    ak = env.get("BOHR_ACCESS_KEY", "")
     if ak:
         env["BOHR_ACCESS_KEY"] = ak
         env["ACCESS_KEY"] = ak

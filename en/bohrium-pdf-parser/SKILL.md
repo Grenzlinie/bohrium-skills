@@ -16,26 +16,26 @@ Parse PDF documents using the `open.bohrium.com` PDF parsing service. Extract te
 
 ## Authentication
 
-ACCESS_KEY is read from the OpenClaw config `~/.openclaw/openclaw.json`:
+BOHR_ACCESS_KEY is read from the OpenClaw config `~/.openclaw/openclaw.json`:
 
 ```json
 "bohrium-pdf-parser": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-OpenClaw automatically injects `env.ACCESS_KEY` into the runtime.
+OpenClaw automatically injects `env.BOHR_ACCESS_KEY` into the runtime.
 
 ## Common Code Template
 
 ```python
 import os, time, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/parse"
 HEADERS = {"accessKey": AK}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
@@ -153,7 +153,7 @@ print(f"Status: {data['status']}, Content length: {len(data.get('content', ''))}
 ```python
 import os, time, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/parse"
 HEADERS = {"accessKey": AK}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
@@ -253,7 +253,7 @@ print(f"Content: {result['content'][:200]}")
 ## curl Examples
 
 ```bash
-AK="YOUR_ACCESS_KEY"
+AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com/openapi/v1/parse"
 
 # URL submission

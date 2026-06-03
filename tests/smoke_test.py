@@ -26,12 +26,12 @@ import urllib.error
 
 
 BASE = os.environ.get("BOHR_API_BASE_URL", "https://open.bohrium.com/openapi")
-AK = os.environ.get("BOHR_ACCESS_KEY") or os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 TIMEOUT = 60
 
 
 if not AK:
-    print("ERROR: set BOHR_ACCESS_KEY (or ACCESS_KEY) in env", file=sys.stderr)
+    print("ERROR: set BOHR_ACCESS_KEY in env", file=sys.stderr)
     sys.exit(2)
 
 

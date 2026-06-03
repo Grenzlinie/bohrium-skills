@@ -16,9 +16,15 @@ Dev nodes are used for data preparation, compilation, debugging, and post-proces
 ```json
 "bohrium-node": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
-  "env": { "ACCESS_KEY": "YOUR_ACCESS_KEY" }
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
+  "env": { "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY" }
 }
+```
+
+Only configure `BOHR_ACCESS_KEY` for this skill. For raw `bohr` CLI commands, map it for that process:
+
+```bash
+ACCESS_KEY="$BOHR_ACCESS_KEY" bohr node list
 ```
 
 ## Prerequisites: Install bohr CLI
@@ -133,7 +139,7 @@ Mount datasets when creating a container node; access via path (e.g. `/bohr/my-d
 ```python
 import os, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/node"
 HEADERS = {"accessKey": AK}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}

@@ -27,8 +27,6 @@ Choose one based on your runtime environment:
 export BOHR_ACCESS_KEY="your_access_key_here"
 ```
 
-`ACCESS_KEY` remains supported for compatibility, but new scripts prefer `BOHR_ACCESS_KEY`.
-
 **OpenClaw config** `~/.openclaw/openclaw.json`:
 
 ```json
@@ -36,9 +34,9 @@ export BOHR_ACCESS_KEY="your_access_key_here"
   "skills": {
     "<skill-name>": {
       "enabled": true,
-      "apiKey": "YOUR_ACCESS_KEY",
+      "apiKey": "YOUR_BOHR_ACCESS_KEY",
       "env": {
-        "BOHR_ACCESS_KEY": "YOUR_ACCESS_KEY"
+        "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
       }
     }
   }
@@ -114,7 +112,7 @@ description: "One-line description. Use when: ... NOT for: ..."
 
 - **Frontmatter** — `name` + `description` (with use/exclusion scenarios); optionally `version` and `metadata.openclaw.primaryEnv`
 - **Body** — Feature description, API endpoints, parameter tables, response fields, code examples, error handling
-- **Code examples** — Python `requests` style, preferring `os.environ.get("BOHR_ACCESS_KEY")` and falling back to `ACCESS_KEY`, never hardcoded
+- **Code examples** — Python `requests` style, preferring `os.environ.get("BOHR_ACCESS_KEY")`, never hardcoded
 
 ---
 

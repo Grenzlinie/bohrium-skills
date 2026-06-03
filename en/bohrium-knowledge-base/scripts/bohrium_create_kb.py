@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Create Bohrium Knowledge Base and return (kb_id, nodesID).
 
-Uses ACCESS_KEY from env or ~/.openclaw/openclaw.json (skills entry).
+Uses BOHR_ACCESS_KEY from env or ~/.openclaw/openclaw.json (skills entry).
 
 Output: JSON to stdout.
 """
@@ -32,7 +32,7 @@ def load_access_key_from_openclaw_config() -> str:
             or skills.get("bohrium-knowledge-base")
             or {}
         ).get("env") or {}
-        return env.get("BOHR_ACCESS_KEY", "") or env.get("ACCESS_KEY", "")
+        return env.get("BOHR_ACCESS_KEY", "")
     except Exception:
         return ""
 
@@ -56,10 +56,10 @@ def main(argv: list[str]) -> int:
     desc = argv[2] if len(argv) >= 3 else "SciPulse Daily Digest"
 
     access_key = (
-        os.environ.get("BOHR_ACCESS_KEY") or os.environ.get("ACCESS_KEY") or ""
+        os.environ.get("BOHR_ACCESS_KEY") or ""
     ).strip() or load_access_key_from_openclaw_config().strip()
     if not access_key:
-        print("Missing BOHR_ACCESS_KEY/ACCESS_KEY (env or ~/.openclaw/openclaw.json)", file=sys.stderr)
+        print("Missing BOHR_ACCESS_KEY (env or ~/.openclaw/openclaw.json)", file=sys.stderr)
         return 2
 
     url = f"{BASE}/knowledge_base/create"

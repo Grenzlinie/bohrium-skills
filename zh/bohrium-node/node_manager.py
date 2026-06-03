@@ -12,14 +12,23 @@ Usage:
 import argparse
 import json
 import os
+import subprocess
 import sys
 
 import requests
 
-AK = os.environ.get("BOHR_ACCESS_KEY") or os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://openapi.dp.tech/openapi/v1/node"
 HEADERS = {"accessKey": AK}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
+
+
+def bohr_env() -> dict:
+    env = os.environ.copy()
+    if AK:
+        env["BOHR_ACCESS_KEY"] = AK
+        env["ACCESS_KEY"] = AK
+    return env
 
 
 def list_resources():
@@ -109,11 +118,11 @@ def main():
     args = parser.parse_args()
 
     if not AK:
-        print("ERROR: set BOHR_ACCESS_KEY (or ACCESS_KEY) environment variable")
+        print("ERROR: set BOHR_ACCESS_KEY environment variable")
         sys.exit(1)
 
     if args.cmd == "list":
-        os.system("bohr node list")
+        subprocess.run(["bohr", "node", "list"], env=bohr_env(), check=False)
     elif args.cmd == "resources":
         list_resources()
     elif args.cmd == "price":

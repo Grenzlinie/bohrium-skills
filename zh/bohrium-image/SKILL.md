@@ -13,19 +13,23 @@ description: "Manage Bohrium container images via bohr CLI or open.bohrium.com A
 
 ## 认证配置
 
-ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
+BOHR_ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
 
 ```json
 "bohrium-image": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-OpenClaw 会自动将 `env.ACCESS_KEY` 注入到运行环境。
+OpenClaw 会自动将 `env.BOHR_ACCESS_KEY` 注入到运行环境。Skill 只需要配置 `BOHR_ACCESS_KEY`；如果直接运行原始 `bohr` CLI 命令，请在该进程临时映射：
+
+```bash
+ACCESS_KEY="$BOHR_ACCESS_KEY" bohr image list
+```
 
 ## 前置条件：安装 bohr CLI
 
@@ -175,7 +179,7 @@ bohr image delete 121510 121395         # 批量删除
 ```python
 import os, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 HEADERS = {"accessKey": AK}
 
 # 搜索公共镜像版本（关键词）

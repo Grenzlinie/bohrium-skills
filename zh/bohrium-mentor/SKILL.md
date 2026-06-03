@@ -46,14 +46,14 @@ description: "AI science tutor powered by Bohrium's adk_science_navigator agent.
 ```json
 "bohrium-mentor": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取。
+BOHR_ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取。
 
 ## API 接口
 
@@ -128,10 +128,10 @@ import requests
 
 # ─── 配置 ───────────────────────────────────────────────
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 if not AK:
-    print("ERROR: ACCESS_KEY 未配置。")
-    print("请在 ~/.openclaw/openclaw.json 中配置 bohrium-mentor.env.ACCESS_KEY")
+    print("ERROR: BOHR_ACCESS_KEY 未配置。")
+    print("请在 ~/.openclaw/openclaw.json 中配置 bohrium-mentor.env.BOHR_ACCESS_KEY")
     sys.exit(1)
 
 BASE = "https://open.bohrium.com/openapi/v1/sigma-search"
@@ -372,7 +372,7 @@ if __name__ == "__main__":
 ### 示例 1：基因治疗进展
 
 ```bash
-export ACCESS_KEY="your_key"
+export BOHR_ACCESS_KEY="your_key"
 python3 science_navigator.py "CRISPR-Cas9 近三年在基因治疗领域的最新进展"
 ```
 

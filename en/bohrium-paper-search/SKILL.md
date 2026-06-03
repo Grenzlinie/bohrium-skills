@@ -22,26 +22,26 @@ Search academic papers and patents using the Bohrium RAG search engine. Combines
 
 ## Authentication
 
-ACCESS_KEY is read from the OpenClaw config `~/.openclaw/openclaw.json`:
+BOHR_ACCESS_KEY is read from the OpenClaw config `~/.openclaw/openclaw.json`:
 
 ```json
 "bohrium-paper-search": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-OpenClaw automatically injects `env.ACCESS_KEY` into the runtime.
+OpenClaw automatically injects `env.BOHR_ACCESS_KEY` into the runtime.
 
 ## Common Code Template
 
 ```python
 import os, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com"
 PAPER_BASE = f"{BASE}/openapi/v2/paper"
 HEADERS_JSON = {"accessKey": AK, "Content-Type": "application/json"}
@@ -201,7 +201,7 @@ words = ["science", "research"]
 ## curl Examples
 
 ```bash
-AK="YOUR_ACCESS_KEY"
+AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com"
 PAPER_BASE="$BASE/openapi/v2/paper"
 
@@ -225,7 +225,7 @@ curl -s -X POST "$PAPER_BASE/rag/pass/patent" \
 | Problem | Cause | Solution |
 |---------|-------|----------|
 | `code` is non-zero | Request parameter error | Check `message` field for details |
-| 401 Unauthorized | Invalid accessKey | Verify ACCESS_KEY is correct |
+| 401 Unauthorized | Invalid accessKey | Verify BOHR_ACCESS_KEY is correct |
 | Irrelevant results | Keywords too generic or vague question | Use 3-8 professional terms + clear question |
 | Empty results | Date range too narrow or filters too strict | Widen startTime/endTime or remove jcrZones |
 | Response has multiple JSON lines | Normal behavior (streaming) | Parse first line only: `json.loads(response.text.split('\n')[0])` |

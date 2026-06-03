@@ -13,25 +13,25 @@ Manage knowledge bases (Literature Sage) on the Bohrium platform. Knowledge base
 
 ## Authentication
 
-ACCESS_KEY is read from the OpenClaw config `~/.openclaw/openclaw.json`:
+BOHR_ACCESS_KEY is read from the OpenClaw config `~/.openclaw/openclaw.json`:
 
 ```json
 "bohrium-knowledge-base": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-OpenClaw automatically injects `env.ACCESS_KEY` into the runtime.
+OpenClaw automatically injects `env.BOHR_ACCESS_KEY` into the runtime.
 
 ## Route Mapping
 
 ```
 External call: GET/POST https://open.bohrium.com/openapi/v1/knowledge/{path}
-               Header: accessKey: YOUR_ACCESS_KEY
+               Header: accessKey: $BOHR_ACCESS_KEY
 
 Gateway forwards: → literature-sage.bohrium.com/api/v1/{path}
                   Header: X-User-Id, X-Org-Id (converted from accessKey)
@@ -42,7 +42,7 @@ Gateway forwards: → literature-sage.bohrium.com/api/v1/{path}
 ```python
 import os, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/knowledge"
 HEADERS = {"accessKey": AK}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
@@ -974,7 +974,7 @@ r = requests.get(f"{BASE}/account/user_knowledge_base_role", headers=HEADERS,
 | Problem | Cause | Solution |
 |---------|-------|----------|
 | `code` is non-zero | API call error | Check `error.msg` or `message` in the response for details |
-| 401 Unauthorized | Invalid or expired accessKey | Verify ACCESS_KEY is correct |
+| 401 Unauthorized | Invalid or expired accessKey | Verify BOHR_ACCESS_KEY is correct |
 | Knowledge base not found | Wrong ID used | `nodesId` (node ID) and `id` (KB ID) are different. Permission and folder endpoints all use `nodesId`; list endpoints return both. |
 | 404 page not found | Called a `/v2/*` path | Gateway only proxies to `/api/v1/*`; all examples in this document use v1 paths and work correctly |
 | `code=230606 keywords is required` | `recall/hybrid` `keywords` is empty | Provide at least one `keyword: weight` pair |

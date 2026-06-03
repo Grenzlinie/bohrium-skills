@@ -208,7 +208,7 @@ def run_skill(num: str, skill_name: str) -> tuple[str, str, bool]:
 
     try:
         env = os.environ.copy()
-        ak = env.get("BOHR_ACCESS_KEY") or env.get("ACCESS_KEY", "")
+        ak = env.get("BOHR_ACCESS_KEY", "")
         env["BOHR_ACCESS_KEY"] = ak
         env["ACCESS_KEY"] = ak
 
@@ -242,9 +242,9 @@ def run_skill(num: str, skill_name: str) -> tuple[str, str, bool]:
 
 
 def main():
-    ak = os.environ.get("BOHR_ACCESS_KEY") or os.environ.get("ACCESS_KEY", "")
+    ak = os.environ.get("BOHR_ACCESS_KEY", "")
     if not ak:
-        print("ERROR: BOHR_ACCESS_KEY (or ACCESS_KEY) not set")
+        print("ERROR: BOHR_ACCESS_KEY not set")
         sys.exit(1)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

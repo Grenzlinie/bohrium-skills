@@ -27,9 +27,9 @@ Access **Bohrium SciencePedia** through the `/v1/literature-sage/wiki_v2/*` endp
 ```json
 "bohrium-wiki": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
@@ -39,7 +39,7 @@ Access **Bohrium SciencePedia** through the `/v1/literature-sage/wiki_v2/*` endp
 ```python
 import os, requests
 
-AK = os.environ["ACCESS_KEY"]
+AK = os.environ["BOHR_ACCESS_KEY"]
 BASE = "https://open.bohrium.com/openapi/v1/literature-sage/wiki_v2"
 H = {"accessKey": AK, "Content-Type": "application/json"}
 
@@ -161,7 +161,7 @@ print(doc.get("main_content", "")[:2000])
 ## curl example
 
 ```bash
-AK="YOUR_ACCESS_KEY"
+AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com/openapi/v1/literature-sage/wiki_v2"
 
 # Search entries by keyword

@@ -27,8 +27,6 @@ Bohrium 平台 AI 技能集合，为 [OpenClaw](https://github.com/openclaw) 和
 export BOHR_ACCESS_KEY="your_access_key_here"
 ```
 
-`ACCESS_KEY` 仍然兼容，但新脚本会优先读取 `BOHR_ACCESS_KEY`。
-
 **OpenClaw 配置文件** `~/.openclaw/openclaw.json`：
 
 ```json
@@ -36,9 +34,9 @@ export BOHR_ACCESS_KEY="your_access_key_here"
   "skills": {
     "<skill-name>": {
       "enabled": true,
-      "apiKey": "YOUR_ACCESS_KEY",
+      "apiKey": "YOUR_BOHR_ACCESS_KEY",
       "env": {
-        "BOHR_ACCESS_KEY": "YOUR_ACCESS_KEY"
+        "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
       }
     }
   }
@@ -114,7 +112,7 @@ description: "一行描述。Use when: ... NOT for: ..."
 
 - **Frontmatter** — `name` + `description`（含使用场景和排除场景）；可选添加 `version`、`metadata.openclaw.primaryEnv`
 - **正文** — 功能说明、API 端点、参数表、返回字段、代码示例、错误处理
-- **代码示例** — 使用 Python `requests` 风格，优先通过 `os.environ.get("BOHR_ACCESS_KEY")` 读取密钥，并兼容 `ACCESS_KEY`，不硬编码
+- **代码示例** — 使用 Python `requests` 风格，优先通过 `os.environ.get("BOHR_ACCESS_KEY")` 读取密钥，不硬编码
 
 ---
 
