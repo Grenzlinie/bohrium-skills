@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 """
-Extract and run all 22 orchestration skill demo scripts in parallel.
+Extract and run available skill demo scripts in parallel.
 Saves output as v4 demo reports in docs/demo-reports/.
 
 Usage:
-    export ACCESS_KEY="your_access_key"
+    export BOHR_ACCESS_KEY="your_access_key"
     python3 tests/run_all_demos.py
 """
 
@@ -21,29 +23,8 @@ ZH_DIR = BASE_DIR / "zh"
 OUTPUT_DIR = BASE_DIR / "docs" / "demo-reports"
 
 ORCHESTRATION_SKILLS = [
-    ("01", "literature-review"),
-    ("02", "topic-scout"),
-    ("03", "paper-dissector"),
-    ("04", "tech-radar"),
-    ("05", "grant-helper"),
-    ("06", "scholar-profiler"),
-    ("07", "pre-review"),
-    ("08", "field-mapper"),
-    ("09", "related-work-writer"),
-    ("10", "tech-compare"),
-    ("11", "frontier-alert"),
-    ("12", "journal-matcher"),
-    ("13", "citation-explorer"),
-    ("14", "conference-tracker"),
-    ("15", "collaborator-finder"),
-    ("16", "patent-paper-cross"),
-    ("17", "method-wiki"),
-    ("18", "research-journal"),
-    ("19", "reading-club"),
-    ("20", "academic-promo"),
-    ("21", "review-assistant"),
-    ("22", "research-agent"),
-    ("23", "bohrium-mentor"),
+    (f"{idx:02d}", path.parent.name)
+    for idx, path in enumerate(sorted(ZH_DIR.glob("*/SKILL.md")), start=1)
 ]
 
 # CLI arguments for scripts that require them
@@ -55,6 +36,10 @@ SKILL_ARGS = {
     "collaborator-finder": ["电催化CO2还原", "需要in-situ表征能力", ""],
     "review-assistant": ["https://arxiv.org/pdf/2302.14231", "NeurIPS"],
     "academic-promo": ["https://arxiv.org/pdf/2302.14231"],
+}
+
+SKIP_DEMOS = {
+    "bohrium-knowledge-base": "requires local input files and can mutate remote knowledge bases",
 }
 
 
@@ -223,7 +208,9 @@ def run_skill(num: str, skill_name: str) -> tuple[str, str, bool]:
 
     try:
         env = os.environ.copy()
-        env["ACCESS_KEY"] = env.get("ACCESS_KEY", "")
+        ak = env.get("BOHR_ACCESS_KEY") or env.get("ACCESS_KEY", "")
+        env["BOHR_ACCESS_KEY"] = ak
+        env["ACCESS_KEY"] = ak
 
         # Build command with skill-specific arguments
         cmd = [sys.executable, tmp_path]
@@ -255,22 +242,34 @@ def run_skill(num: str, skill_name: str) -> tuple[str, str, bool]:
 
 
 def main():
-    ak = os.environ.get("ACCESS_KEY", "")
+    ak = os.environ.get("BOHR_ACCESS_KEY") or os.environ.get("ACCESS_KEY", "")
     if not ak:
-        print("ERROR: ACCESS_KEY not set")
+        print("ERROR: BOHR_ACCESS_KEY (or ACCESS_KEY) not set")
         sys.exit(1)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    print(f"Running {len(ORCHESTRATION_SKILLS)} demo scripts in parallel...")
+    demo_skills = [
+        (num, skill_name)
+        for num, skill_name in ORCHESTRATION_SKILLS
+        if skill_name not in SKIP_DEMOS and extract_main_script(skill_name)
+    ]
+    skipped = len(ORCHESTRATION_SKILLS) - len(demo_skills)
+    if not demo_skills:
+        print("No runnable demo scripts found.")
+        return
+
+    print(f"Running {len(demo_skills)} demo scripts in parallel...")
+    if skipped:
+        print(f"Skipping {skipped} skills without standalone demo scripts.")
     print(f"Output directory: {OUTPUT_DIR}")
-    print(f"ACCESS_KEY: {ak[:8]}...{ak[-4:]}")
+    print(f"BOHR_ACCESS_KEY: {ak[:8]}...{ak[-4:]}")
     print("=" * 60)
 
     # Run all skills in parallel (max 6 concurrent to avoid API rate limits)
     futures = {}
     with ProcessPoolExecutor(max_workers=6) as executor:
-        for num, skill_name in ORCHESTRATION_SKILLS:
+        for num, skill_name in demo_skills:
             future = executor.submit(run_skill, num, skill_name)
             futures[future] = (num, skill_name)
 
@@ -288,7 +287,7 @@ def main():
                 success = False
 
             status = "✅" if success else "❌"
-            print(f"  [{completed}/{len(ORCHESTRATION_SKILLS)}] {status} {num}-{name}")
+            print(f"  [{completed}/{len(demo_skills)}] {status} {num}-{name}")
 
             # Save output
             out_file = OUTPUT_DIR / f"{num}-{name}-v4.md"
@@ -298,10 +297,10 @@ def main():
                 failed += 1
 
     print("=" * 60)
-    print(f"Done: {len(ORCHESTRATION_SKILLS) - failed} succeeded, {failed} failed")
+    print(f"Done: {len(demo_skills) - failed} succeeded, {failed} failed, {skipped} skipped")
     if failed:
         print("\nFailed skills:")
-        for num, skill_name in ORCHESTRATION_SKILLS:
+        for num, skill_name in demo_skills:
             f = OUTPUT_DIR / f"{num}-{skill_name}-v4.md"
             if f.exists():
                 content = f.read_text()[:200]

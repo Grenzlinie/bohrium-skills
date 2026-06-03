@@ -59,11 +59,15 @@ def load_access_key_from_openclaw_config() -> str:
         if not cfg_path.exists():
             return ""
         cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
-        return (
-            (((cfg.get("skills") or {}).get("entries") or {}).get("bohrium-knowledge-file-upload") or {})
-            .get("env")
+        skills = cfg.get("skills") or {}
+        entries = skills.get("entries") or {}
+        env = (
+            entries.get("bohrium-knowledge-file-upload")
+            or entries.get("bohrium-knowledge-base")
+            or skills.get("bohrium-knowledge-base")
             or {}
-        ).get("ACCESS_KEY", "")
+        ).get("env") or {}
+        return env.get("BOHR_ACCESS_KEY", "") or env.get("ACCESS_KEY", "")
     except Exception:
         return ""
 
@@ -206,7 +210,7 @@ def submit_file(access_key: str, file_name: str, md5: str, parent_id: int, size:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Upload file to Bohrium Knowledge Base via multipart flow")
     p.add_argument("local_file", help="Local file path")
-    p.add_argument("--access-key", default=os.environ.get("ACCESS_KEY", ""), help="Bohrium OpenAPI accessKey (or set ACCESS_KEY env)")
+    p.add_argument("--access-key", default=os.environ.get("BOHR_ACCESS_KEY") or os.environ.get("ACCESS_KEY", ""), help="Bohrium OpenAPI accessKey (or set BOHR_ACCESS_KEY/ACCESS_KEY env)")
     p.add_argument("--parent-id", type=int, required=True, help="Knowledge base nodeId (parentId in multipart API)")
     p.add_argument("--file-name", default="", help="Override fileName (default: basename of local file)")
     p.add_argument("--md5", default="", help="Override md5 (default: computed from file)")
@@ -221,7 +225,7 @@ def main(argv: list[str] | None = None) -> int:
         access_key = load_access_key_from_openclaw_config().strip()
     if not access_key:
         print(
-            "ERROR: accessKey missing. Provide --access-key or set ACCESS_KEY env, or configure skills.entries.bohrium-knowledge-file-upload.env.ACCESS_KEY in ~/.openclaw/openclaw.json.",
+            "ERROR: accessKey missing. Provide --access-key, set BOHR_ACCESS_KEY/ACCESS_KEY env, or configure skills.entries.bohrium-knowledge-file-upload.env.ACCESS_KEY in ~/.openclaw/openclaw.json.",
             file=sys.stderr,
         )
         return 2

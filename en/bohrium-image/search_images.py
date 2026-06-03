@@ -15,7 +15,7 @@ import sys
 
 import requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY") or os.environ.get("ACCESS_KEY", "")
 BASE_V2 = "https://openapi.dp.tech/openapi/v2/image"
 HEADERS = {"accessKey": AK}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
@@ -41,6 +41,10 @@ def search_versions(keyword: str, limit: int = 5):
         version = item.get("version", "?")
         url = item.get("url", "?")
         size = item.get("size", 0)
+        try:
+            size = float(size)
+        except (TypeError, ValueError):
+            size = 0
         size_mb = size / (1024 * 1024) if size else 0
         print(f"  {name}:{version}")
         print(f"    URL:  {url}")
@@ -128,7 +132,7 @@ def main():
     args = parser.parse_args()
 
     if not AK:
-        print("ERROR: ACCESS_KEY environment variable not set")
+        print("ERROR: set BOHR_ACCESS_KEY (or ACCESS_KEY) environment variable")
         sys.exit(1)
 
     if args.cmd == "search":

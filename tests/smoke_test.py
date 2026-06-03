@@ -211,9 +211,15 @@ record(
 print("\n[bohrium-paper-search]")
 record(
     "paper-search",
-    "/v1/paper/rag/pass/keyword",
+    "/v2/paper/rag/pass/keyword",
     "POST",
     body={"words": ["graphene"], "question": "graphene synthesis", "type": 0, "pageSize": 2},
+)
+record(
+    "paper-search",
+    "/v2/paper/rag/pass/patent",
+    "POST",
+    body={"type": 3, "words": ["neural network"], "question": "neural network", "pageSize": 2},
 )
 
 # ---------------------------------------------------------------------------

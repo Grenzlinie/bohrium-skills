@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Batch submit jobs to Bohrium with the same config but different input directories.
 
@@ -8,9 +10,19 @@ Usage:
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+
+def bohr_env() -> dict:
+    env = os.environ.copy()
+    ak = env.get("BOHR_ACCESS_KEY") or env.get("ACCESS_KEY", "")
+    if ak:
+        env["BOHR_ACCESS_KEY"] = ak
+        env["ACCESS_KEY"] = ak
+    return env
 
 
 def create_job_group(name: str, project_id: int) -> str | None:
@@ -19,6 +31,7 @@ def create_job_group(name: str, project_id: int) -> str | None:
         ["bohr", "job_group", "create", "-n", name, "-p", str(project_id)],
         capture_output=True,
         text=True,
+        env=bohr_env(),
     )
     if result.returncode != 0:
         print(f"[WARN] Failed to create job group: {result.stderr.strip()}")
@@ -48,7 +61,7 @@ def submit_job(
         cmd.extend(["-r", result_path])
 
     print(f"[SUBMIT] {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, env=bohr_env())
     if result.returncode == 0:
         print(f"  -> {result.stdout.strip()}")
         return True

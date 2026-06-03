@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Poll running jobs and print status updates.
 
@@ -10,9 +12,17 @@ Usage:
 import json
 import os
 import subprocess
-import sys
 import time
 from datetime import datetime
+
+
+def bohr_env() -> dict:
+    env = os.environ.copy()
+    ak = env.get("BOHR_ACCESS_KEY") or env.get("ACCESS_KEY", "")
+    if ak:
+        env["BOHR_ACCESS_KEY"] = ak
+        env["ACCESS_KEY"] = ak
+    return env
 
 
 def get_jobs(status_flag: str | None = None) -> list[dict]:
@@ -20,7 +30,7 @@ def get_jobs(status_flag: str | None = None) -> list[dict]:
     cmd = ["bohr", "job", "list", "-n", "20", "--json"]
     if status_flag:
         cmd.append(status_flag)
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, env=bohr_env())
     if result.returncode != 0:
         return []
     try:
