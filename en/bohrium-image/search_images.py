@@ -106,7 +106,7 @@ def build_image(project_id: int, name: str, dockerfile_path: str, desc: str = ""
     )
     result = r.json()
     if result.get("code") == 0:
-        print(f"Image build started! Check status with: bohr image list")
+        print("Image build started! Check status in the Bohrium image console.")
         print(f"Response: {json.dumps(result.get('data', {}), indent=2)}")
     else:
         print(f"Build failed: {result}")
