@@ -12,23 +12,41 @@ Usage:
 import argparse
 import json
 import os
-import subprocess
 import sys
 
 import requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
-BASE = "https://openapi.dp.tech/openapi/v1/node"
+BASE = "https://open.bohrium.com/openapi/v1/node"
 HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
 
-def bohr_env() -> dict:
-    env = os.environ.copy()
-    if AK:
-        env["BOHR_ACCESS_KEY"] = AK
-        env["ACCESS_KEY"] = AK
-    return env
+def list_nodes(page: int = 1, page_size: int = 20):
+    """List nodes through OpenAPI without depending on the legacy bohr CLI."""
+    r = requests.get(f"{BASE}/list", headers=HEADERS, params={"page": page, "pageSize": page_size})
+    result = r.json()
+    if result.get("code") != 0:
+        print(f"Failed: {result}")
+        return
+
+    data = result.get("data", {})
+    items = data.get("items", []) if isinstance(data, dict) else []
+    if not items:
+        print("No nodes found.")
+        return
+
+    print(f"{'Machine ID':<12} {'Node ID':<10} {'Name':<24} {'Status':<8} {'Spec':<16} {'Project':<20}")
+    print("-" * 96)
+    for item in items:
+        print(
+            f"{item.get('machineId', '')!s:<12} "
+            f"{item.get('nodeId', '')!s:<10} "
+            f"{item.get('nodeName', '')[:23]:<24} "
+            f"{item.get('status', '')!s:<8} "
+            f"{item.get('spec', '')[:15]:<16} "
+            f"{item.get('projectName', '')[:19]:<20}"
+        )
 
 
 def list_resources():
@@ -98,7 +116,9 @@ def main():
     parser = argparse.ArgumentParser(description="Bohrium node manager")
     sub = parser.add_subparsers(dest="cmd")
 
-    sub.add_parser("list", help="List nodes (uses bohr CLI)")
+    p_list = sub.add_parser("list", help="List nodes")
+    p_list.add_argument("--page", type=int, default=1)
+    p_list.add_argument("--page-size", type=int, default=20)
     sub.add_parser("resources", help="Show available machine resources")
 
     p_price = sub.add_parser("price", help="Query machine price")
@@ -122,7 +142,7 @@ def main():
         sys.exit(1)
 
     if args.cmd == "list":
-        subprocess.run(["bohr", "node", "list"], env=bohr_env(), check=False)
+        list_nodes(args.page, args.page_size)
     elif args.cmd == "resources":
         list_resources()
     elif args.cmd == "price":
