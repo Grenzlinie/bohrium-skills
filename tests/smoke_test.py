@@ -7,8 +7,8 @@ Usage:
     python3 tests/smoke_test.py
 
 Exits with non-zero if any required-endpoint test fails.
-Skills that depend on external services (sandbox/E2B, viking) are skipped with
-an explanation; they are documented but not part of the open.bohrium.com surface.
+Skills that require optional CLIs or create billable resources are skipped with
+an explanation; they are documented but not part of the basic endpoint smoke.
 """
 
 from __future__ import annotations
@@ -293,16 +293,14 @@ record(
 )
 
 # ---------------------------------------------------------------------------
-# bohrium-sandbox (external, skipped)
+# bohrium-sandbox (optional CLI / billable sandbox, skipped)
 # ---------------------------------------------------------------------------
 print("\n[bohrium-sandbox]")
-skip("sandbox", "api.e2b.dev/v1/*", "External service (E2B); not via open.bohrium.com")
-
-# ---------------------------------------------------------------------------
-# bohrium-viking-memory (external, skipped)
-# ---------------------------------------------------------------------------
-print("\n[bohrium-viking-memory]")
-skip("viking-memory", "openviking.test.dp.tech/*", "External service (OpenViking); not via open.bohrium.com")
+skip(
+    "sandbox",
+    "lbg sdbx / open.bohrium.com/openapi/launching/v2/*",
+    "Requires Python >=3.10 and lbg 4.0.0b*; create/exec can be billable",
+)
 
 
 # ---------------------------------------------------------------------------

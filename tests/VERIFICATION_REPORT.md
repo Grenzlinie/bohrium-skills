@@ -4,9 +4,8 @@
 **测试 AK**: f0f923c97cdc49c7bd28978ac41fed12  
 **API Base**: https://open.bohrium.com/openapi/v1  
 **Image API Base**: https://openapi.dp.tech/openapi/v2  
-**Viking Base**: https://openviking.test.dp.tech  
 **bohr CLI**: v1.1.0 (Go, 从 OSS 安装到 ~/.bohrium/bohr)  
-**lbg CLI**: v4.0.0b37 (Python prerelease, pip install --pre lbg)  
+**lbg CLI**: v4.0.0b46 (Python >=3.10 prerelease, pip install --pre lbg)
 **OPENAPI_HOST**: https://open.bohrium.com
 
 ---
@@ -16,7 +15,7 @@
 | 状态 | Skill | 说明 |
 |------|-------|------|
 | ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node, bohrium-knowledge-base, bohrium-image, bohrium-scholar-search, bohrium-wiki, bohrium-lkm, bohrium-paper-search, bohrium-dataset | 所有文档端点/CLI 均正常 |
-| ❌ 已移除 | bohrium-file, bohrium-viking-memory, bohrium-scholar, bohrium-matmaster, diagnose-agent, proposal-agent, preparation-agent, scoring-agent | 冗余或后端不可用 |
+| ❌ 已移除 | bohrium-file, bohrium-viking-memory, bohrium-scholar, bohrium-matmaster, diagnose-agent, proposal-agent, preparation-agent, scoring-agent | 冗余或后端不可用；当前仓库不包含这些 skill |
 
 ---
 
@@ -270,29 +269,22 @@ if pathParam == "/" {
 
 | 功能 | 状态 | 备注 |
 |------|------|------|
-| `lbg sdbx doctor` | ✅ | sandbox_ready=true, template_ready=true |
-| `lbg sdbx create [template]` | ✅ | 成功创建实例（首次可能超时但实际成功） |
-| `lbg sdbx exec <id> <cmd>` | ✅ | 命令执行正常 |
-| `lbg sdbx files write` | ✅ | 文件写入正常 |
-| `lbg sdbx files read` | ✅ | 文件读取正常 |
-| `lbg sdbx list` | ✅ | 列表正常 |
-| `lbg sdbx kill` | ✅ | 销毁正常 |
+| `python sdbx.py doctor --json` | ✅ | sandbox_ready=true, template_ready=true；只需 BOHR_ACCESS_KEY |
+| `python sdbx.py template ls --json` | ✅ | 模板列表正常 |
+| `python sdbx.py list --json` | ✅ | 沙箱列表正常 |
+| `python sdbx.py create sdbx-cpu-mini --timeout 300 --json` | ✅ | 成功创建最小 CPU 实例 |
+| `python sdbx.py exec <id> <cmd>` | ✅ | 命令执行正常 |
+| `python sdbx.py kill <id> --json` | ✅ | 销毁正常 |
 
-**前置条件**: `pip install --pre lbg` (需 prerelease 版本 4.0.0b37+)
+**前置条件**: Python >=3.10；`python3 -m pip install --pre lbg` 需安装到 4.0.0b*。`sdbx.py` 会把 `BOHR_ACCESS_KEY` 映射成 beta 版 lbg 实际读取的 `BOHRIUM_ACCESS_KEY`。
 
 **结论**: 全部功能正常。
 
 ---
 
-### bohrium-viking-memory (长期记忆)
+### bohrium-viking-memory
 
-| 端点 | 方法 | 状态 | 备注 |
-|------|------|------|------|
-| `/health` | GET | ✅ | 服务可达 |
-| `/api/v1/search/find` | POST | ❌ 401 | **Invalid API Key** |
-| `/api/v1/search/search` | POST | ❌ 401 | **Invalid API Key** |
-
-**结论**: 全部功能正常。
+当前仓库已不包含 `bohrium-viking-memory` skill；不再作为 smoke 或发布验证对象。
 
 ---
 
@@ -325,8 +317,8 @@ export OPENAPI_HOST=https://open.bohrium.com
 export TIEFBLUE_HOST=https://tiefblue.dp.tech
 export BOHR_ACCESS_KEY=<your_access_key>
 
-# 安装 Python lbg CLI（sandbox）
-pip install --pre lbg   # 必须 prerelease 版本
+# 安装 Python lbg CLI（sandbox，需 Python >=3.10）
+python3 -m pip install --pre lbg   # 必须安装到 4.0.0b* prerelease
 export BOHR_ACCESS_KEY=<your_access_key>
 ```
 
