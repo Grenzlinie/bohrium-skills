@@ -51,7 +51,7 @@ OpenClaw 会自动将 `env.BOHR_ACCESS_KEY` 注入到运行环境。
 
 若 API 返回 `Invalid AccessKey`（code 2000）或 HTTP 401：
 1. 说明 OpenClaw 配置中的 Key 已失效或错误
-2. 提示用户：「您的 AccessKey 已失效，请在 `~/.openclaw/openclaw.json` 中更新 `bohrium-scholar-search.env.BOHR_ACCESS_KEY` 并重启 OpenClaw 会话。」
+2. 提示用户：「您的 BOHR_ACCESS_KEY 已失效，请在 `~/.openclaw/openclaw.json` 中更新 `bohrium-scholar-search.env.BOHR_ACCESS_KEY` 并重启 OpenClaw 会话。」
 
 ## 通用代码模板
 

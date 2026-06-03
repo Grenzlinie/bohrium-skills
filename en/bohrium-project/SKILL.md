@@ -23,11 +23,7 @@ Projects are the organizational containers for Nodes, Jobs, Images, and Datasets
 }
 ```
 
-Only configure `BOHR_ACCESS_KEY` for this skill. For raw `bohr` CLI commands, map it for that process:
-
-```bash
-ACCESS_KEY="$BOHR_ACCESS_KEY" bohr project list
-```
+Only configure `BOHR_ACCESS_KEY` for this skill. Helper scripts handle any legacy CLI compatibility internally.
 
 ## Prerequisites: Install bohr CLI
 

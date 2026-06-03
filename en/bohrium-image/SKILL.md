@@ -21,11 +21,7 @@ Since 2023, Bohrium no longer supports VM jobs — container images are required
 }
 ```
 
-Only configure `BOHR_ACCESS_KEY` for this skill. For raw `bohr` CLI commands, map it for that process:
-
-```bash
-ACCESS_KEY="$BOHR_ACCESS_KEY" bohr image list
-```
+Only configure `BOHR_ACCESS_KEY` for this skill. Helper scripts handle any legacy CLI compatibility internally.
 
 ## Prerequisites: Install bohr CLI
 

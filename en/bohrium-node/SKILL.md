@@ -21,11 +21,7 @@ Dev nodes are used for data preparation, compilation, debugging, and post-proces
 }
 ```
 
-Only configure `BOHR_ACCESS_KEY` for this skill. For raw `bohr` CLI commands, map it for that process:
-
-```bash
-ACCESS_KEY="$BOHR_ACCESS_KEY" bohr node list
-```
+Only configure `BOHR_ACCESS_KEY` for this skill. Helper scripts handle any legacy CLI compatibility internally.
 
 ## Prerequisites: Install bohr CLI
 

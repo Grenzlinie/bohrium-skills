@@ -89,7 +89,7 @@ curl -s "https://open.bohrium.com/openapi/v1/search/web?q=deepmd-kit&num=5" \
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `No organic_results` | No matches for the query | Rephrase; English queries generally return more hits than Chinese |
-| `401` | Bad BOHR_ACCESS_KEY | Use `Authorization: Bearer ` |
+| `401` | Bad BOHR_ACCESS_KEY | Use `Authorization: Bearer $BOHR_ACCESS_KEY` |
 | `num` ignored | Out of range | Must be `1-10`; values outside the range may be clamped or ignored |
 
 ## Pairs well with

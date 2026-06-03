@@ -52,7 +52,7 @@ Read os.environ["BOHR_ACCESS_KEY"]
 
 If the API returns `Invalid AccessKey` (code 2000) or HTTP 401:
 1. The key configured in OpenClaw is invalid or expired.
-2. Prompt the user: "Your AccessKey is invalid. Please update `bohrium-scholar-search.env.BOHR_ACCESS_KEY` in `~/.openclaw/openclaw.json` and restart the OpenClaw session."
+2. Prompt the user: "Your BOHR_ACCESS_KEY is invalid. Please update `bohrium-scholar-search.env.BOHR_ACCESS_KEY` in `~/.openclaw/openclaw.json` and restart the OpenClaw session."
 
 ## Common Code Template
 

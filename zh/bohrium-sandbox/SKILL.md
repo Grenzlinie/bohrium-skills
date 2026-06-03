@@ -48,10 +48,10 @@ lbg sdbx --help    # 应能看到 doctor / create / list / exec / files / termin
 
 ```bash
 # 1. 一次性登录（写入本地配置）
-lbg login --ak <YOUR_BOHRIUM_ACCESS_KEY>
+lbg login --ak "$BOHR_ACCESS_KEY"
 
 # 2. 临时环境变量
-export BOHRIUM_ACCESS_KEY=<YOUR_BOHRIUM_ACCESS_KEY>
+export BOHR_ACCESS_KEY=<YOUR_BOHR_ACCESS_KEY>
 ```
 
 验证：
@@ -336,7 +336,7 @@ lbg sdbx kill $SID
 | 问题 | 原因 | 解决 |
 |------|------|------|
 | `lbg: error: invalid choice: 'sdbx'` | 装的是稳定版 lbg，没有 sdbx 子命令 | `pip install --pre --upgrade lbg` 装 prerelease |
-| `access key required` / 鉴权失败 | 没 `lbg login` 或 `BOHRIUM_ACCESS_KEY` 没设 | `lbg login --ak <key>` 或 `export BOHRIUM_ACCESS_KEY=...` |
+| `access key required` / 鉴权失败 | 没 `lbg login` 或 `BOHR_ACCESS_KEY` 没设 | `lbg login --ak "$BOHR_ACCESS_KEY"` 或导出该环境变量 |
 | 前台命令超时被杀 | 默认 `--timeout 60` 太短 | 改 `--background --timeout 0` |
 | 后台命令到点被杀 | 同时设了 `--background` 和有限 `--timeout` | 后台只配 `--timeout 0`（默认就是 0） |
 | kill 后想取文件取不到 | 沙箱销毁后无法读文件 | 永远先 `files read` 再 `kill` |

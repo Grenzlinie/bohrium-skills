@@ -24,7 +24,7 @@ BOHR_ACCESS_KEY 和 PROJECT_ID 从 OpenClaw 配置文件 `~/.openclaw/openclaw.j
 }
 ```
 
-OpenClaw 会自动将 `env` 中的变量注入到运行环境。Skill 只要求配置 `BOHR_ACCESS_KEY`；调用 `bohr` CLI 时，如 CLI 需要旧变量名，可在当前 shell 中临时映射：`export ACCESS_KEY="$BOHR_ACCESS_KEY"`。
+OpenClaw 会自动将 `env` 中的变量注入到运行环境。Skill 只要求配置 `BOHR_ACCESS_KEY`；兼容旧 CLI 所需的映射由辅助脚本内部处理。
 
 ## 前置条件：安装 bohr CLI
 

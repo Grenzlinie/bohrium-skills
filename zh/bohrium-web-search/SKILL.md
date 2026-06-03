@@ -89,7 +89,7 @@ curl -s "https://open.bohrium.com/openapi/v1/search/web?q=deepmd-kit&num=5" \
 | 问题 | 原因 | 解决 |
 |------|------|------|
 | `No organic_results` | 查询无结果 | 换关键词；英文一般比中文命中更多 |
-| `401` | BOHR_ACCESS_KEY 错误 | 确认 `accessKey` 大小写正确；别用 `Authorization: Bearer` |
+| `401` | BOHR_ACCESS_KEY 错误 | 使用 `Authorization: Bearer $BOHR_ACCESS_KEY` |
 | `num` 被忽略 | 超出范围 | `num` 限制在 `1-10`，超出上限会截断或忽略 |
 
 ## 搭配使用

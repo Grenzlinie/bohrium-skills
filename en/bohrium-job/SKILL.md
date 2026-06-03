@@ -24,7 +24,7 @@ BOHR_ACCESS_KEY and PROJECT_ID are read from the OpenClaw config `~/.openclaw/op
 }
 ```
 
-OpenClaw automatically injects `env` variables into the runtime. The skill only requires `BOHR_ACCESS_KEY`; when invoking `bohr` CLI, map it for the CLI process with `export ACCESS_KEY="$BOHR_ACCESS_KEY"`.
+OpenClaw automatically injects `env` variables into the runtime. The skill only requires `BOHR_ACCESS_KEY`; helper scripts handle any legacy CLI compatibility internally.
 
 ## Prerequisites: Install bohr CLI
 

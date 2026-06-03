@@ -44,14 +44,14 @@ See version history at <https://pypi.org/project/lbg/#history>. The current beta
 
 ## Configuration
 
-Requires a Bohrium AccessKey (not an E2B key). Two ways:
+Requires `BOHR_ACCESS_KEY` (not an E2B key). Two ways:
 
 ```bash
 # 1. Persistent login (writes local config)
-lbg login --ak <YOUR_BOHRIUM_ACCESS_KEY>
+lbg login --ak "$BOHR_ACCESS_KEY"
 
 # 2. Per-session env var
-export BOHRIUM_ACCESS_KEY=<YOUR_BOHRIUM_ACCESS_KEY>
+export BOHR_ACCESS_KEY=<YOUR_BOHR_ACCESS_KEY>
 ```
 
 Sanity check:
@@ -336,7 +336,7 @@ lbg sdbx kill $SID
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `lbg: error: invalid choice: 'sdbx'` | Stable lbg installed; no sdbx subcommand | `pip install --pre --upgrade lbg` to get the prerelease |
-| `access key required` / auth failure | No `lbg login`, `BOHRIUM_ACCESS_KEY` unset | `lbg login --ak <key>` or export the env var |
+| `access key required` / auth failure | No `lbg login`, `BOHR_ACCESS_KEY` unset | `lbg login --ak "$BOHR_ACCESS_KEY"` or export the env var |
 | Foreground command killed by timeout | Default `--timeout 60` too short | Switch to `--background --timeout 0` |
 | Background command killed mid-run | Set both `--background` and a finite `--timeout` | Drop the finite timeout (default is 0) |
 | Cannot read files after kill | Sandbox destroyed, disk gone | Always `files read` first, kill last |

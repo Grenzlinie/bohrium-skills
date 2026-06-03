@@ -323,11 +323,11 @@ if pathParam == "/" {
 export PATH="$HOME/.bohrium:$PATH"
 export OPENAPI_HOST=https://open.bohrium.com
 export TIEFBLUE_HOST=https://tiefblue.dp.tech
-export ACCESS_KEY=<your_access_key>
+export BOHR_ACCESS_KEY=<your_access_key>
 
 # 安装 Python lbg CLI（sandbox）
 pip install --pre lbg   # 必须 prerelease 版本
-export BOHRIUM_ACCESS_KEY=<your_access_key>
+export BOHR_ACCESS_KEY=<your_access_key>
 ```
 
 ### bohr CLI 可用命令一览
