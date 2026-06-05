@@ -1,7 +1,7 @@
 ---
 name: polymer-db
-version: 1.0.0
-description: "Polymer database search: query the Polymer-Data-Bank for polymer data, supporting searches by DOI, polymer name, properties, etc. Returns structure, thermal, optical, mechanical, and electrical property information. Use when users ask about polymer properties (Tg/Td/transmittance/mechanical properties), look up polymer data from specific papers, or need to filter polymers by performance criteria."
+version: 2.0.2
+description: "Polymer database retrieval: query Polymer-Data-Bank polymer records (280k+ records), supporting searches by DOI, polymer name, performance properties, and numeric property ranges. Returns structure, thermal, optical, mechanical, electrical, and synthesis information. Use when users ask about polymer properties (Tg/Td/transmittance/mechanical properties), look up polymer data from a paper, or need polymers filtered by performance criteria."
 ---
 
 # Polymer Database Search (Polymer-Data-Bank)
@@ -30,8 +30,7 @@ curl -s -X POST 'https://open.bohrium.com/openapi/v1/database/common_data/list' 
   "page": 1,
   "pageSize": 50,
   "filters": { ... },
-  "selectedFields": ["field1", "field2"],
-  "orderBy": [{"field": "fieldName", "order": "asc"}]
+  "selectedFields": ["field1", "field2"]
 }
 ```
 
@@ -43,8 +42,31 @@ curl -s -X POST 'https://open.bohrium.com/openapi/v1/database/common_data/list' 
 | `page` | int | Yes | Page number, starting from 1 |
 | `pageSize` | int | Yes | Items per page, max 5000 |
 | `filters` | object | No | Filter conditions (Filter structure) |
-| `selectedFields` | []string | No | Only return specified fields |
-| `orderBy` | []object | No | Sort by `{"field": "xxx", "order": "asc/desc"}` |
+| `selectedFields` | []string | No | Only return specified fields; recommended to reduce response size |
+| `orderBy` | []object | No | Not recommended. Sorting is fragile for this endpoint and can trigger `$sort key ordering must be 1 or -1`; for performance fields, omit `orderBy` and sort locally after retrieval. |
+
+### Response Structure
+
+Records are returned in `data.list`; the server-side candidate count is in `data.count`.
+
+```json
+{
+  "data": {
+    "count": 123,
+    "list": [{ "polymer_name": "...", "GlassTransitionTemperature(Tg)(°C)": "455.0" }]
+  }
+}
+```
+
+**Do not read results from `data.rows`.** If `data.count` is nonzero but `data.list` is empty, check `page`/`pageSize`, field names, sorting parameters, and the response structure before concluding that the database has no results.
+
+### Call Strategy (Avoid Repeated Queries)
+
+1. **Do not pass `orderBy`** for property fields such as `Tg`, `Td`, mechanical, or optical properties. Fetch candidates, parse numbers, and sort locally.
+2. **Use one call for ordinary lookup questions**: when the user asks "query/find/show some", use `page=1` and `pageSize=50`, then present representative records that pass local validation.
+3. **Use at most two calls for representative Top results**: if the first page has too few locally valid matches and the user asks for top/representative results, repeat the same query once with `pageSize=500`, then filter and sort locally. Do not jump directly to `5000`.
+4. **Paginate only for explicit full-data tasks**: use larger `pageSize` or pagination only when the user explicitly asks for all results, a complete list, statistical distribution, export, or as many results as possible.
+5. **Do not call sampled results an exact full-database count**: unless full pagination was performed, say "N locally validated records in this sample" instead of presenting a precise total match count.
 
 ### Filter Structure
 
@@ -55,7 +77,7 @@ curl -s -X POST 'https://open.bohrium.com/openapi/v1/database/common_data/list' 
   "sub": [
     {
       "type": 1,
-      "field": "field_name (dataIndex)",
+      "field": "field name (dataIndex)",
       "operator": "eq",
       "value": "value"
     }
@@ -63,77 +85,175 @@ curl -s -X POST 'https://open.bohrium.com/openapi/v1/database/common_data/list' 
 }
 ```
 
-- `type`: `1` = Simple condition, `2` = Compound condition (with sub)
+- `type`: `1` = Simple condition, `2` = Compound condition (with `sub`)
 - `groupOperator`: `"and"` | `"or"`
 - `operator`: `eq` / `neq` / `like` / `gt` / `gte` / `lt` / `lte` / `in` / `nin` / `between`
 
-**Important limitation**: All property fields are **string type** (values like `"71.3 °C"`, `"[255 °C,288 °C]"`). Operators like `gt`/`lt` perform lexicographic comparison, not numeric. Numeric range filtering must be done client-side after parsing.
-
 ## Field Name Mapping
 
+**Important notes**:
+
+1. Property values are usually numbers or numeric strings, with units encoded in the field name. For example, `GlassTransitionTemperature(Tg)(°C)` returns values such as `71.3` or `"71.3"` without a unit suffix.
+2. `gt`/`lt`/`gte`/`lte` can be used to narrow candidate records. For example, `{"field": "GlassTransitionTemperature(Tg)(°C)", "operator": "gt", "value": "350"}` asks for Tg > 350°C candidates; still run a local `float()` validation after retrieval.
+3. Each property field may have two equivalent spellings in the database: a compact form and a spaced form. Prefer the compact no-space form as the `dataIndex`.
+
 ### Basic Information
-| Common Name | dataIndex | Example Value |
-|-------------|-----------|---------------|
-| DOI | `doi` | `"10.1021/acs.macromol.9b02359"` |
-| Polymer name | `polymer_name` | `"PI"`, `"PU"` |
-| Polymer type | `polymer_type` | `"Polyimide"` |
-| Monomer composition/structure | `components` | `"6FDA:O=C1OC...;ODA:Nc1ccc..."` |
-| Feed ratio | `feed_ratio_text` | `"DABz/m-BAPS = 1/1"` |
-| Ratio type | `ratio_type` | `"mole"`, `"weight"` |
 
-### Thermal Properties
-| Common Name | dataIndex | Related Fields |
-|-------------|-----------|----------------|
-| Tg / Glass transition temperature | `GlassTransitionTemperature(Tg)` | `test_method_GlassTransitionTemperature(Tg)`, `heating_rate_GlassTransitionTemperature(Tg)`, `atmosphere_GlassTransitionTemperature(Tg)` |
-| Td / Decomposition temperature | `DecompositionTemperature(Td)` | `decomposition_criterion_DecompositionTemperature(Td)`, `atmosphere_DecompositionTemperature(Td)` |
-| Tm / Melting temperature | `MeltingTemperature(Tm)` | `test_method_MeltingTemperature(Tm)` |
-| Tc / Crystallization temperature | `CrystallizationTemperature(Tc)` | — |
-| CTE / Coefficient of thermal expansion | `CoefficientofThermalExpansion(CTE)` | — |
-| Thermal conductivity | `ThermalConductivity` | — |
+| User Term | dataIndex | Type | Notes |
+|-----------|-----------|------|-------|
+| DOI | `doi` | str | Paper DOI |
+| Polymer name | `polymer_name` | str | e.g. `"PI"`, `"PU"` |
+| Polymer type | `polymer_type` | str | e.g. `"Polyimide"`, `"Polyurethane"` |
+| Feed ratio text | `feed_ratio_text` | str | Raw ratio text |
+| Ratio values | `ratio_values_text` | str | e.g. `"6FDA:DDM = 1.04:1.00"` |
+| Ratio type | `ratio_type` | str | `"mole"` / `"weight"` |
+| Diamine ratio | `diamine_ratio` | str | e.g. `"ODA:TBDS = 0.05:49.58"` |
+| Dianhydride ratio | `dianhydride_ratio` | str | e.g. `"PMDA:6FDA = 9.83:39.31"` |
 
-### Optical Properties
-| Common Name | dataIndex | Related Fields |
-|-------------|-----------|----------------|
-| Transmittance | `Transmittance` | `wavelength_Transmittance`, `thickness_Transmittance` |
-| Refractive index | `RefractiveIndex(n)` | `wavelength_RefractiveIndex(n)` |
-| Yellow index | `YellowIndex(YI)/WhitenessIndex(WI)` | — |
-| Haze | `Haze` | — |
-| Birefringence | `Birefringence(Δn)` | — |
-| Cut-off wavelength | `Cut-offWavelength(λ_cut)` | — |
-| Abbe number | `AbbeNumber(νd)` | — |
+### Monomer Structure (`monomer_1` ~ `monomer_19`)
 
-### Mechanical Properties
-| Common Name | dataIndex |
-|-------------|-----------|
-| Tensile strength | `TensileStrength` |
-| Tensile modulus / Young's modulus | `TensileModulus` |
-| Elongation at break | `ElongationatBreak` |
-| Flexural strength | `FlexuralStrength` |
-| Flexural modulus | `FlexuralModulus` |
-| Impact strength | `ImpactStrength` |
-| Shear strength | `ShearStrength` |
-| Shore hardness | `ShoreHardness` |
+| dataIndex | Type | Notes |
+|-----------|------|-------|
+| `monomer_N` | str | Abbreviated name of monomer N, e.g. `"6FDA"`, `"ODA"` |
+| `monomer_N_fullname` | str | Full monomer name |
+| `monomer_N_smiles` | smiles | Monomer SMILES |
 
-### Electrical Properties
-| Common Name | dataIndex |
-|-------------|-----------|
-| Dielectric constant Dk | `DielectricConstant(Dk)` |
-| Dielectric loss Df | `DielectricLoss(Df/tanδ)` |
-| Breakdown strength | `BreakdownStrength` |
-| Volume resistivity | `VolumeResistivity` |
-| Proton conductivity | `ProtonConductivity` |
+N ranges from 1 to 19. Most records have 2 to 4 monomers.
 
 ### Molecular Weight
-| Common Name | dataIndex |
-|-------------|-----------|
-| Number-average molecular weight Mn | `mn_value` |
-| PDI / Polydispersity index | `pdi_value` |
 
-## Query Strategies
+| User Term | dataIndex | Type | Unit |
+|-----------|-----------|------|------|
+| Number-average molecular weight Mn | `mn_value(g/mol)` | num | g/mol |
+| Weight-average molecular weight Mw | `mw_value(g/mol)` | num | g/mol |
+| PDI / dispersity | `pdi_value` | num | dimensionless |
 
-### Exact Query (Q1 type)
+### Thermal Properties
 
-User asks "properties of a specific DOI/polymer": query directly with `selectedFields` limiting returned fields.
+| User Term | dataIndex | Data Volume |
+|-----------|-----------|-------------|
+| Tg / glass transition temperature | `GlassTransitionTemperature(Tg)(°C)` | ~100k |
+| Td / decomposition temperature | `DecompositionTemperature(Td)(°C)` | large |
+| Tm / melting temperature | `MeltingTemperature(Tm)(°C)` | ~7k |
+| Tc / crystallization temperature | `CrystallizationTemperature(Tc)(°C)` | ~2.4k |
+| CTE / coefficient of thermal expansion | `CoefficientofThermalExpansion(CTE)(ppm/K)` | ~425 |
+| Thermal conductivity | `ThermalConductivity(W/(m·K))` | ~1.7k |
+
+Thermal property auxiliary fields use the property name as a suffix:
+- `test_method_GlassTransitionTemperature(Tg)` - test method, e.g. DSC, TGA, DMA
+- `heating_rate_GlassTransitionTemperature(Tg)(°C/min)` - heating rate
+- `atmosphere_GlassTransitionTemperature(Tg)` - atmosphere, e.g. N2, Air
+- `decomposition_criterion_DecompositionTemperature(Td)` - decomposition criterion, e.g. "5% weight loss"
+- `test_conditions_GlassTransitionTemperature(Tg)` - test conditions
+- `notes_GlassTransitionTemperature(Tg)` - notes
+
+### Optical Properties
+
+| User Term | dataIndex | Data Volume |
+|-----------|-----------|-------------|
+| Transmittance | `Transmittance(%)` | ~11.7k |
+| Refractive index | `RefractiveIndex(n)(dimensionless)` | available in schema |
+| Yellow index | `YellowIndex(YI)/WhitenessIndex(WI)(dimensionless)` | available |
+| Haze | `Haze(%)` | ~349 |
+| Birefringence | `Birefringence(Δn)(dimensionless)` | available |
+| Cut-off wavelength | `Cut-offWavelength(λ_cut)(nm)` | ~1.4k |
+| Abbe number | `AbbeNumber(νd)(dimensionless)` | available |
+
+Optical property auxiliary fields:
+- `wavelength_Transmittance(nm)` - measurement wavelength
+- `thickness_Transmittance` - film thickness (str)
+- `test_method_Transmittance` - test method
+- `test_conditions_Transmittance` - test conditions
+- `test_standard_Transmittance` - test standard
+- `notes_Transmittance` - notes
+
+### Mechanical Properties
+
+| User Term | dataIndex | Data Volume |
+|-----------|-----------|-------------|
+| Tensile strength | `TensileStrength(MPa)` | ~19.9k |
+| Tensile modulus / Young's modulus | `TensileModulus(GPa)` | ~14.4k |
+| Elongation at break | `ElongationatBreak(%)` | ~7.8k |
+| Flexural strength | `FlexuralStrength(MPa)` | ~3.3k |
+| Flexural modulus | `FlexuralModulus(GPa)` | ~2.2k |
+| Impact strength | `ImpactStrength(kJ/m²)` | ~3.0k |
+| Shear strength | `ShearStrength(MPa)` | ~6.8k |
+| Shore hardness | `ShoreHardness` | ~813 |
+| Storage modulus | `StorageModulus(E'orG')(GPa)` | available |
+| Loss modulus | `LossModulus(E''orG'')(GPa)` | available |
+| Shear modulus | `ShearModulus(GPa)` | available |
+| Poisson's ratio | `Poisson'sRatio(dimensionless)` | available |
+| Tan Delta | `TanDelta(dimensionless)` | available |
+
+Mechanical property auxiliary fields:
+- `temperature_TensileStrength(°C)` - test temperature
+- `frequency_TensileStrength(Hz)` - test frequency
+- `test_method_TensileStrength` - test method
+- `test_standard_TensileStrength` - test standard
+- `test_conditions_TensileStrength` - test conditions
+- `test_mode_TensileStrength` - test mode
+- `measurement_direction_TensileStrength` - measurement direction
+- `notes_TensileStrength` - notes
+
+### Electrical Properties
+
+| User Term | dataIndex | Data Volume |
+|-----------|-----------|-------------|
+| Dielectric constant Dk | `DielectricConstant(Dk)(dimensionless)` | available |
+| Dielectric loss Df | `DielectricLoss(Df/tanδ)(dimensionless)` | available |
+| Breakdown strength | `BreakdownStrength(kV/mm)` | ~255 |
+| Volume resistivity | `VolumeResistivity(Ω·cm)` | ~1.6k |
+| Surface resistivity | `SurfaceResistivity(Ω/sq)` | available |
+| Electrical conductivity | `ElectricalConductivity(S/cm)` | available |
+
+Electrical property auxiliary fields:
+- `frequency_DielectricConstant(Dk)(Hz)` - test frequency
+- `temperature_DielectricConstant(Dk)(°C)` - test temperature
+- `thickness_DielectricConstant(Dk)` - thickness
+
+### Other Properties
+
+| User Term | dataIndex | Data Volume |
+|-----------|-----------|-------------|
+| Density | `Density(g/cm³)` | available |
+| Water absorption | `WaterAbsorption(%)` | ~6.3k |
+| Crystallinity | `Crystallinity(%)` | available |
+| Crystallinity category | `Crystallinity(category)` | str |
+| Solubility | `Solubility(category)` | str |
+| Solvent uptake | `SolventUptake(%)` | available |
+| Intrinsic viscosity | `IntrinsicViscosity(dL/g)` | available |
+| Dynamic viscosity | `DynamicViscosity(Pa·s)` | available |
+| Melt viscosity | `MeltViscosity(Pa·s)` | available |
+| Gas permeability | `GasPermeability(Barrer)` | available |
+| Gas separation selectivity | `GasSeparationSelectivity(dimensionless)` | available |
+
+### Synthesis Process Fields
+
+| dataIndex | Notes |
+|-----------|-------|
+| `Synthesis_Solvent` | Synthesis solvent |
+| `Synthesis_Solid_Content` | Solid content |
+| `Synthesis_Reaction_Temperature` | Reaction temperature |
+| `Synthesis_Reaction_Time` | Reaction time |
+| `Synthesis_Atmosphere` | Reaction atmosphere |
+| `Solution_Viscosity` | Solution viscosity |
+| `Coating_Method` | Coating method |
+| `Film_Thickness` | Film thickness |
+| `Post_Processing_Type` | Post-processing type |
+| `Post_Thermal_Temperature_Schedule` | Thermal treatment schedule |
+
+### System Fields (Ignore in User-Facing Output)
+
+- `_id`: MongoDB ObjectID
+- `a1b2c3d4e5_is_locked` / `a1b2c3d4e5_owner_id` / `a1b2c3d4e5_source` / `a1b2c3d4e5_status`
+- `authors`: contributor information
+- `createTime` / `updateTime`: timestamps
+
+## Execution Strategy
+
+### Exact Query (by DOI / Polymer Name)
+
+When the user asks for properties of a DOI or a specific polymer, use direct `eq` filters and limit `selectedFields` to the fields needed.
 
 ```json
 {
@@ -144,76 +264,90 @@ User asks "properties of a specific DOI/polymer": query directly with `selectedF
     "type": 2, "groupOperator": "and",
     "sub": [{"type": 1, "field": "doi", "operator": "eq", "value": "10.1021/..."}]
   },
-  "selectedFields": ["polymer_name", "polymer_type", "GlassTransitionTemperature(Tg)", "DecompositionTemperature(Td)"]
+  "selectedFields": ["polymer_name", "polymer_type", "GlassTransitionTemperature(Tg)(°C)", "DecompositionTemperature(Td)(°C)", "monomer_1", "monomer_2", "monomer_3", "monomer_4"]
 }
 ```
 
-### Numeric Range Filtering (Q2 type)
+**Note**: for the first lookup of a DOI, consider leaving `selectedFields` unset or using only a small field list, because it may be unclear which properties were entered for that paper. Refine the next query based on returned fields.
 
-User asks "polymers with Tg > 350°C":
+### Numeric Range Filtering (by Property Value)
 
-1. **Cannot** directly use `gt` operator (field is string, lexicographic comparison is inaccurate)
-2. **Correct approach**: Use `like` operator to exclude empty values (`"value": ""`), set `pageSize: 5000`, fetch data and parse numerically on client side
+When the user asks for "polymers with Tg > 350°C", use the `gt` operator to narrow candidates, but **convert field values to numbers and validate locally after retrieval**. For ordinary questions, fetch only the first page sample; do not automatically do full pagination and do not pass `orderBy`.
+
+```json
+{
+  "tableAk": "123zl00",
+  "page": 1,
+  "pageSize": 50,
+  "filters": {
+    "type": 2, "groupOperator": "and",
+    "sub": [{"type": 1, "field": "GlassTransitionTemperature(Tg)(°C)", "operator": "gt", "value": "350"}]
+  },
+  "selectedFields": ["polymer_name", "polymer_type", "GlassTransitionTemperature(Tg)(°C)", "monomer_1", "monomer_2", "monomer_3", "monomer_4", "monomer_1_smiles", "monomer_2_smiles"]
+}
+```
+
+Result handling:
+
+1. Read page records from `data.list`; read the server-side candidate count from `data.count`.
+2. For each record, run local validation such as `float(record["GlassTransitionTemperature(Tg)(°C)"]) > 350`.
+3. If the page contains records that do not meet the threshold after local validation, describe `data.count` as the "server-side candidate count", not as the "exact number of matching records".
+4. For ordinary requests such as "query/find/show some", present representative locally validated records from this page and the candidate count, and state that this is not a complete list.
+5. If the user needs representative Top results and the first page has too few valid hits, expand once to `pageSize=500` and sort locally by numeric value.
+6. Only when the user explicitly asks for all results, complete lists, statistical distribution, export, or maximum coverage, paginate (`page=2`, `page=3`, ...) or use `pageSize=5000`; throttle requests and avoid large bursts.
+
+Python parsing template:
 
 ```python
-import re
-
-def parse_value_celsius(val_str):
-    """Parse temperature string with units, convert to °C"""
-    if not val_str:
-        return None
-    nums = re.findall(r'[-+]?\d+\.?\d*', val_str)
-    if not nums:
-        return None
-    values = [float(n) for n in nums]
-    max_val = max(values)
-    if 'K' in val_str and '°C' not in val_str:
-        return max_val - 273.15
-    elif '°F' in val_str:
-        return (max_val - 32) * 5 / 9
-    return max_val
+data = response_json.get("data", {})
+candidate_count = data.get("count", 0)
+rows = data.get("list", [])
+matched = []
+for row in rows:
+    try:
+        value = float(row.get("GlassTransitionTemperature(Tg)(°C)", ""))
+    except (TypeError, ValueError):
+        continue
+    if value > 350:
+        matched.append(row)
 ```
 
-3. After filtering, perform statistical analysis (type distribution, frequent monomers, etc.)
+### Analysis and Recommendation (Design Guidance)
 
-### Analysis & Recommendation (Q3 type)
+When the user asks for suggestions to synthesize a polymer with a target property:
 
-User asks "suggestions for synthesizing a polymer with XX properties":
+1. Use a range filter to fetch the first page of candidates, then run local numeric validation.
+2. If the user explicitly needs statistics or design guidance, expand to a `pageSize=500` sample first; only paginate enough samples or all candidates when full coverage is explicitly requested.
+3. Summarize the `polymer_type` distribution to identify dominant polymer families.
+4. Count `monomer_1` ~ `monomer_4` frequencies to identify frequent monomers.
+5. Analyze common SMILES structural features such as aromatic rings, fluorinated groups, or alicyclic groups.
+6. Combine observed data patterns with polymer chemistry knowledge to provide structural design suggestions.
 
-1. Use `like ""` to fetch records with that property data (max 5000/page, may need pagination)
-2. Parse values on client side, filter records meeting criteria
-3. Analyze `polymer_type` distribution, frequent monomers in `components`
-4. Provide structural design suggestions based on data patterns
+### Combined Filtering
 
-## Data Format Notes
+AND/OR combinations are supported:
 
-### components field format
+```json
+{
+  "filters": {
+    "type": 2, "groupOperator": "and",
+    "sub": [
+      {"type": 1, "field": "polymer_type", "operator": "eq", "value": "Polyimide"},
+      {"type": 1, "field": "Transmittance(%)", "operator": "gt", "value": "90"}
+    ]
+  }
+}
 ```
-monomer_name:SMILES;monomer_name:SMILES;...
-```
-Example: `6FDA:O=C1OC(=O)c2cc(...)ccc21;ODA:Nc1ccc(Oc2ccc(N)cc2)cc1`
 
-### Property value format (all strings)
-- Single value: `"71.3 °C"`
-- Multiple values: `"[255 °C,288 °C]"`
-- Descriptive: `"over 90 %"`, `"greater than 350 °C"`
-- With error: `"90.8% ± 0.6%"`
+## Key Behavior Notes
 
-### System fields (ignore)
-- `_id`: MongoDB ObjectID
-- `a1b2c3d4e5_is_locked`: Lock flag
-- `a1b2c3d4e5_owner_id`: Data owner
-- `a1b2c3d4e5_source`: Data source
-- `a1b2c3d4e5_status`: Review status
-- `authors`: Contributor info
-- `createTime` / `updateTime`: Timestamps
-
-## Important Notes
-
-1. **Inconsistent units**: Same field may mix °C, K, °F — unit conversion is required
-2. **String values**: All property fields are strings, numeric comparison must be done client-side
-3. **Multi-value fields**: A record may have multiple values for a property (array format like `"[val1,val2]"`)
-4. **pageSize limit**: Max 5000. For large datasets, use pagination (total count in `data.count`)
-5. **Special characters in field names**: e.g. `GlassTransitionTemperature(Tg)` contains parentheses, use directly as JSON key
-6. **like empty string**: `"operator": "like", "value": ""` matches all non-empty records
-7. **When presenting results** to user, filter out system fields (`a1b2c3d4e5_*`, `authors`), show only meaningful data
+1. **Use server-side numeric ranges only to narrow candidates, then validate locally**: property fields are usually numbers or numeric strings; `gt`/`lt`/`gte`/`lte` can reduce candidates, but final matches must pass local `float()` validation.
+2. **Field names include units**: units such as `(°C)`, `(%)`, and `(MPa)` are part of the field name; values usually do not include unit strings.
+3. **Response fields**: records are in `data.list`, not `data.rows`; the candidate count is in `data.count`.
+4. **Local validation is required** for numeric range queries to avoid reporting server-side candidate counts as exact match counts.
+5. **Do not pass `orderBy`** for property sorting; sort locally to avoid backend `$sort` parameter errors and repeated failed queries.
+6. **`pageSize` max is 5000**: for ordinary Q&A use `pageSize=20~50`; for representative Top results expand at most to `500`; use `5000` or pagination only for explicit full-list/statistics/export requests.
+7. **Two field-name styles are equivalent**: `GlassTransitionTemperature(Tg)(°C)` and `Glass Transition Temperature (Tg) (°C)` can both work; prefer the compact form.
+8. **`like ""` for non-empty matching**: for string fields, `"operator": "like", "value": ""` can match non-empty records. It may not work for numeric fields; use `gt` with `"0"` or omit that field filter.
+9. **When presenting results**, filter out system fields (`a1b2c3d4e5_*`, `authors`, `_id`, timestamps) and show only meaningful user-facing data.
+10. **The API has rate limits**: avoid large bursts of concurrent requests. If `count=0` with no error code, it may be transient rate limiting; retry later.
