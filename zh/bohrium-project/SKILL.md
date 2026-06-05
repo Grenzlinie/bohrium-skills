@@ -192,7 +192,7 @@ requests.post(f"{BASE}/set_cost_limit", headers=HEADERS_JSON,
 import os, requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
-BASE = "https://open.bohrium.com/openapi/v1/project"
+BASE = "https://open.bohrium.com/openapi/v2/project"
 HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
@@ -251,7 +251,7 @@ requests.put(f"{BASE}/154/recovery_user", headers=HEADERS_JSON,
 |------|------|
 | `POST /project/join` | 路由转发路径不匹配 |
 | `POST /project/share_status` | 同上 |
-| `GET /project/available` | 注册在 AK v2 Group，v1 auth 不可达 |
+| `GET /project/available` | 注册在上游 AK v2 Group，openapi 网关 auth 不可达 |
 
 ## 常见问题
 

@@ -30,7 +30,7 @@ OpenClaw automatically injects `env.BOHR_ACCESS_KEY` into the runtime.
 ## Route Mapping
 
 ```
-External call: GET/POST https://open.bohrium.com/openapi/v1/knowledge/{path}
+External call: GET/POST https://open.bohrium.com/openapi/v2/knowledge/{path}
                Header: Authorization: Bearer $BOHR_ACCESS_KEY
 
 Gateway forwards: → literature-sage.bohrium.com/api/v1/{path}
@@ -43,7 +43,7 @@ Gateway forwards: → literature-sage.bohrium.com/api/v1/{path}
 import os, requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
-BASE = "https://open.bohrium.com/openapi/v1/knowledge"
+BASE = "https://open.bohrium.com/openapi/v2/knowledge"
 HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 ```
@@ -976,7 +976,7 @@ r = requests.get(f"{BASE}/account/user_knowledge_base_role", headers=HEADERS,
 | `code` is non-zero | API call error | Check `error.msg` or `message` in the response for details |
 | 401 Unauthorized | Invalid or expired auth | Verify BOHR_ACCESS_KEY is correct |
 | Knowledge base not found | Wrong ID used | `nodesId` (node ID) and `id` (KB ID) are different. Permission and folder endpoints all use `nodesId`; list endpoints return both. |
-| 404 page not found | Called a `/v2/*` path | Gateway only proxies to `/api/v1/*`; all examples in this document use v1 paths and work correctly |
+| 404 page not found | Tried to reach a downstream `/api/v2/*` capability | The gateway always proxies to downstream `/api/v1/*`; examples in this document rely on that and work correctly |
 | `code=230606 keywords is required` | `recall/hybrid` `keywords` is empty | Provide at least one `keyword: weight` pair |
 | `code=230105` | Wrong file-endpoint field name | Use `userResourceId` (not `resourceId`/`name`/`targetFolderId`); see examples above |
 | Literature search returns empty | Literature not yet indexed | Newly imported literature needs time for backend parsing and indexing |
@@ -985,6 +985,6 @@ r = requests.get(f"{BASE}/account/user_knowledge_base_role", headers=HEADERS,
 
 ## Gateway Limitations
 
-- Any `/openapi/v1/knowledge/<path>` request is proxied to literature-sage `/api/v1/<path>`.
-- literature-sage's `/api/v2/*` routes cannot be reached through this gateway. However, all examples in this document use v1 paths and work correctly.
+- Any `/openapi/v2/knowledge/<path>` request is proxied to literature-sage `/api/v1/<path>`.
+- literature-sage's downstream `/api/v2/*` capabilities cannot be reached through this gateway. However, all examples in this document are proxied to downstream `/api/v1/*` and work correctly.
 - There is no dedicated KB delete endpoint; use `POST /folder/delete {nodesId: <KB_nodesID>}`.

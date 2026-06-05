@@ -11,8 +11,8 @@ Query scholar information via the Bohrium OpenAPI gateway (`open.bohrium.com`). 
 
 | Endpoint | Method | Path | Purpose |
 |----------|--------|------|---------|
-| Scholar Search | POST | `/openapi/v1/paper-server/scholar/search` | Search scholars by name / affiliation / research tags |
-| Scholar Info | GET | `/openapi/v1/paper-server/scholar/info?scholarId=xxx` | Fetch the full profile by `scholarId` |
+| Scholar Search | POST | `/openapi/v2/paper-server/scholar/search` | Search scholars by name / affiliation / research tags |
+| Scholar Info | GET | `/openapi/v2/paper-server/scholar/info?scholarId=xxx` | Fetch the full profile by `scholarId` |
 
 **Typical workflow:** Given a scholar name → search candidates → pick the target `scholarId` → fetch the full profile (papers, citations, h-index, research directions, education/work history).
 
@@ -66,7 +66,7 @@ if not AK:
         "under bohrium-scholar-search.env.BOHR_ACCESS_KEY."
     )
 
-BASE = "https://open.bohrium.com/openapi/v1/paper-server"
+BASE = "https://open.bohrium.com/openapi/v2/paper-server"
 HEADERS_JSON = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
 HEADERS = {"Authorization": f"Bearer {AK}"}
 ```
@@ -192,7 +192,7 @@ If multiple candidates are returned, first present a summary table for the user 
 
 ```bash
 AK="$BOHR_ACCESS_KEY"
-BASE="https://open.bohrium.com/openapi/v1/paper-server"
+BASE="https://open.bohrium.com/openapi/v2/paper-server"
 
 # Step 1: Scholar search
 curl -s -X POST "$BASE/scholar/search" \

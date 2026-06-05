@@ -36,7 +36,7 @@ OpenClaw automatically injects `env.BOHR_ACCESS_KEY` into the runtime.
 import os, time, requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
-BASE = "https://open.bohrium.com/openapi/v1/parse"
+BASE = "https://open.bohrium.com/openapi/v2/parse"
 HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 ```
@@ -154,7 +154,7 @@ print(f"Status: {data['status']}, Content length: {len(data.get('content', ''))}
 import os, time, requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
-BASE = "https://open.bohrium.com/openapi/v1/parse"
+BASE = "https://open.bohrium.com/openapi/v2/parse"
 HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
@@ -254,7 +254,7 @@ print(f"Content: {result['content'][:200]}")
 
 ```bash
 AK="$BOHR_ACCESS_KEY"
-BASE="https://open.bohrium.com/openapi/v1/parse"
+BASE="https://open.bohrium.com/openapi/v2/parse"
 
 # URL submission
 curl -s -X POST "$BASE/trigger-url-async" \

@@ -61,9 +61,9 @@ This skill uses:
 
 | # | API | Method and Path | Purpose |
 |---|-----|-----------------|---------|
-| 1 | Create session | `POST /v1/sigma-search/api/v4/ai_search/sessions` | Submit the question and get `sessionId` |
-| 2 | SSE stream | `GET /v1/sigma-search/api/v3/sse/ai_search/v1/{sessionId}/stream` | Receive streamed reasoning and answer events |
-| 3 | Session detail | `GET /v1/sigma-search/api/v4/ai_search/sessions/{sessionId}` | Recover or replay session output |
+| 1 | Create session | `POST /v2/sigma-search/api/v4/ai_search/sessions` | Submit the question and get `sessionId` |
+| 2 | SSE stream | `GET /v2/sigma-search/api/v3/sse/ai_search/v1/{sessionId}/stream` | Receive streamed reasoning and answer events |
+| 3 | Session detail | `GET /v2/sigma-search/api/v4/ai_search/sessions/{sessionId}` | Recover or replay session output |
 
 Authentication uses the `Authorization: Bearer <BOHR_ACCESS_KEY>` header.
 
@@ -129,7 +129,7 @@ if not AK:
     print("ERROR: BOHR_ACCESS_KEY is not configured.")
     sys.exit(1)
 
-BASE = "https://open.bohrium.com/openapi/v1/sigma-search"
+BASE = "https://open.bohrium.com/openapi/v2/sigma-search"
 
 QUERY = sys.argv[1] if len(sys.argv) > 1 else "Recent CRISPR-Cas9 progress in gene therapy"
 DISCIPLINE = sys.argv[2] if len(sys.argv) > 2 else "All"
@@ -356,5 +356,5 @@ python3 science_navigator.py "Deep learning applications in protein structure pr
 
 1. First-token latency can be 30-60 seconds for deep reasoning.
 2. Some streams may time out before an explicit `end` event; return the accumulated content in that case.
-3. To recover after disconnects, call `GET /v1/sigma-search/api/v4/ai_search/sessions/{sessionId}`.
+3. To recover after disconnects, call `GET /v2/sigma-search/api/v4/ai_search/sessions/{sessionId}`.
 4. Use single calls or exponential backoff to avoid 429 rate limits.

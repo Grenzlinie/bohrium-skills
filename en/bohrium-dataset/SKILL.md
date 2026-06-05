@@ -159,7 +159,7 @@ bohr dataset delete 138201 108601       # Batch
 import os, requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
-BASE = "https://open.bohrium.com/openapi/v1/ds"
+BASE = "https://open.bohrium.com/openapi/v2/ds"
 HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
@@ -212,7 +212,7 @@ r = requests.get(f"{BASE}/{dataset_id}/permission", headers=HEADERS)
 r = requests.get(f"{BASE}/project", headers=HEADERS)
 ```
 
-**Important**: The dataset list API path is `GET /v1/ds/` (**with trailing slash**), not `/v1/ds/list` (`/list` gets caught by the `/:id` route).
+**Important**: The dataset list API path is `GET /v2/ds/` (**with trailing slash**), not `/v2/ds/list` (`/list` gets caught by the `/:id` route).
 
 ---
 

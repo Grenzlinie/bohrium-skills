@@ -5,11 +5,11 @@
 Upload a local file into Bohrium Knowledge Base via OpenAPI multipart + binary upload.
 
 Flow (confirmed):
-0) (Optional) POST https://open.bohrium.com/openapi/v1/knowledge/knowledge_base/create
+0) (Optional) POST https://open.bohrium.com/openapi/v2/knowledge/knowledge_base/create
    body: {"knowledgeBaseName": "Daily Paper-YYMMDD", "introduction": "...", "cover": "", "privilege": 1}
    header: Authorization: Bearer <BOHR_ACCESS_KEY>
 
-1) GET https://open.bohrium.com/openapi/v1/knowledge/file/multipart
+1) GET https://open.bohrium.com/openapi/v2/knowledge/file/multipart
    query: fileName, md5, parentId(nodeId), size
    header: Authorization: Bearer <BOHR_ACCESS_KEY>
    -> returns data.host, data.path, data.token
@@ -74,8 +74,8 @@ def load_access_key_from_openclaw_config() -> str:
 import urllib.request
 
 
-OPENAPI_MULTIPART = "https://open.bohrium.com/openapi/v1/knowledge/file/multipart"
-OPENAPI_SUBMIT = "https://open.bohrium.com/openapi/v1/knowledge/file/submit"
+OPENAPI_MULTIPART = "https://open.bohrium.com/openapi/v2/knowledge/file/multipart"
+OPENAPI_SUBMIT = "https://open.bohrium.com/openapi/v2/knowledge/file/submit"
 
 
 def encode_uri_component(s: str) -> str:

@@ -11,8 +11,8 @@ description: "Search scholars and fetch scholar profile via open.bohrium.com. Us
 
 | 接口 | 方法 | 路径 | 用途 |
 |------|------|------|------|
-| 学者搜索 | POST | `/openapi/v1/paper-server/scholar/search` | 按姓名/机构/研究方向等条件检索 |
-| 学者详情 | GET | `/openapi/v1/paper-server/scholar/info?scholarId=xxx` | 根据 scholarId 获取完整画像 |
+| 学者搜索 | POST | `/openapi/v2/paper-server/scholar/search` | 按姓名/机构/研究方向等条件检索 |
+| 学者详情 | GET | `/openapi/v2/paper-server/scholar/info?scholarId=xxx` | 根据 scholarId 获取完整画像 |
 
 **典型用法：** 输入学者姓名 → 搜索候选列表 → 选中目标 `scholarId` → 拉取完整画像（发文量、引用、h-index、研究方向、教育/工作经历）。
 
@@ -65,7 +65,7 @@ if not AK:
         "under bohrium-scholar-search.env.BOHR_ACCESS_KEY."
     )
 
-BASE = "https://open.bohrium.com/openapi/v1/paper-server"
+BASE = "https://open.bohrium.com/openapi/v2/paper-server"
 HEADERS_JSON = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
 HEADERS = {"Authorization": f"Bearer {AK}"}
 ```
@@ -191,7 +191,7 @@ print("Work:", info.get("workExperienceZh") or info.get("workExperience"))
 
 ```bash
 AK="$BOHR_ACCESS_KEY"
-BASE="https://open.bohrium.com/openapi/v1/paper-server"
+BASE="https://open.bohrium.com/openapi/v2/paper-server"
 
 # Step 1: 学者搜索
 curl -s -X POST "$BASE/scholar/search" \
