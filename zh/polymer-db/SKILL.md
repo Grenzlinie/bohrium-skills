@@ -1,7 +1,7 @@
 ---
 name: polymer-db
-version: 1.0.0
-description: "高分子数据库检索：查询 Polymer-Data-Bank 中的聚合物数据，支持按 DOI、聚合物名称、性能指标等条件检索，返回结构、热性能、光学性能、力学性能等信息。当用户询问聚合物性质（Tg/Td/透光率/力学性能等）、查找特定论文中的聚合物数据、或需要按性能筛选聚合物时使用。"
+version: 2.0.1
+description: "高分子数据库检索：查询 Polymer-Data-Bank 中的聚合物数据（28万+条），支持按 DOI、聚合物名称、性能指标等条件检索，返回结构、热性能、光学性能、力学性能等信息。当用户询问聚合物性质（Tg/Td/透光率/力学性能等）、查找特定论文中的聚合物数据、或需要按性能筛选聚合物时使用。"
 ---
 
 # 高分子数据库检索 (Polymer-Data-Bank)
@@ -43,8 +43,23 @@ curl -s -X POST 'https://open.bohrium.com/openapi/v1/database/common_data/list' 
 | `page` | int | 是 | 页码，从 1 开始 |
 | `pageSize` | int | 是 | 每页条数，最大 5000 |
 | `filters` | object | 否 | 过滤条件（Filter 结构） |
-| `selectedFields` | []string | 否 | 只返回指定字段 |
+| `selectedFields` | []string | 否 | 只返回指定字段（推荐使用以减少响应体积） |
 | `orderBy` | []object | 否 | 排序 `{"field": "xxx", "order": "asc/desc"}` |
+
+### 响应结构
+
+接口返回的记录列表在 `data.list`，总候选数在 `data.count`。
+
+```json
+{
+  "data": {
+    "count": 123,
+    "list": [{ "polymer_name": "...", "GlassTransitionTemperature(Tg)(°C)": "455.0" }]
+  }
+}
+```
+
+**不要使用 `data.rows` 读取结果。** 如果 `data.count` 有值但 `data.list` 为空，先检查 `page`/`pageSize`、字段名、排序参数和响应结构，不要立刻判断为数据库无结果。
 
 ### Filter 结构
 
@@ -67,73 +82,171 @@ curl -s -X POST 'https://open.bohrium.com/openapi/v1/database/common_data/list' 
 - `groupOperator`: `"and"` | `"or"`
 - `operator`: `eq` / `neq` / `like` / `gt` / `gte` / `lt` / `lte` / `in` / `nin` / `between`
 
-**重要限制**：所有性能字段均为 **string 类型**（值如 `"71.3 °C"`、`"[255 °C,288 °C]"`），`gt`/`lt` 等操作符做字典序比较而非数值比较。数值范围筛选必须在客户端解析处理。
+## 字段名映射
 
-## 字段名映射（用户常用说法 → dataIndex）
+**重要说明**：
+
+1. 所有性能字段的值通常是纯数字或数字字符串，单位已编码在字段名中。例如 `GlassTransitionTemperature(Tg)(°C)` 的值为 `71.3` 或 `"71.3"`（不带单位字符串）。
+2. `gt`/`lt`/`gte`/`lte` 操作符可用于缩小候选集。例如 `{"field": "GlassTransitionTemperature(Tg)(°C)", "operator": "gt", "value": "350"}` 可请求 Tg > 350°C 的候选记录；返回后仍需本地 `float()` 二次校验。
+3. 数据库中每个性能字段存在**两种写法**（紧凑版和空格版），两者等价，推荐使用紧凑版（无空格）作为 `dataIndex`。
 
 ### 基本信息
-| 用户说法 | dataIndex | 示例值 |
-|---------|-----------|--------|
-| DOI | `doi` | `"10.1021/acs.macromol.9b02359"` |
-| 聚合物名 | `polymer_name` | `"PI"`, `"PU"` |
-| 聚合物类型 | `polymer_type` | `"Polyimide"` |
-| 单体组成/结构 | `components` | `"6FDA:O=C1OC...;ODA:Nc1ccc..."` |
-| 配比 | `feed_ratio_text` | `"DABz/m-BAPS = 1/1"` |
-| 配比类型 | `ratio_type` | `"mole"`, `"weight"` |
 
-### 热性能
-| 用户说法 | dataIndex | 附属字段 |
-|---------|-----------|---------|
-| Tg / 玻璃化转变温度 | `GlassTransitionTemperature(Tg)` | `test_method_GlassTransitionTemperature(Tg)`, `heating_rate_GlassTransitionTemperature(Tg)`, `atmosphere_GlassTransitionTemperature(Tg)` |
-| Td / 热分解温度 | `DecompositionTemperature(Td)` | `decomposition_criterion_DecompositionTemperature(Td)`, `atmosphere_DecompositionTemperature(Td)` |
-| Tm / 熔融温度 | `MeltingTemperature(Tm)` | `test_method_MeltingTemperature(Tm)` |
-| Tc / 结晶温度 | `CrystallizationTemperature(Tc)` | — |
-| CTE / 热膨胀系数 | `CoefficientofThermalExpansion(CTE)` | — |
-| 热导率 | `ThermalConductivity` | — |
+| 用户说法 | dataIndex | 数据类型 | 说明 |
+|---------|-----------|----------|------|
+| DOI | `doi` | str | 论文 DOI |
+| 聚合物名 | `polymer_name` | str | 如 `"PI"`, `"PU"` |
+| 聚合物类型 | `polymer_type` | str | 如 `"Polyimide"`, `"Polyurethane"` |
+| 配比描述 | `feed_ratio_text` | str | 原始配比文本 |
+| 配比数值 | `ratio_values_text` | str | 如 `"6FDA:DDM = 1.04:1.00"` |
+| 配比类型 | `ratio_type` | str | `"mole"` / `"weight"` |
+| 二胺配比 | `diamine_ratio` | str | 如 `"ODA:TBDS = 0.05:49.58"` |
+| 二酐配比 | `dianhydride_ratio` | str | 如 `"PMDA:6FDA = 9.83:39.31"` |
 
-### 光学性能
-| 用户说法 | dataIndex | 附属字段 |
-|---------|-----------|---------|
-| 透光率 / 透过率 | `Transmittance` | `wavelength_Transmittance`, `thickness_Transmittance` |
-| 折射率 | `RefractiveIndex(n)` | `wavelength_RefractiveIndex(n)` |
-| 黄色指数 | `YellowIndex(YI)/WhitenessIndex(WI)` | — |
-| 雾度 | `Haze` | — |
-| 双折射 | `Birefringence(Δn)` | — |
-| 截止波长 | `Cut-offWavelength(λ_cut)` | — |
-| 阿贝数 | `AbbeNumber(νd)` | — |
+### 单体结构（monomer_1 ~ monomer_19）
 
-### 力学性能
-| 用户说法 | dataIndex |
-|---------|-----------|
-| 拉伸强度 | `TensileStrength` |
-| 拉伸模量 / 杨氏模量 | `TensileModulus` |
-| 断裂伸长率 | `ElongationatBreak` |
-| 弯曲强度 | `FlexuralStrength` |
-| 弯曲模量 | `FlexuralModulus` |
-| 冲击强度 | `ImpactStrength` |
-| 剪切强度 | `ShearStrength` |
-| 邵氏硬度 | `ShoreHardness` |
+| dataIndex | 数据类型 | 说明 |
+|-----------|----------|------|
+| `monomer_N` | str | 第 N 个单体的缩写名（如 `"6FDA"`, `"ODA"`） |
+| `monomer_N_fullname` | str | 单体全名 |
+| `monomer_N_smiles` | smiles | 单体 SMILES 结构式 |
 
-### 电学性能
-| 用户说法 | dataIndex |
-|---------|-----------|
-| 介电常数 Dk | `DielectricConstant(Dk)` |
-| 介电损耗 Df | `DielectricLoss(Df/tanδ)` |
-| 击穿场强 | `BreakdownStrength` |
-| 体积电阻率 | `VolumeResistivity` |
-| 质子电导率 | `ProtonConductivity` |
+N 取值 1~19。大多数记录有 2~4 个单体。
 
 ### 分子量
-| 用户说法 | dataIndex |
-|---------|-----------|
-| 数均分子量 Mn | `mn_value` |
-| PDI / 分散度 | `pdi_value` |
+
+| 用户说法 | dataIndex | 数据类型 | 单位 |
+|---------|-----------|----------|------|
+| 数均分子量 Mn | `mn_value(g/mol)` | num | g/mol |
+| 重均分子量 Mw | `mw_value(g/mol)` | num | g/mol |
+| PDI / 分散度 | `pdi_value` | num | 无量纲 |
+
+### 热性能
+
+| 用户说法 | dataIndex | 数据量 |
+|---------|-----------|--------|
+| Tg / 玻璃化转变温度 | `GlassTransitionTemperature(Tg)(°C)` | ~100k |
+| Td / 热分解温度 | `DecompositionTemperature(Td)(°C)` | 大量 |
+| Tm / 熔融温度 | `MeltingTemperature(Tm)(°C)` | ~7k |
+| Tc / 结晶温度 | `CrystallizationTemperature(Tc)(°C)` | ~2.4k |
+| CTE / 热膨胀系数 | `CoefficientofThermalExpansion(CTE)(ppm/K)` | ~425 |
+| 热导率 | `ThermalConductivity(W/(m·K))` | ~1.7k |
+
+每个热性能字段有以下附属字段（前缀 + 性能名）：
+- `test_method_GlassTransitionTemperature(Tg)` — 测试方法（如 DSC, TGA, DMA）
+- `heating_rate_GlassTransitionTemperature(Tg)(°C/min)` — 升温速率
+- `atmosphere_GlassTransitionTemperature(Tg)` — 气氛（如 N2, Air）
+- `decomposition_criterion_DecompositionTemperature(Td)` — 分解标准（如 "5% weight loss"）
+- `test_conditions_GlassTransitionTemperature(Tg)` — 测试条件
+- `notes_GlassTransitionTemperature(Tg)` — 备注
+
+### 光学性能
+
+| 用户说法 | dataIndex | 数据量 |
+|---------|-----------|--------|
+| 透光率 / 透过率 | `Transmittance(%)` | ~11.7k |
+| 折射率 | `RefractiveIndex(n)(dimensionless)` | 有（schema 声明） |
+| 黄色指数 | `YellowIndex(YI)/WhitenessIndex(WI)(dimensionless)` | 有 |
+| 雾度 | `Haze(%)` | ~349 |
+| 双折射 | `Birefringence(Δn)(dimensionless)` | 有 |
+| 截止波长 | `Cut-offWavelength(λ_cut)(nm)` | ~1.4k |
+| 阿贝数 | `AbbeNumber(νd)(dimensionless)` | 有 |
+
+光学性能附属字段：
+- `wavelength_Transmittance(nm)` — 测试波长
+- `thickness_Transmittance` — 薄膜厚度（str）
+- `test_method_Transmittance` — 测试方法
+- `test_conditions_Transmittance` — 测试条件
+- `test_standard_Transmittance` — 测试标准
+- `notes_Transmittance` — 备注
+
+### 力学性能
+
+| 用户说法 | dataIndex | 数据量 |
+|---------|-----------|--------|
+| 拉伸强度 | `TensileStrength(MPa)` | ~19.9k |
+| 拉伸模量 / 杨氏模量 | `TensileModulus(GPa)` | ~14.4k |
+| 断裂伸长率 | `ElongationatBreak(%)` | ~7.8k |
+| 弯曲强度 | `FlexuralStrength(MPa)` | ~3.3k |
+| 弯曲模量 | `FlexuralModulus(GPa)` | ~2.2k |
+| 冲击强度 | `ImpactStrength(kJ/m²)` | ~3.0k |
+| 剪切强度 | `ShearStrength(MPa)` | ~6.8k |
+| 邵氏硬度 | `ShoreHardness` | ~813 |
+| 储能模量 | `StorageModulus(E'orG')(GPa)` | 有 |
+| 损耗模量 | `LossModulus(E''orG'')(GPa)` | 有 |
+| 剪切模量 | `ShearModulus(GPa)` | 有 |
+| 泊松比 | `Poisson'sRatio(dimensionless)` | 有 |
+| Tan Delta | `TanDelta(dimensionless)` | 有 |
+
+力学性能附属字段：
+- `temperature_TensileStrength(°C)` — 测试温度
+- `frequency_TensileStrength(Hz)` — 测试频率
+- `test_method_TensileStrength` — 测试方法
+- `test_standard_TensileStrength` — 测试标准
+- `test_conditions_TensileStrength` — 测试条件
+- `test_mode_TensileStrength` — 测试模式
+- `measurement_direction_TensileStrength` — 测量方向
+- `notes_TensileStrength` — 备注
+
+### 电学性能
+
+| 用户说法 | dataIndex | 数据量 |
+|---------|-----------|--------|
+| 介电常数 Dk | `DielectricConstant(Dk)(dimensionless)` | 有 |
+| 介电损耗 Df | `DielectricLoss(Df/tanδ)(dimensionless)` | 有 |
+| 击穿场强 | `BreakdownStrength(kV/mm)` | ~255 |
+| 体积电阻率 | `VolumeResistivity(Ω·cm)` | ~1.6k |
+| 表面电阻率 | `SurfaceResistivity(Ω/sq)` | 有 |
+| 电导率 | `ElectricalConductivity(S/cm)` | 有 |
+
+电学性能附属字段：
+- `frequency_DielectricConstant(Dk)(Hz)` — 测试频率
+- `temperature_DielectricConstant(Dk)(°C)` — 测试温度
+- `thickness_DielectricConstant(Dk)` — 厚度
+
+### 其他性能
+
+| 用户说法 | dataIndex | 数据量 |
+|---------|-----------|--------|
+| 密度 | `Density(g/cm³)` | 有 |
+| 吸水率 | `WaterAbsorption(%)` | ~6.3k |
+| 结晶度 | `Crystallinity(%)` | 有 |
+| 结晶度（类别） | `Crystallinity(category)` | str |
+| 溶解性 | `Solubility(category)` | str |
+| 溶剂吸收率 | `SolventUptake(%)` | 有 |
+| 特性粘度 | `IntrinsicViscosity(dL/g)` | 有 |
+| 动力学粘度 | `DynamicViscosity(Pa·s)` | 有 |
+| 熔体粘度 | `MeltViscosity(Pa·s)` | 有 |
+| 气体渗透率 | `GasPermeability(Barrer)` | 有 |
+| 气体分离选择性 | `GasSeparationSelectivity(dimensionless)` | 有 |
+
+### 合成工艺字段
+
+| dataIndex | 说明 |
+|-----------|------|
+| `Synthesis_Solvent` | 合成溶剂 |
+| `Synthesis_Solid_Content` | 固含量 |
+| `Synthesis_Reaction_Temperature` | 反应温度 |
+| `Synthesis_Reaction_Time` | 反应时间 |
+| `Synthesis_Atmosphere` | 反应气氛 |
+| `Solution_Viscosity` | 溶液粘度 |
+| `Coating_Method` | 涂覆方法 |
+| `Film_Thickness` | 成膜厚度 |
+| `Post_Processing_Type` | 后处理类型 |
+| `Post_Thermal_Temperature_Schedule` | 热处理温度程序 |
+
+### 系统字段（忽略，不展示给用户）
+
+- `_id`: MongoDB ObjectID
+- `a1b2c3d4e5_is_locked` / `a1b2c3d4e5_owner_id` / `a1b2c3d4e5_source` / `a1b2c3d4e5_status`
+- `authors`: 录入人信息
+- `createTime` / `updateTime`: 时间戳
 
 ## 执行策略
 
-### 精确查询（Q1 类型）
+### 精确查询（按 DOI / 聚合物名）
 
-用户问"某 DOI/某聚合物的性质"：直接查询，`selectedFields` 限定需要的字段。
+用户问"某 DOI / 某聚合物的性质"：直接用 `eq` 过滤，`selectedFields` 限定需要的字段。
 
 ```json
 {
@@ -144,76 +257,88 @@ curl -s -X POST 'https://open.bohrium.com/openapi/v1/database/common_data/list' 
     "type": 2, "groupOperator": "and",
     "sub": [{"type": 1, "field": "doi", "operator": "eq", "value": "10.1021/..."}]
   },
-  "selectedFields": ["polymer_name", "polymer_type", "GlassTransitionTemperature(Tg)", "DecompositionTemperature(Td)"]
+  "selectedFields": ["polymer_name", "polymer_type", "GlassTransitionTemperature(Tg)(°C)", "DecompositionTemperature(Td)(°C)", "monomer_1", "monomer_2", "monomer_3", "monomer_4"]
 }
 ```
 
-### 数值范围筛选（Q2 类型）
+**注意**：首次查某个 DOI 时，建议不限 `selectedFields`（或少限制），因为不确定该论文录入了哪些性能字段。根据返回字段再做后续精确查询。
 
-用户问"Tg > 350°C 的聚合物"：
+### 数值范围筛选（按性能值过滤）
 
-1. **不能**直接用 `gt` 操作符（字段是 string，字典序比较不准确）
-2. **正确做法**：用 `like` 操作符排除空值（`"value": ""`），设置 `pageSize: 5000`，拉取数据后客户端解析数值
+用户问"Tg > 350°C 的聚合物"：使用 `gt` 操作符缩小候选集，但**返回后必须把字段值转为数字并在本地二次校验**。普通查询只取第一页样例，不要自动全量分页。
+
+```json
+{
+  "tableAk": "123zl00",
+  "page": 1,
+  "pageSize": 50,
+  "filters": {
+    "type": 2, "groupOperator": "and",
+    "sub": [{"type": 1, "field": "GlassTransitionTemperature(Tg)(°C)", "operator": "gt", "value": "350"}]
+  },
+  "selectedFields": ["polymer_name", "polymer_type", "GlassTransitionTemperature(Tg)(°C)", "monomer_1", "monomer_2", "monomer_3", "monomer_4", "monomer_1_smiles", "monomer_2_smiles"]
+}
+```
+
+结果处理要点：
+
+1. 从 `data.list` 读取本页记录，从 `data.count` 读取服务端候选总数。
+2. 对每条记录执行 `float(record["GlassTransitionTemperature(Tg)(°C)"]) > 350` 这类本地校验。
+3. 如果本页混入不满足阈值的记录，把 `data.count` 表述为"服务端候选数"，不要称为"满足条件的精确总数"。
+4. 对"查询一下/有哪些/给我看看"这类普通请求，展示本页本地校验通过的代表记录和候选总数即可，并说明不是完整列表。
+5. 只有用户明确要求"全部/完整列表/统计分布/导出/尽可能全量"时，才分页拉取（page=2, 3, ...），并控制请求节奏，避免短时间大量并发。
+
+Python 解析模板：
 
 ```python
-import re
-
-def parse_value_celsius(val_str):
-    """解析带单位的温度字符串，统一转为 °C"""
-    if not val_str:
-        return None
-    nums = re.findall(r'[-+]?\d+\.?\d*', val_str)
-    if not nums:
-        return None
-    values = [float(n) for n in nums]
-    max_val = max(values)
-    if 'K' in val_str and '°C' not in val_str:
-        return max_val - 273.15
-    elif '°F' in val_str:
-        return (max_val - 32) * 5 / 9
-    return max_val
+data = response_json.get("data", {})
+candidate_count = data.get("count", 0)
+rows = data.get("list", [])
+matched = []
+for row in rows:
+    try:
+        value = float(row.get("GlassTransitionTemperature(Tg)(°C)", ""))
+    except (TypeError, ValueError):
+        continue
+    if value > 350:
+        matched.append(row)
 ```
 
-3. 筛选后做统计分析（类型分布、高频单体等）
+### 分析建议类（设计指导）
 
-### 分析建议类（Q3 类型）
+用户问"想合成某性能的聚合物，有什么建议"：
 
-用户问"想合成 XX 性能的聚合物，有什么建议"：
+1. 用范围过滤先拉取第一页候选记录，并做本地数值校验
+2. 若用户明确需要统计/设计建议，再分页拉取足够样本或全量候选
+3. 统计 `polymer_type` 分布，找出主流体系
+4. 统计 `monomer_1` ~ `monomer_4` 出现频次，找出高频单体
+5. 分析 SMILES 结构中的共同特征（芳环、含氟、脂环等）
+6. 结合高分子化学知识给出结构设计建议
 
-1. 先用 `like ""` 拉取有该性能数据的记录（最多 5000 条/页，可能需多页）
-2. 客户端解析数值，筛选满足条件的记录
-3. 统计 `polymer_type` 分布、`components` 中高频单体
-4. 基于数据规律给出结构设计建议
+### 组合筛选
 
-## 数据格式说明
+支持多条件 AND/OR 组合：
 
-### components 字段格式
+```json
+{
+  "filters": {
+    "type": 2, "groupOperator": "and",
+    "sub": [
+      {"type": 1, "field": "polymer_type", "operator": "eq", "value": "Polyimide"},
+      {"type": 1, "field": "Transmittance(%)", "operator": "gt", "value": "90"}
+    ]
+  }
+}
 ```
-单体名:SMILES;单体名:SMILES;...
-```
-例如：`6FDA:O=C1OC(=O)c2cc(...)ccc21;ODA:Nc1ccc(Oc2ccc(N)cc2)cc1`
 
-### 性能值格式（均为 string）
-- 单值：`"71.3 °C"`
-- 多值：`"[255 °C,288 °C]"`
-- 描述性：`"over 90 %"`, `"greater than 350 °C"`
-- 带误差：`"90.8% ± 0.6%"`
+## 关键行为说明
 
-### 系统字段（忽略）
-- `_id`: MongoDB ObjectID
-- `a1b2c3d4e5_is_locked`: 锁定标记
-- `a1b2c3d4e5_owner_id`: 数据所有者
-- `a1b2c3d4e5_source`: 数据来源
-- `a1b2c3d4e5_status`: 审核状态
-- `authors`: 录入人信息
-- `createTime` / `updateTime`: 时间戳
-
-## 注意事项
-
-1. **单位不统一**：同一字段内可能混合 °C、K、°F，必须做单位转换
-2. **字符串数值**：所有性能字段都是 string，数值比较必须客户端解析
-3. **多值字段**：一条记录的某个性能可能有多个值（数组格式如 `"[val1,val2]"`）
-4. **pageSize 上限**：最大 5000。数据量大时需分页（total count 在 `data.count`）
-5. **字段名含特殊字符**：如 `GlassTransitionTemperature(Tg)` 含括号，JSON key 直接使用
-6. **like 空字符串**：`"operator": "like", "value": ""` 可匹配所有非空记录
-7. **向用户展示结果**时，过滤掉系统字段（`a1b2c3d4e5_*`、`authors`），只展示有意义的数据
+1. **数值范围先服务端缩小、再本地校验**：性能字段通常是数字或数字字符串，`gt`/`lt`/`gte`/`lte` 可用于缩小候选集，但最终命中必须用 `float()` 校验。
+2. **字段名带单位**：字段名中直接包含单位（如 `(°C)`、`(%)`、`(MPa)`），值本身通常不带单位字符串。
+3. **响应字段**：记录列表是 `data.list`，不是 `data.rows`；总候选数是 `data.count`。
+4. **本地校验必做**：数值范围查询返回后必须 `float()` 二次过滤，避免把服务端候选数误报为精确命中数。
+5. **pageSize 上限 5000**：大数据量需分页，但普通问答默认 `pageSize=20~50`；只有明确要求全量/统计/导出时才用更大 pageSize 或分页。
+6. **两种字段名等价**：`GlassTransitionTemperature(Tg)(°C)` 和 `Glass Transition Temperature (Tg) (°C)` 均可用，推荐用紧凑版。
+7. **`like ""` 筛非空**：对 str 类型字段可用 `"operator": "like", "value": ""` 匹配所有非空记录。对 num 类型字段可能不适用，改用 `gt` + `"0"` 或直接不过滤该字段。
+8. **向用户展示结果时**：过滤掉系统字段（`a1b2c3d4e5_*`、`authors`、`_id`、时间戳），只展示有意义的数据。
+9. **API 有调用频率限制**：避免短时间内大量并发请求。如返回 count=0 且无错误码，可能是临时限流，稍后重试。
