@@ -16,28 +16,28 @@ description: "Parse PDF documents via Bohrium open API. Use when: user asks abou
 
 ## 认证配置
 
-ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
+BOHR_ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
 
 ```json
 "bohrium-pdf-parser": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-OpenClaw 会自动将 `env.ACCESS_KEY` 注入到运行环境。
+OpenClaw 会自动将 `env.BOHR_ACCESS_KEY` 注入到运行环境。
 
 ## 通用代码模板
 
 ```python
 import os, time, uuid, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/parse"
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 ```
 
@@ -131,7 +131,8 @@ task_token = str(uuid.uuid4())
 
 with open(pdf_path, "rb") as f:
     r = requests.post(
-        f"{BASE}/trigger-file-async?accessKey={AK}",
+        f"{BASE}/trigger-file-async",
+        headers=HEADERS,       # 不要设置 Content-Type；requests 会自动处理 multipart boundary
         files={"file": (pdf_path.name, f, "application/pdf")},
         data={
             "token": task_token,    # 必须：客户端生成的 UUID
@@ -152,7 +153,7 @@ token = r.json()["token"]
 
 > **关键点**：
 > - `token` 字段必填，传客户端生成的 UUID
-> - 认证使用 query param `?accessKey=AK`（multipart 请求中 header 认证可能失效）
+> - 认证使用 `Authorization: Bearer <BOHR_ACCESS_KEY>` header
 > - 不要设置 `Content-Type` header，让 requests 自动处理 multipart boundary
 > - form data 中所有值都是字符串（`"2"` 而非 `2`）
 
@@ -195,9 +196,9 @@ print(f"Status: {data['status']}, Content length: {len(data.get('content', ''))}
 ```python
 import os, time, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/parse"
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
 # 1. 提交
@@ -278,17 +279,18 @@ print(f"Content: {result['content'][:200]}")
 ## curl 示例
 
 ```bash
-AK="YOUR_ACCESS_KEY"
+AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com/openapi/v1/parse"
 
 # URL 提交
 curl -s -X POST "$BASE/trigger-url-async" \
   -H "Content-Type: application/json" \
-  -H "accessKey: $AK" \
+  -H "Authorization: Bearer $AK" \
   -d '{"url":"https://www.nature.com/articles/s41586-021-03819-2.pdf","sync":false,"textual":2,"table":2,"molecule":0,"chart":0,"figure":0,"expression":1,"equation":2,"pages":[0],"timeout":1800}'
 
-# 文件上传（注意 token 必填，认证用 query param）
-curl -s -X POST "$BASE/trigger-file-async?accessKey=$AK" \
+# 文件上传（注意 token 必填）
+curl -s -X POST "$BASE/trigger-file-async" \
+  -H "Authorization: Bearer $AK" \
   -F "file=@paper.pdf" \
   -F "token=$(uuidgen)" \
   -F "sync=false" -F "textual=2" -F "table=2" \
@@ -297,7 +299,7 @@ curl -s -X POST "$BASE/trigger-file-async?accessKey=$AK" \
 # 查询结果
 curl -s -X POST "$BASE/get-result" \
   -H "Content-Type: application/json" \
-  -H "accessKey: $AK" \
+  -H "Authorization: Bearer $AK" \
   -d '{"token":"YOUR_TOKEN","content":true,"objects":false,"pages_dict":true}'
 ```
 
@@ -308,8 +310,8 @@ curl -s -X POST "$BASE/get-result" \
 | 问题 | 原因 | 解决 |
 |------|------|------|
 | `Token is required` | 文件上传时未传 `token` 字段 | multipart 请求必须由客户端生成 UUID 作为 `token` 字段传入 |
-| 文件上传 401 | header 认证对 multipart 请求可能失效 | 改用 query param：`?accessKey=AK` |
-| `AccessKey is required` | 未传或传错 accessKey | Header 名为 `accessKey`（camelCase），或用 query param |
+| 文件上传 401 | 未传或传错鉴权信息 | 使用 `Authorization: Bearer $BOHR_ACCESS_KEY` |
+| `AccessKey is required` | 未传或传错鉴权信息 | 使用 `Authorization: Bearer $BOHR_ACCESS_KEY` |
 | URL 提交超时 | 服务端无法下载目标 PDF（如 arxiv 网络不通） | 换用其他可达的 PDF URL，或改用文件上传方式 |
 | `int_parsing` 错误 | 文件上传时 `pages` 传了 JSON 数组 | multipart form 中 `pages` 只能传单个整数 |
 | `status: undefined` | 异步任务排队中 | 等待后重新调用 `get-result`，建议间隔 3 秒轮询 |

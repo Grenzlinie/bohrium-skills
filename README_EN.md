@@ -24,7 +24,7 @@ Choose one based on your runtime environment:
 **Environment variable** (Claude Code / general):
 
 ```bash
-export ACCESS_KEY="your_access_key_here"
+export BOHR_ACCESS_KEY="your_access_key_here"
 ```
 
 **OpenClaw config** `~/.openclaw/openclaw.json`:
@@ -34,9 +34,9 @@ export ACCESS_KEY="your_access_key_here"
   "skills": {
     "<skill-name>": {
       "enabled": true,
-      "apiKey": "YOUR_ACCESS_KEY",
+      "apiKey": "YOUR_BOHR_ACCESS_KEY",
       "env": {
-        "ACCESS_KEY": "YOUR_ACCESS_KEY"
+        "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
       }
     }
   }
@@ -54,7 +54,7 @@ This repo is also a Claude Code plugin marketplace:
 /plugin install bohrium-skills@bohrium
 ```
 
-This installs 15 Bohrium skills (English versions).
+This installs 14 Bohrium skills (English versions).
 
 ---
 
@@ -100,22 +100,18 @@ bohrium-skill-hub/
 
 ## SKILL.md Format
 
-Each SKILL.md contains:
+Each SKILL.md contains at least:
 
 ```yaml
 ---
 name: skill-name
-version: 1.0.0
 description: "One-line description. Use when: ... NOT for: ..."
-metadata:
-  openclaw:
-    primaryEnv: ACCESS_KEY
 ---
 ```
 
-- **Frontmatter** — `name` + `description` (with use/exclusion scenarios) + `metadata.openclaw.primaryEnv` (declares required env var)
+- **Frontmatter** — `name` + `description` (with use/exclusion scenarios); optionally `version` and `metadata.openclaw.primaryEnv`
 - **Body** — Feature description, API endpoints, parameter tables, response fields, code examples, error handling
-- **Code examples** — Python `requests` style, using `os.environ.get("ACCESS_KEY")` to read credentials, never hardcoded
+- **Code examples** — Python `requests` style, preferring `os.environ.get("BOHR_ACCESS_KEY")`, never hardcoded
 
 ---
 

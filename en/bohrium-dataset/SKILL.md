@@ -21,10 +21,12 @@ Datasets solve common pain points:
 ```json
 "bohrium-dataset": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
-  "env": { "ACCESS_KEY": "YOUR_ACCESS_KEY" }
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
+  "env": { "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY" }
 }
 ```
+
+Only configure `BOHR_ACCESS_KEY` for this skill. Helper scripts handle any legacy CLI compatibility internally.
 
 ## Prerequisites: Install bohr CLI
 
@@ -156,9 +158,9 @@ bohr dataset delete 138201 108601       # Batch
 ```python
 import os, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/ds"
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
 # Dataset details

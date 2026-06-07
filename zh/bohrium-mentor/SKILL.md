@@ -46,14 +46,14 @@ description: "AI science tutor powered by Bohrium's adk_science_navigator agent.
 ```json
 "bohrium-mentor": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取。
+BOHR_ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取。
 
 ## API 接口
 
@@ -65,7 +65,7 @@ ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取。
 | 2 | SSE 流 | `GET /v1/sigma-search/api/v3/sse/ai_search/v1/{sessionId}/stream` | 实时接收推理结果 |
 | 3 | 会话详情 | `GET /v1/sigma-search/api/v4/ai_search/sessions/{sessionId}` | 断线恢复/历史回显 |
 
-鉴权方式：URL query 参数 `accessKey=<KEY>`。
+鉴权方式：`Authorization: Bearer <BOHR_ACCESS_KEY>` 请求头。
 
 ## 输入参数
 
@@ -128,10 +128,10 @@ import requests
 
 # ─── 配置 ───────────────────────────────────────────────
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 if not AK:
-    print("ERROR: ACCESS_KEY 未配置。")
-    print("请在 ~/.openclaw/openclaw.json 中配置 bohrium-mentor.env.ACCESS_KEY")
+    print("ERROR: BOHR_ACCESS_KEY 未配置。")
+    print("请在 ~/.openclaw/openclaw.json 中配置 bohrium-mentor.env.BOHR_ACCESS_KEY")
     sys.exit(1)
 
 BASE = "https://open.bohrium.com/openapi/v1/sigma-search"
@@ -209,9 +209,9 @@ def create_session(query, discipline, journal_type, model):
         }
     }
 
-    url = f"{BASE}/api/v4/ai_search/sessions?accessKey={AK}"
+    url = f"{BASE}/api/v4/ai_search/sessions"
     try:
-        r = requests.post(url, json=payload, timeout=30)
+        r = requests.post(url, headers={"Authorization": f"Bearer {AK}"}, json=payload, timeout=30)
         r.raise_for_status()
     except requests.exceptions.Timeout:
         print("  错误：创建会话超时")
@@ -236,12 +236,12 @@ def subscribe_sse(session_id):
     """订阅 SSE 流，合并事件，返回最终状态。"""
     print(f"\n[步骤 2/2] 订阅 SSE 流，等待推理结果...")
 
-    url = f"{BASE}/api/v3/sse/ai_search/v1/{session_id}/stream?accessKey={AK}"
+    url = f"{BASE}/api/v3/sse/ai_search/v1/{session_id}/stream"
 
     state = {}  # {answerId: {layout: {key: accumulated_text}}}
 
     try:
-        with requests.get(url, stream=True, timeout=180) as r:
+        with requests.get(url, headers={"Authorization": f"Bearer {AK}"}, stream=True, timeout=180) as r:
             r.raise_for_status()
             buf = b""
             event_count = 0
@@ -372,7 +372,7 @@ if __name__ == "__main__":
 ### 示例 1：基因治疗进展
 
 ```bash
-export ACCESS_KEY="your_key"
+export BOHR_ACCESS_KEY="your_key"
 python3 science_navigator.py "CRISPR-Cas9 近三年在基因治疗领域的最新进展"
 ```
 

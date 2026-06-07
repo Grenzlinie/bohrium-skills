@@ -7,11 +7,11 @@ Upload a local file into Bohrium Knowledge Base via OpenAPI multipart + binary u
 Flow (confirmed):
 0) (Optional) POST https://open.bohrium.com/openapi/v1/knowledge/knowledge_base/create
    body: {"knowledgeBaseName": "Daily Paper-YYMMDD", "introduction": "...", "cover": "", "privilege": 1}
-   header: accessKey
+   header: Authorization: Bearer <BOHR_ACCESS_KEY>
 
 1) GET https://open.bohrium.com/openapi/v1/knowledge/file/multipart
    query: fileName, md5, parentId(nodeId), size
-   header: accessKey
+   header: Authorization: Bearer <BOHR_ACCESS_KEY>
    -> returns data.host, data.path, data.token
 
 2) POST {host}/api/upload/binary
@@ -46,10 +46,10 @@ from pathlib import Path
 
 
 def load_access_key_from_openclaw_config() -> str:
-    """Fallback: read ACCESS_KEY from ~/.openclaw/openclaw.json
+    """Fallback: read BOHR_ACCESS_KEY from ~/.openclaw/openclaw.json
 
     Expected path:
-      skills.entries.bohrium-knowledge-file-upload.env.ACCESS_KEY
+      skills.entries.bohrium-knowledge-file-upload.env.BOHR_ACCESS_KEY
 
     Returns empty string if not found.
     """
@@ -59,11 +59,15 @@ def load_access_key_from_openclaw_config() -> str:
         if not cfg_path.exists():
             return ""
         cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
-        return (
-            (((cfg.get("skills") or {}).get("entries") or {}).get("bohrium-knowledge-file-upload") or {})
-            .get("env")
+        skills = cfg.get("skills") or {}
+        entries = skills.get("entries") or {}
+        env = (
+            entries.get("bohrium-knowledge-file-upload")
+            or entries.get("bohrium-knowledge-base")
+            or skills.get("bohrium-knowledge-base")
             or {}
-        ).get("ACCESS_KEY", "")
+        ).get("env") or {}
+        return env.get("BOHR_ACCESS_KEY", "")
     except Exception:
         return ""
 
@@ -136,7 +140,7 @@ def get_multipart_info(access_key: str, file_name: str, md5: str, parent_id: int
         "size": size,
     })
     url = f"{OPENAPI_MULTIPART}?{qs}"
-    data = _http_json("GET", url, headers={"accessKey": access_key}, timeout=60)
+    data = _http_json("GET", url, headers={"Authorization": f"Bearer {access_key}"}, timeout=60)
     if data.get("code") != 0:
         raise RuntimeError(f"multipart failed: {data}")
     d = data.get("data") or {}
@@ -194,7 +198,7 @@ def submit_file(access_key: str, file_name: str, md5: str, parent_id: int, size:
         "POST",
         OPENAPI_SUBMIT,
         headers={
-            "accessKey": access_key,
+            "Authorization": f"Bearer {access_key}",
             "Content-Type": "application/json",
         },
         data=body,
@@ -206,7 +210,7 @@ def submit_file(access_key: str, file_name: str, md5: str, parent_id: int, size:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Upload file to Bohrium Knowledge Base via multipart flow")
     p.add_argument("local_file", help="Local file path")
-    p.add_argument("--access-key", default=os.environ.get("ACCESS_KEY", ""), help="Bohrium OpenAPI accessKey (or set ACCESS_KEY env)")
+    p.add_argument("--bohr-access-key", "--access-key", dest="access_key", default=os.environ.get("BOHR_ACCESS_KEY", ""), help="Bohrium OpenAPI key (or set BOHR_ACCESS_KEY env)")
     p.add_argument("--parent-id", type=int, required=True, help="Knowledge base nodeId (parentId in multipart API)")
     p.add_argument("--file-name", default="", help="Override fileName (default: basename of local file)")
     p.add_argument("--md5", default="", help="Override md5 (default: computed from file)")
@@ -221,7 +225,7 @@ def main(argv: list[str] | None = None) -> int:
         access_key = load_access_key_from_openclaw_config().strip()
     if not access_key:
         print(
-            "ERROR: accessKey missing. Provide --access-key or set ACCESS_KEY env, or configure skills.entries.bohrium-knowledge-file-upload.env.ACCESS_KEY in ~/.openclaw/openclaw.json.",
+            "ERROR: BOHR_ACCESS_KEY missing. Provide --bohr-access-key or set BOHR_ACCESS_KEY env, or configure skills.entries.bohrium-knowledge-file-upload.env.BOHR_ACCESS_KEY in ~/.openclaw/openclaw.json.",
             file=sys.stderr,
         )
         return 2

@@ -16,10 +16,12 @@ Since 2023, Bohrium no longer supports VM jobs — container images are required
 ```json
 "bohrium-image": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
-  "env": { "ACCESS_KEY": "YOUR_ACCESS_KEY" }
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
+  "env": { "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY" }
 }
 ```
+
+Only configure `BOHR_ACCESS_KEY` for this skill. Helper scripts handle any legacy CLI compatibility internally.
 
 ## Prerequisites: Install bohr CLI
 
@@ -150,8 +152,8 @@ bohr image delete 121510 121395         # Batch
 
 ```python
 import os, requests
-AK = os.environ.get("ACCESS_KEY", "")
-HEADERS = {"accessKey": AK}
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
+HEADERS = {"Authorization": f"Bearer {AK}"}
 
 r = requests.get("https://open.bohrium.com/openapi/v2/image/public/version/search",
     headers=HEADERS, params={"keyword": "deepmd", "page": 1, "pageSize": 5})

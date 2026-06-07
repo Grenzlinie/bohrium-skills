@@ -1,57 +1,37 @@
 ---
 name: bohrium-node
-description: "Manage Bohrium dev nodes (containers/VMs) via bohr CLI or open.bohrium.com API. Use when: user asks about creating/starting/stopping/deleting dev machines on Bohrium, checking available resources and pricing, or managing node lifecycle. NOT for: job submission, image management, or project management."
+description: "Manage Bohrium dev nodes (containers/VMs) via open.bohrium.com API. Use when: user asks about creating/querying dev machines on Bohrium, checking available resources and pricing, or managing node lifecycle. NOT for: job submission, image management, or project management."
 ---
 
 # SKILL: Bohrium 开发机 (Node) 管理
 
 ## 概述
 
-管理 Bohrium 平台的开发机（容器/虚拟机节点）。**优先使用 `bohr` CLI**，仅在 CLI 不支持的操作时回退到 API。
+管理 Bohrium 平台的开发机（容器/虚拟机节点），通过 OpenAPI 完成查询和自动化操作。
 
 开发机用于数据准备、编译调试、结果处理等场景，支持 Web Shell 和 SSH 两种连接方式。
 
 ## 认证配置
 
-ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
+BOHR_ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
 
 ```json
 "bohrium-node": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-OpenClaw 会自动将 `env.ACCESS_KEY` 注入到运行环境。`bohr` CLI 通过 `ACCESS_KEY` 环境变量认证。
-
-## 前置条件：安装 bohr CLI
-
-```bash
-# macOS
-/bin/bash -c "$(curl -fsSL https://dp-public.oss-cn-beijing.aliyuncs.com/bohrctl/1.0.0/install_bohr_mac_curl.sh)"
-
-# Linux
-/bin/bash -c "$(curl -fsSL https://dp-public.oss-cn-beijing.aliyuncs.com/bohrctl/1.0.0/install_bohr_linux_curl.sh)"
-
-source ~/.bashrc  # 或 source ~/.zshrc
-export PATH="$HOME/.bohrium:$PATH"
-```
-
----
+OpenClaw 会自动将 `env.BOHR_ACCESS_KEY` 注入到运行环境。Skill 只需要配置 `BOHR_ACCESS_KEY`；兼容旧 CLI 所需的映射由辅助脚本内部处理。
 
 ## 列出节点
 
 ```bash
-bohr node list                  # 所有节点（表格）
-bohr node list --json           # JSON 格式
-bohr node list -s               # 仅运行中
-bohr node list -p               # 仅已暂停
-bohr node list -d               # 仅等待中
-bohr node list -w               # 仅 waiting
-bohr node list -q               # 仅显示 ID 和名称
+python node_manager.py list
+python node_manager.py list --page 1 --page-size 20
 ```
 
 **JSON 输出字段：**
@@ -165,14 +145,14 @@ bohr node delete 1431145        # 删除节点（不可逆）
 
 ## API 补充（CLI 不支持的操作）
 
-以下操作 bohr CLI 不覆盖，需通过 API 完成：
+以下操作可通过 API 完成：
 
 ```python
 import os, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/node"
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
 # ── 程序化创建节点（非交互式） ──
@@ -244,7 +224,7 @@ requests.post(f"{BASE}/ds/bind", headers=HEADERS_JSON,
 | 问题 | 原因 | 解决 |
 |------|------|------|
 | `There is no resource for the selected machine` | 所选规格暂无库存 | 换一个规格或稍后重试 |
-| `record not found` | machineId 不存在或已删除 | 先通过 `bohr node list --json` 确认有效 ID |
+| `record not found` | machineId 不存在或已删除 | 先通过 `python node_manager.py list` 确认有效 ID |
 | 重启失败 | 节点未处于 stopped 状态 | 先 `bohr node stop`，等变为 Paused 再用 API 重启 |
 | `nodeId` vs `machineId` | 列表返回两个 ID 字段 | CLI 用 `nodeId`；API 详情/操作用 `machineId`；数据集接口用 `nodeId` |
 | SSH 连接失败 | 镜像不含 SSH 组件 | DockerHub 公共镜像通常无 SSH，需手动安装 |

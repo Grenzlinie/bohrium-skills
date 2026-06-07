@@ -24,7 +24,7 @@ Bohrium 平台 AI 技能集合，为 [OpenClaw](https://github.com/openclaw) 和
 **环境变量**（Claude Code / 通用）：
 
 ```bash
-export ACCESS_KEY="your_access_key_here"
+export BOHR_ACCESS_KEY="your_access_key_here"
 ```
 
 **OpenClaw 配置文件** `~/.openclaw/openclaw.json`：
@@ -34,9 +34,9 @@ export ACCESS_KEY="your_access_key_here"
   "skills": {
     "<skill-name>": {
       "enabled": true,
-      "apiKey": "YOUR_ACCESS_KEY",
+      "apiKey": "YOUR_BOHR_ACCESS_KEY",
       "env": {
-        "ACCESS_KEY": "YOUR_ACCESS_KEY"
+        "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
       }
     }
   }
@@ -54,7 +54,7 @@ export ACCESS_KEY="your_access_key_here"
 /plugin install bohrium-skills@bohrium
 ```
 
-装完会得到 15 个 Bohrium skill（英文版）。
+装完会得到 14 个 Bohrium skill（英文版）。
 
 ---
 
@@ -100,22 +100,18 @@ bohrium-skill-hub/
 
 ## SKILL.md 格式规范
 
-每个 SKILL.md 包含：
+每个 SKILL.md 至少包含：
 
 ```yaml
 ---
 name: skill-name
-version: 1.0.0
 description: "一行描述。Use when: ... NOT for: ..."
-metadata:
-  openclaw:
-    primaryEnv: ACCESS_KEY
 ---
 ```
 
-- **Frontmatter** — `name` + `description`（含使用场景和排除场景）+ `metadata.openclaw.primaryEnv`（声明所需环境变量）
+- **Frontmatter** — `name` + `description`（含使用场景和排除场景）；可选添加 `version`、`metadata.openclaw.primaryEnv`
 - **正文** — 功能说明、API 端点、参数表、返回字段、代码示例、错误处理
-- **代码示例** — 使用 Python `requests` 风格，通过 `os.environ.get("ACCESS_KEY")` 读取密钥，不硬编码
+- **代码示例** — 使用 Python `requests` 风格，优先通过 `os.environ.get("BOHR_ACCESS_KEY")` 读取密钥，不硬编码
 
 ---
 

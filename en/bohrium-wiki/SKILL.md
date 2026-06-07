@@ -27,9 +27,9 @@ Access **Bohrium SciencePedia** through the `/v1/literature-sage/wiki_v2/*` endp
 ```json
 "bohrium-wiki": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
@@ -39,9 +39,9 @@ Access **Bohrium SciencePedia** through the `/v1/literature-sage/wiki_v2/*` endp
 ```python
 import os, requests
 
-AK = os.environ["ACCESS_KEY"]
+AK = os.environ["BOHR_ACCESS_KEY"]
 BASE = "https://open.bohrium.com/openapi/v1/literature-sage/wiki_v2"
-H = {"accessKey": AK, "Content-Type": "application/json"}
+H = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
 
 # Optional global defaults
 DEFAULTS = {"language": "en-US", "style": "Feynman"}
@@ -68,7 +68,7 @@ DEFAULTS = {"language": "en-US", "style": "Feynman"}
 ## 1. Info — `info`
 
 ```python
-r = requests.get(f"{BASE}/info", headers={"accessKey": AK})
+r = requests.get(f"{BASE}/info", headers={"Authorization": f"Bearer {AK}"})
 print(r.json())
 ```
 
@@ -161,12 +161,12 @@ print(doc.get("main_content", "")[:2000])
 ## curl example
 
 ```bash
-AK="YOUR_ACCESS_KEY"
+AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com/openapi/v1/literature-sage/wiki_v2"
 
 # Search entries by keyword
 curl -s -X POST "$BASE/search_index_name" \
-  -H "accessKey: $AK" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
   -d '{"name":"graphene","node_types":["field"],"style":"Feynman"}' \
   | jq '.wiki_indices[] | {node_name, node_type, node_id}'
 ```

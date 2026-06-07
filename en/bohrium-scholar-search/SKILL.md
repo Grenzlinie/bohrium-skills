@@ -20,28 +20,28 @@ Query scholar information via the Bohrium OpenAPI gateway (`open.bohrium.com`). 
 
 ## Authentication
 
-`ACCESS_KEY` is read from the OpenClaw config `~/.openclaw/openclaw.json`:
+`BOHR_ACCESS_KEY` is read from the OpenClaw config `~/.openclaw/openclaw.json`:
 
 ```json
 "bohrium-scholar-search": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-OpenClaw automatically injects `env.ACCESS_KEY` into the runtime environment.
+OpenClaw automatically injects `env.BOHR_ACCESS_KEY` into the runtime environment.
 
 ### Runtime Resolution
 
 ```
-Read os.environ["ACCESS_KEY"]
+Read os.environ["BOHR_ACCESS_KEY"]
   ├─ Non-empty → use directly
   └─ Empty     → prompt the user:
-                 "ACCESS_KEY is not configured in OpenClaw. Please set
-                  bohrium-scholar-search.env.ACCESS_KEY in ~/.openclaw/openclaw.json
+                 "BOHR_ACCESS_KEY is not configured in OpenClaw. Please set
+                  bohrium-scholar-search.env.BOHR_ACCESS_KEY in ~/.openclaw/openclaw.json
                   with the AccessKey obtained from the user settings page at
                   https://bohrium.dp.tech, then restart the OpenClaw session."
 ```
@@ -52,23 +52,23 @@ Read os.environ["ACCESS_KEY"]
 
 If the API returns `Invalid AccessKey` (code 2000) or HTTP 401:
 1. The key configured in OpenClaw is invalid or expired.
-2. Prompt the user: "Your AccessKey is invalid. Please update `bohrium-scholar-search.env.ACCESS_KEY` in `~/.openclaw/openclaw.json` and restart the OpenClaw session."
+2. Prompt the user: "Your BOHR_ACCESS_KEY is invalid. Please update `bohrium-scholar-search.env.BOHR_ACCESS_KEY` in `~/.openclaw/openclaw.json` and restart the OpenClaw session."
 
 ## Common Code Template
 
 ```python
 import os, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 if not AK:
     raise RuntimeError(
-        "ACCESS_KEY not found. Please configure it in ~/.openclaw/openclaw.json "
-        "under bohrium-scholar-search.env.ACCESS_KEY."
+        "BOHR_ACCESS_KEY not found. Please configure it in ~/.openclaw/openclaw.json "
+        "under bohrium-scholar-search.env.BOHR_ACCESS_KEY."
     )
 
 BASE = "https://open.bohrium.com/openapi/v1/paper-server"
-HEADERS_JSON = {"accessKey": AK, "Content-Type": "application/json"}
-HEADERS = {"accessKey": AK}
+HEADERS_JSON = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 ```
 
 ---
@@ -191,18 +191,18 @@ If multiple candidates are returned, first present a summary table for the user 
 ## curl Examples
 
 ```bash
-AK="$ACCESS_KEY"
+AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com/openapi/v1/paper-server"
 
 # Step 1: Scholar search
 curl -s -X POST "$BASE/scholar/search" \
-  -H "accessKey: $AK" \
+  -H "Authorization: Bearer $AK" \
   -H "Content-Type: application/json" \
   -d '{"name":"Yann LeCun","page":1,"pageSize":3}'
 
 # Step 2: Fetch profile
 curl -s "$BASE/scholar/info?scholarId=RETURNED_ID" \
-  -H "accessKey: $AK"
+  -H "Authorization: Bearer $AK"
 ```
 
 ---
@@ -211,7 +211,7 @@ curl -s "$BASE/scholar/info?scholarId=RETURNED_ID" \
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| `ACCESS_KEY` is empty | OpenClaw did not inject the env var | Verify `bohrium-scholar-search.env.ACCESS_KEY` in `~/.openclaw/openclaw.json` |
+| `BOHR_ACCESS_KEY` is empty | OpenClaw did not inject the env var | Verify `bohrium-scholar-search.env.BOHR_ACCESS_KEY` in `~/.openclaw/openclaw.json` |
 | `Invalid AccessKey` / 401 | Key expired or incorrect | Update the AccessKey in `~/.openclaw/openclaw.json` and restart the session |
 | Empty search result | 1) A 24-char no-space string is treated as an internal ID; 2) upstream per-user rate limiting | Use a natural name rather than an ID; retry later |
 | Info endpoint parameter error | Missing `scholarId` | Call the search endpoint first and take `data.items[].scholarId` |

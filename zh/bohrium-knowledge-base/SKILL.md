@@ -13,28 +13,28 @@ description: "Manage Bohrium knowledge bases via open.bohrium.com API. Use when:
 
 ## 认证配置
 
-ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
+BOHR_ACCESS_KEY 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
 
 ```json
 "bohrium-knowledge-base": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-OpenClaw 会自动将 `env.ACCESS_KEY` 注入到运行环境。
+OpenClaw 会自动将 `env.BOHR_ACCESS_KEY` 注入到运行环境。
 
 ## 路由映射
 
 ```
 外部调用: GET/POST https://open.bohrium.com/openapi/v1/knowledge/{path}
-         Header: accessKey: YOUR_ACCESS_KEY
+         Header: Authorization: Bearer $BOHR_ACCESS_KEY
 
 网关转发: → literature-sage.bohrium.com/api/v1/{path}
-         Header: X-User-Id, X-Org-Id (由 accessKey 自动转换)
+         Header: X-User-Id, X-Org-Id (由 BOHR_ACCESS_KEY 自动转换)
 ```
 
 ## 通用代码模板
@@ -42,9 +42,9 @@ OpenClaw 会自动将 `env.ACCESS_KEY` 注入到运行环境。
 ```python
 import os, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/knowledge"
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 ```
 
@@ -974,7 +974,7 @@ r = requests.get(f"{BASE}/account/user_knowledge_base_role", headers=HEADERS,
 | 问题 | 原因 | 解决 |
 |------|------|------|
 | `code` 非 0 | API 调用错误 | 检查返回的 `error.msg` 或 `message` 字段获取具体错误信息 |
-| 401 Unauthorized | accessKey 无效或过期 | 确认 ACCESS_KEY 正确 |
+| 401 Unauthorized | 鉴权无效或过期 | 确认 BOHR_ACCESS_KEY 正确 |
 | 找不到知识库 | 使用了错误的 ID | `nodesId`（节点 ID）和 `id`（知识库 ID）是不同概念；权限/文件夹端点统一用 `nodesId`，列表端点也会同时返回二者 |
 | 404 page not found | 调用了 `/v2/*` 路径 | 网关只转发到 `/api/v1/*`；本文档中的所有示例均使用 v1 路径，可正常使用 |
 | `code=230606 keywords is required` | `recall/hybrid` 的 `keywords` 为空 | 至少传一个 `keyword: weight` 键值对 |

@@ -39,9 +39,9 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com. Use when: user a
 ```json
 "bohrium-lkm": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
@@ -51,9 +51,9 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com. Use when: user a
 ```python
 import os, requests
 
-AK = os.environ["ACCESS_KEY"]
+AK = os.environ["BOHR_ACCESS_KEY"]
 BASE = "https://open.bohrium.com/openapi/v1/lkm"
-H = {"accessKey": AK, "Content-Type": "application/json"}
+H = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
 ```
 
 ---
@@ -184,30 +184,30 @@ for paper in data.get("data", []):
 ## curl 示例
 
 ```bash
-AK="YOUR_ACCESS_KEY"
+AK="$BOHR_ACCESS_KEY"
 
 # 知识图谱搜索
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/search" \
-  -H "accessKey: $AK" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
   -d '{"query":"lithium battery degradation mechanism","limit":10}' | jq .
 
 # 论断匹配
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/claims/match" \
-  -H "accessKey: $AK" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
   -d '{"text":"MoS2 is a promising catalyst for hydrogen evolution","limit":5}' | jq .
 
 # 证据链
 curl -s -X GET "https://open.bohrium.com/openapi/v1/lkm/claims/abc123/evidence" \
-  -H "accessKey: $AK" | jq .
+  -H "Authorization: Bearer $AK" | jq .
 
 # 变量批量查询（ID 从 search/claims 结果获取）
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/variables/batch" \
-  -H "accessKey: $AK" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
   -d '{"ids":["gcn_b2bf079b541a4fa0","gcn_5cecd02c3d8a4e61"]}' | jq .
 
 # 批量 OCR
 curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/papers/ocr/batch" \
-  -H "accessKey: $AK" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
   -d '{"paper_ids":["doi:10.1038/s41586-021-03819-2"]}' | jq .
 ```
 

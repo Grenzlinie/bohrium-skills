@@ -16,28 +16,28 @@ Parse PDF documents using the `open.bohrium.com` PDF parsing service. Extract te
 
 ## Authentication
 
-ACCESS_KEY is read from the OpenClaw config `~/.openclaw/openclaw.json`:
+BOHR_ACCESS_KEY is read from the OpenClaw config `~/.openclaw/openclaw.json`:
 
 ```json
 "bohrium-pdf-parser": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY"
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
   }
 }
 ```
 
-OpenClaw automatically injects `env.ACCESS_KEY` into the runtime.
+OpenClaw automatically injects `env.BOHR_ACCESS_KEY` into the runtime.
 
 ## Common Code Template
 
 ```python
 import os, time, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/parse"
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 ```
 
@@ -153,9 +153,9 @@ print(f"Status: {data['status']}, Content length: {len(data.get('content', ''))}
 ```python
 import os, time, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/parse"
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
 # 1. Submit
@@ -253,18 +253,18 @@ print(f"Content: {result['content'][:200]}")
 ## curl Examples
 
 ```bash
-AK="YOUR_ACCESS_KEY"
+AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com/openapi/v1/parse"
 
 # URL submission
 curl -s -X POST "$BASE/trigger-url-async" \
   -H "Content-Type: application/json" \
-  -H "accessKey: $AK" \
+  -H "Authorization: Bearer $AK" \
   -d '{"url":"https://arxiv.org/pdf/2107.06922","sync":false,"textual":true,"table":true,"molecule":false,"chart":false,"figure":false,"expression":true,"equation":true,"pages":[0],"timeout":1800}'
 
 # File upload
 curl -s -X POST "$BASE/trigger-file-async" \
-  -H "accessKey: $AK" \
+  -H "Authorization: Bearer $AK" \
   -F "file=@paper.pdf" \
   -F "sync=false" -F "textual=true" -F "table=true" \
   -F "pages=0"
@@ -272,7 +272,7 @@ curl -s -X POST "$BASE/trigger-file-async" \
 # Query result
 curl -s -X POST "$BASE/get-result" \
   -H "Content-Type: application/json" \
-  -H "accessKey: $AK" \
+  -H "Authorization: Bearer $AK" \
   -d '{"token":"YOUR_TOKEN","content":true,"objects":false,"pages_dict":true}'
 ```
 
@@ -282,7 +282,7 @@ curl -s -X POST "$BASE/get-result" \
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| `AccessKey is required` | Missing or incorrect accessKey | Header name is `accessKey` (case-sensitive), not `Authorization: Bearer` |
+| `AccessKey is required` | Missing or incorrect auth | Use `Authorization: Bearer $BOHR_ACCESS_KEY` |
 | `int_parsing` error | `pages` sent as JSON array in file upload | Use a single integer for `pages` in multipart form |
 | `status: undefined` | Async task not yet complete | Poll `get-result` again; recommended interval: 2 seconds |
 | Connection timeout | Domain/network issue | Use `open.bohrium.com`; test connectivity via `curl -I https://open.bohrium.com/openapi` |

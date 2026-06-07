@@ -1,13 +1,13 @@
 ---
 name: bohrium-node
-description: "Manage Bohrium dev nodes (containers/VMs) via bohr CLI or open.bohrium.com API. Use when: user asks about creating/starting/stopping/deleting dev machines on Bohrium, checking available resources and pricing, or managing node lifecycle. NOT for: job submission, image management, or project management."
+description: "Manage Bohrium dev nodes (containers/VMs) via open.bohrium.com API. Use when: user asks about creating/querying dev machines on Bohrium, checking available resources and pricing, or managing node lifecycle. NOT for: job submission, image management, or project management."
 ---
 
 # SKILL: Bohrium Dev Node Management
 
 ## Overview
 
-Manage dev nodes (container/VM instances) on the Bohrium platform. **Prefer `bohr` CLI**; fall back to the API for unsupported operations.
+Manage dev nodes (container/VM instances) on the Bohrium platform through OpenAPI.
 
 Dev nodes are used for data preparation, compilation, debugging, and post-processing. They support Web Shell and SSH connections.
 
@@ -16,33 +16,18 @@ Dev nodes are used for data preparation, compilation, debugging, and post-proces
 ```json
 "bohrium-node": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
-  "env": { "ACCESS_KEY": "YOUR_ACCESS_KEY" }
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
+  "env": { "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY" }
 }
 ```
 
-## Prerequisites: Install bohr CLI
-
-```bash
-# macOS
-/bin/bash -c "$(curl -fsSL https://dp-public.oss-cn-beijing.aliyuncs.com/bohrctl/1.0.0/install_bohr_mac_curl.sh)"
-# Linux
-/bin/bash -c "$(curl -fsSL https://dp-public.oss-cn-beijing.aliyuncs.com/bohrctl/1.0.0/install_bohr_linux_curl.sh)"
-source ~/.bashrc && export PATH="$HOME/.bohrium:$PATH"
-```
-
----
+Only configure `BOHR_ACCESS_KEY` for this skill. Helper scripts handle any legacy CLI compatibility internally.
 
 ## List Nodes
 
 ```bash
-bohr node list                  # All nodes (table)
-bohr node list --json           # JSON
-bohr node list -s               # Running only
-bohr node list -p               # Paused only
-bohr node list -d               # Pending only
-bohr node list -w               # Waiting only
-bohr node list -q               # ID and name only
+python node_manager.py list
+python node_manager.py list --page 1 --page-size 20
 ```
 
 **JSON fields:** `nodeId`, `nodeName`, `status` (Started/Paused/Pending/Waiting), `cpu`/`memory`/`gpu`, `ip`, `imageName`, `cost`
@@ -128,14 +113,14 @@ Mount datasets when creating a container node; access via path (e.g. `/bohr/my-d
 
 ---
 
-## API Supplement (CLI Unsupported)
+## API Supplement
 
 ```python
 import os, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1/node"
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
 # Programmatic node creation (non-interactive)
@@ -202,7 +187,7 @@ requests.post(f"{BASE}/ds/bind", headers=HEADERS_JSON,
 | Problem | Cause | Solution |
 |---------|-------|----------|
 | `No resource for selected machine` | Out of stock | Try another spec or retry later |
-| `record not found` | Invalid machineId | Verify with `bohr node list --json` |
+| `record not found` | Invalid machineId | Verify with `python node_manager.py list` |
 | Restart fails | Node not stopped | `bohr node stop` first, wait for Paused |
 | `nodeId` vs `machineId` | Two different IDs | CLI uses `nodeId`; API uses `machineId`; dataset API uses `nodeId` |
 | SSH fails | Image lacks SSH | DockerHub images need manual sshd install |

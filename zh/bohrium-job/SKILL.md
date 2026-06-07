@@ -11,20 +11,20 @@ description: "Manage Bohrium compute jobs via bohr CLI or open.bohrium.com API. 
 
 ## 认证配置
 
-ACCESS_KEY 和 PROJECT_ID 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
+BOHR_ACCESS_KEY 和 PROJECT_ID 从 OpenClaw 配置文件 `~/.openclaw/openclaw.json` 中读取：
 
 ```json
 "bohrium-job": {
   "enabled": true,
-  "apiKey": "YOUR_ACCESS_KEY",
+  "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": {
-    "ACCESS_KEY": "YOUR_ACCESS_KEY",
+    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY",
     "PROJECT_ID": "YOUR_PROJECT_ID"
   }
 }
 ```
 
-OpenClaw 会自动将 `env` 中的变量注入到运行环境。`bohr` CLI 通过 `ACCESS_KEY` 环境变量认证。
+OpenClaw 会自动将 `env` 中的变量注入到运行环境。Skill 只要求配置 `BOHR_ACCESS_KEY`；兼容旧 CLI 所需的映射由辅助脚本内部处理。
 
 ## 前置条件：安装 bohr CLI
 
@@ -313,9 +313,9 @@ bohr job_group download -j 15954383 -o ./results/    # 下载任务组结果
 ```python
 import os, requests
 
-AK = os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 BASE = "https://open.bohrium.com/openapi/v1"
-HEADERS = {"accessKey": AK}
+HEADERS = {"Authorization": f"Bearer {AK}"}
 
 # 按状态过滤任务列表 (0=等待, 1=运行中, 2=完成, 3=调度中, -1=失败)
 r = requests.get(f"{BASE}/job/list", headers=HEADERS,
@@ -374,7 +374,7 @@ requests.post(f"{BASE}/job_group/{job_group_id}/modify",
 | `unsupported protocol scheme ""` | bohr CLI 缺少环境变量 | `export OPENAPI_HOST=https://open.bohrium.com && export TIEFBLUE_HOST=https://tiefblue.dp.tech` |
 | `(200, '/account/login', None)` | 旧版 lbg (pip) 不支持 access_key | 用新版 Go CLI（`~/.bohrium/bohr`） |
 | WAF 405 拦截 | cmd 含 shell 关键字被阿里云 WAF 拦截 | 将命令写入脚本文件，cmd 改为 `bash run.sh` |
-| `Permission error` | Job 不属于当前用户 | 确认 ACCESS_KEY 对应的用户 |
+| `Permission error` | Job 不属于当前用户 | 确认 BOHR_ACCESS_KEY 对应的用户 |
 | `jobId` vs `jobGroupId` 搞混 | 两个是不同概念 | CLI 中 `kill/terminate/delete` 均使用 `jobId` |
 | 提交后无输出 | `-p` 目录下有大隐藏文件 | 检查目录大小，排除不需要的大文件 |
 | 同规格任务效率不同 | 算法波动 ~30% + 不同供应商资源差异 | 属正常现象 |

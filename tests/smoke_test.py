@@ -7,8 +7,8 @@ Usage:
     python3 tests/smoke_test.py
 
 Exits with non-zero if any required-endpoint test fails.
-Skills that depend on external services (sandbox/E2B, viking) are skipped with
-an explanation; they are documented but not part of the open.bohrium.com surface.
+Skills that require optional CLIs or create billable resources are skipped with
+an explanation; they are documented but not part of the basic endpoint smoke.
 """
 
 from __future__ import annotations
@@ -26,12 +26,12 @@ import urllib.error
 
 
 BASE = os.environ.get("BOHR_API_BASE_URL", "https://open.bohrium.com/openapi")
-AK = os.environ.get("BOHR_ACCESS_KEY") or os.environ.get("ACCESS_KEY", "")
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
 TIMEOUT = 60
 
 
 if not AK:
-    print("ERROR: set BOHR_ACCESS_KEY (or ACCESS_KEY) in env", file=sys.stderr)
+    print("ERROR: set BOHR_ACCESS_KEY in env", file=sys.stderr)
     sys.exit(2)
 
 
@@ -55,7 +55,7 @@ def http(
     if params:
         url = url + "?" + urllib.parse.urlencode(params)
     data: bytes | None = None
-    headers = {"accessKey": AK}
+    headers = {"Authorization": f"Bearer {AK}"}
     if body is not None:
         data = json.dumps(body).encode()
         headers["Content-Type"] = "application/json"
@@ -158,15 +158,15 @@ print("\n[bohrium-dataset]")
 record("dataset", "/v1/ds/", "GET", params={"page": 1, "pageSize": 1})
 
 # ---------------------------------------------------------------------------
-# bohrium-image  — image v2 endpoints live on the LEGACY gateway
+# bohrium-image  — image v2 endpoints live on open-platform
 # ---------------------------------------------------------------------------
 print("\n[bohrium-image]")
-IMAGE_BASE = "https://openapi.dp.tech/openapi"
+IMAGE_BASE = "https://open.bohrium.com/openapi"
 
 
 def record_image() -> None:
     url = IMAGE_BASE + "/v2/image/public?page=1&pageSize=1"
-    req = urllib.request.Request(url, headers={"accessKey": AK})
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {AK}"})
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
             code = resp.status
@@ -181,7 +181,7 @@ def record_image() -> None:
         code = 0
         data = {"_err": repr(e)}
     status, note = classify(code, data)
-    note = (note + " (via openapi.dp.tech)").strip()
+    note = (note + " (via open.bohrium.com)").strip()
     results.append(Result("image", "/v2/image/public", status, code, note))
     print(f"  [{status}] GET  /v2/image/public  HTTP={code}  {note}")
 
@@ -211,9 +211,15 @@ record(
 print("\n[bohrium-paper-search]")
 record(
     "paper-search",
-    "/v1/paper/rag/pass/keyword",
+    "/v2/paper/rag/pass/keyword",
     "POST",
     body={"words": ["graphene"], "question": "graphene synthesis", "type": 0, "pageSize": 2},
+)
+record(
+    "paper-search",
+    "/v2/paper/rag/pass/patent",
+    "POST",
+    body={"type": 3, "words": ["neural network"], "question": "neural network", "pageSize": 2},
 )
 
 # ---------------------------------------------------------------------------
@@ -287,16 +293,14 @@ record(
 )
 
 # ---------------------------------------------------------------------------
-# bohrium-sandbox (external, skipped)
+# bohrium-sandbox (optional CLI / billable sandbox, skipped)
 # ---------------------------------------------------------------------------
 print("\n[bohrium-sandbox]")
-skip("sandbox", "api.e2b.dev/v1/*", "External service (E2B); not via open.bohrium.com")
-
-# ---------------------------------------------------------------------------
-# bohrium-viking-memory (external, skipped)
-# ---------------------------------------------------------------------------
-print("\n[bohrium-viking-memory]")
-skip("viking-memory", "openviking.test.dp.tech/*", "External service (OpenViking); not via open.bohrium.com")
+skip(
+    "sandbox",
+    "lbg sdbx / open.bohrium.com/openapi/launching/v2/*",
+    "Requires Python >=3.10 and lbg 4.0.0b*; create/exec can be billable",
+)
 
 
 # ---------------------------------------------------------------------------

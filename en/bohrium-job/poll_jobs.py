@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Poll running jobs and print status updates.
 
@@ -9,24 +11,31 @@ Usage:
 
 import json
 import os
-import subprocess
-import sys
 import time
 from datetime import datetime
 
+import requests
 
-def get_jobs(status_flag: str | None = None) -> list[dict]:
-    """Get job list as JSON."""
-    cmd = ["bohr", "job", "list", "-n", "20", "--json"]
-    if status_flag:
-        cmd.append(status_flag)
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        return []
+AK = os.environ.get("BOHR_ACCESS_KEY", "")
+BASE = "https://open.bohrium.com/openapi/v1/job"
+HEADERS = {"Authorization": f"Bearer {AK}"}
+
+
+def get_jobs(status: int | None = None, project_id: int | None = None) -> list[dict]:
+    """Get job list through OpenAPI."""
+    params = {"page": 1, "pageSize": 20}
+    if status is not None:
+        params["status"] = status
+    if project_id is not None:
+        params["projectId"] = project_id
     try:
-        return json.loads(result.stdout)
-    except json.JSONDecodeError:
+        result = requests.get(f"{BASE}/list", headers=HEADERS, params=params, timeout=20).json()
+    except (requests.RequestException, json.JSONDecodeError):
         return []
+    if result.get("code") != 0:
+        return []
+    data = result.get("data", {})
+    return data.get("items", []) if isinstance(data, dict) else []
 
 
 def format_status(status: str) -> str:
@@ -36,6 +45,11 @@ def format_status(status: str) -> str:
         "Failed": "ERR",
         "Pending": "...",
         "Scheduling": "...",
+        1: "RUN",
+        2: "OK ",
+        -1: "ERR",
+        0: "...",
+        3: "...",
     }
     return icons.get(status, status)
 
@@ -44,15 +58,20 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Poll Bohrium job status")
+    parser.add_argument("--project_id", type=int, default=None, help="Filter by project ID")
     parser.add_argument("--interval", type=int, default=60, help="Poll interval in seconds")
     parser.add_argument("--once", action="store_true", help="Run once and exit")
     args = parser.parse_args()
 
+    if not AK:
+        print("ERROR: set BOHR_ACCESS_KEY environment variable")
+        return
+
     while True:
         now = datetime.now().strftime("%H:%M:%S")
-        jobs = get_jobs("-r")  # running only
-        pending = get_jobs("-p")  # pending
-        all_active = jobs + pending
+        all_active = []
+        for status in (1, 0, 3):  # running, pending, scheduling
+            all_active.extend(get_jobs(status, args.project_id))
 
         if not all_active:
             print(f"[{now}] No active jobs.")
