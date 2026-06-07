@@ -54,7 +54,7 @@ This repo is also a Claude Code plugin marketplace:
 /plugin install bohrium-skills@bohrium
 ```
 
-This installs 15 Bohrium skills (English versions).
+This installs 14 Bohrium skills (English versions).
 
 ---
 
@@ -79,7 +79,6 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 | [bohrium-web-search](en/bohrium-web-search/SKILL.md) | Web search — proxy to searchapi.io for open internet search |
 | [bohrium-sandbox](en/bohrium-sandbox/SKILL.md) | Cloud sandbox — on-demand temp VM for running shell/Python |
 | [bohrium-lkm](en/bohrium-lkm/SKILL.md) | Large Knowledge Model — knowledge graph search, claim verification, variable relationships, batch OCR |
-| [polymer-db](en/polymer-db/SKILL.md) | Polymer database — query 280k+ polymer records (Tg/Td/transmittance/mechanical/electrical properties) |
 
 ---
 
