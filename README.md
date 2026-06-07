@@ -79,7 +79,6 @@ export ACCESS_KEY="your_access_key_here"
 | [bohrium-web-search](zh/bohrium-web-search/SKILL.md) | 网页搜索 — 代理 searchapi.io 做开放互联网检索 |
 | [bohrium-sandbox](zh/bohrium-sandbox/SKILL.md) | 云沙箱 — 按需创建临时云 VM，运行 shell/Python |
 | [bohrium-lkm](zh/bohrium-lkm/SKILL.md) | 大知识模型 — 知识图谱搜索、论断验证、变量关系、批量 OCR |
-| [polymer-db](zh/polymer-db/SKILL.md) | 高分子数据库 — 查询 28 万+ 条聚合物记录（Tg/Td/透光率/力学/电学性能等） |
 
 ---
 
