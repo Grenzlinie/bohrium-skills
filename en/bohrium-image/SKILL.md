@@ -187,10 +187,18 @@ r = requests.post("https://open.bohrium.com/openapi/v2/image/private",
         "dockerfile": dockerfile_b64,
     })
 
+# Update image description
+requests.put(f"https://open.bohrium.com/openapi/v2/image/private/{image_id}",
+    headers=HEADERS_JSON, json={"desc": "updated"})
+
 # Validate Dockerfile (also requires base64)
 check_b64 = base64.b64encode(b"FROM ubuntu:22.04\nRUN apt-get update").decode()
 requests.post("https://open.bohrium.com/openapi/v2/image/dockerfile/check",
     headers=HEADERS_JSON, json={"dockerfile": check_b64})
+
+# Get the last used image
+r = requests.get("https://open.bohrium.com/openapi/v2/image/last_used",
+    headers=HEADERS, params={"type": "public"})
 ```
 
 ### Private Image Management
@@ -200,6 +208,10 @@ requests.post("https://open.bohrium.com/openapi/v2/image/dockerfile/check",
 r = requests.get("https://open.bohrium.com/openapi/v2/image/private",
     headers=HEADERS, params={"device": "container", "type": "private", "page": 1, "pageSize": 10})
 # Returns: {items: [{id, name, url, status, buildType, creatorName, projectName, ...}]}
+
+# Private image detail
+r = requests.get(f"https://open.bohrium.com/openapi/v2/image/private/{image_id}",
+    headers=HEADERS)
 
 # Share / unshare
 requests.post(f"https://open.bohrium.com/openapi/v2/image/{image_id}/share", headers=HEADERS_JSON)
