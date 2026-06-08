@@ -15,7 +15,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-BASE = "https://open.bohrium.com/openapi/v1/knowledge"
+BASE = "https://open.bohrium.com/openapi/v2/knowledge"
 
 
 def load_access_key_from_openclaw_config() -> str:

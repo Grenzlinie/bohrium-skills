@@ -7,7 +7,7 @@ description: "Web search via Bohrium's open-platform proxy (backed by searchapi.
 
 ## 概述
 
-通过 `open.bohrium.com` 的 `/v1/search/web` 端点代理到 searchapi.io，对**开放互联网**做关键词搜索，返回包含标题、链接、摘要的结果列表。
+通过 `open.bohrium.com` 的 `/v2/search/web` 端点代理到 searchapi.io，对**开放互联网**做关键词搜索，返回包含标题、链接、摘要的结果列表。
 
 **典型场景**：找一个软件的官网、搜一篇博客、快速核实某个术语、获取新闻报道。
 
@@ -37,7 +37,7 @@ OpenClaw 会自动将 `env.BOHR_ACCESS_KEY` 注入到运行环境。
 ## API
 
 ```
-GET https://open.bohrium.com/openapi/v1/search/web?q=QUERY&num=N
+GET https://open.bohrium.com/openapi/v2/search/web?q=QUERY&num=N
 Header: Authorization: Bearer $BOHR_ACCESS_KEY
 ```
 
@@ -52,7 +52,7 @@ Header: Authorization: Bearer $BOHR_ACCESS_KEY
 import os, requests
 
 AK = os.environ["BOHR_ACCESS_KEY"]
-BASE = "https://open.bohrium.com/openapi/v1/search/web"
+BASE = "https://open.bohrium.com/openapi/v2/search/web"
 
 r = requests.get(BASE,
     headers={"Authorization": f"Bearer {AK}"},
@@ -80,7 +80,7 @@ for i, hit in enumerate(data.get("organic_results", []), 1):
 
 ```bash
 AK="$BOHR_ACCESS_KEY"
-curl -s "https://open.bohrium.com/openapi/v1/search/web?q=deepmd-kit&num=5" \
+curl -s "https://open.bohrium.com/openapi/v2/search/web?q=deepmd-kit&num=5" \
   -H "Authorization: Bearer $AK" | jq '.organic_results[] | {title, link, snippet}'
 ```
 

@@ -79,6 +79,18 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 | [bohrium-web-search](en/bohrium-web-search/SKILL.md) | Web search — proxy to searchapi.io for open internet search |
 | [bohrium-sandbox](en/bohrium-sandbox/SKILL.md) | Cloud sandbox — on-demand temp VM for running shell/Python |
 | [bohrium-lkm](en/bohrium-lkm/SKILL.md) | Large Knowledge Model — knowledge graph search, claim verification, variable relationships, batch OCR |
+| [bohrium-mentor](en/bohrium-mentor/SKILL.md) | AI Science Mentor — deep-reasoning scientific Q&A with automatic literature retrieval, structured Markdown answers |
+
+---
+
+## Billing
+
+The following skills are charged to your account balance per call. Check your balance and bills on the [account page](https://www.bohrium.com/settings/account):
+
+| Skill | Pricing |
+|-------|---------|
+| bohrium-paper-search | Paper / patent RAG search: type 0 = ¥0.4/call, type 1 = ¥0.8/call |
+| bohrium-pdf-parser | PDF parsing ¥0.05/page (charged on trigger; fetching results is free) |
 
 ---
 

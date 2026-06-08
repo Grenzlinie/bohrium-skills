@@ -190,7 +190,7 @@ The following operations are not covered by the bohr CLI and require the API:
 import os, requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
-BASE = "https://open.bohrium.com/openapi/v1/project"
+BASE = "https://open.bohrium.com/openapi/v2/project"
 HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
@@ -249,7 +249,7 @@ The following endpoints are **not accessible** via openapi auth (return 404):
 |----------|--------|
 | `POST /project/join` | Route forwarding path mismatch |
 | `POST /project/share_status` | Same |
-| `GET /project/available` | Registered in AK v2 Group; unreachable via v1 auth |
+| `GET /project/available` | Registered in upstream AK v2 Group; unreachable via openapi gateway auth |
 
 ## Troubleshooting
 

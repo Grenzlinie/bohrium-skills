@@ -79,6 +79,18 @@ export BOHR_ACCESS_KEY="your_access_key_here"
 | [bohrium-web-search](zh/bohrium-web-search/SKILL.md) | 网页搜索 — 代理 searchapi.io 做开放互联网检索 |
 | [bohrium-sandbox](zh/bohrium-sandbox/SKILL.md) | 云沙箱 — 按需创建临时云 VM，运行 shell/Python |
 | [bohrium-lkm](zh/bohrium-lkm/SKILL.md) | 大知识模型 — 知识图谱搜索、论断验证、变量关系、批量 OCR |
+| [bohrium-mentor](zh/bohrium-mentor/SKILL.md) | AI 科学小导师 — 基于深度推理的科学问答，自动检索文献并结构化作答 |
+
+---
+
+## 计费说明
+
+以下 Skill 按调用扣账户余额，可在 [账户页](https://www.bohrium.com/settings/account) 查看余额与账单：
+
+| Skill | 计费 |
+|-------|------|
+| bohrium-paper-search | 论文 / 专利 RAG 搜索：type 0 = 0.4 元/次，type 1 = 0.8 元/次 |
+| bohrium-pdf-parser | PDF 解析 0.05 元/页（触发解析时扣，查询结果免费） |
 
 ---
 

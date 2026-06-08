@@ -190,7 +190,7 @@ bohr dataset delete 138201 108601       # 批量删除
 import os, requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
-BASE = "https://open.bohrium.com/openapi/v1/ds"
+BASE = "https://open.bohrium.com/openapi/v2/ds"
 HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
@@ -246,7 +246,7 @@ r = requests.get(f"{BASE}/{dataset_id}/permission", headers=HEADERS)
 r = requests.get(f"{BASE}/project", headers=HEADERS)
 ```
 
-**重要**：数据集列表 API 路径是 `GET /v1/ds/`（**带尾部斜杠**），不是 `/v1/ds/list`（`/list` 会被 `/:id` 路由捕获报错）。
+**重要**：数据集列表 API 路径是 `GET /v2/ds/`（**带尾部斜杠**），不是 `/v2/ds/list`（`/list` 会被 `/:id` 路由捕获报错）。
 
 ---
 

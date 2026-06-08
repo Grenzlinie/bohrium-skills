@@ -13,11 +13,11 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com. Use when: user a
 
 | 端点 | 功能 |
 |------|------|
-| `/v1/lkm/search` | 知识图谱语义搜索 |
-| `/v1/lkm/claims/match` | 论断匹配：输入一个科学论断，找到支持/反驳的证据 |
-| `/v1/lkm/claims/:id/evidence` | 获取特定论断的证据链详情 |
-| `/v1/lkm/variables/batch` | 批量查询变量关系（如：温度对催化活性的影响） |
-| `/v1/lkm/papers/ocr/batch` | 批量论文 OCR（提取结构化内容） |
+| `/v2/lkm/search` | 知识图谱语义搜索 |
+| `/v2/lkm/claims/match` | 论断匹配：输入一个科学论断，找到支持/反驳的证据 |
+| `/v2/lkm/claims/:id/evidence` | 获取特定论断的证据链详情 |
+| `/v2/lkm/variables/batch` | 批量查询变量关系（如：温度对催化活性的影响） |
+| `/v2/lkm/papers/ocr/batch` | 批量论文 OCR（提取结构化内容） |
 
 **适用场景：**
 
@@ -52,7 +52,7 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com. Use when: user a
 import os, requests
 
 AK = os.environ["BOHR_ACCESS_KEY"]
-BASE = "https://open.bohrium.com/openapi/v1/lkm"
+BASE = "https://open.bohrium.com/openapi/v2/lkm"
 H = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
 ```
 
@@ -187,26 +187,26 @@ for paper in data.get("data", []):
 AK="$BOHR_ACCESS_KEY"
 
 # 知识图谱搜索
-curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/search" \
+curl -s -X POST "https://open.bohrium.com/openapi/v2/lkm/search" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
   -d '{"query":"lithium battery degradation mechanism","limit":10}' | jq .
 
 # 论断匹配
-curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/claims/match" \
+curl -s -X POST "https://open.bohrium.com/openapi/v2/lkm/claims/match" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
   -d '{"text":"MoS2 is a promising catalyst for hydrogen evolution","limit":5}' | jq .
 
 # 证据链
-curl -s -X GET "https://open.bohrium.com/openapi/v1/lkm/claims/abc123/evidence" \
+curl -s -X GET "https://open.bohrium.com/openapi/v2/lkm/claims/abc123/evidence" \
   -H "Authorization: Bearer $AK" | jq .
 
 # 变量批量查询（ID 从 search/claims 结果获取）
-curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/variables/batch" \
+curl -s -X POST "https://open.bohrium.com/openapi/v2/lkm/variables/batch" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
   -d '{"ids":["gcn_b2bf079b541a4fa0","gcn_5cecd02c3d8a4e61"]}' | jq .
 
 # 批量 OCR
-curl -s -X POST "https://open.bohrium.com/openapi/v1/lkm/papers/ocr/batch" \
+curl -s -X POST "https://open.bohrium.com/openapi/v2/lkm/papers/ocr/batch" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
   -d '{"paper_ids":["doi:10.1038/s41586-021-03819-2"]}' | jq .
 ```

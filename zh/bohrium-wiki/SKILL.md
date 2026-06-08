@@ -7,7 +7,7 @@ description: "Browse and search Bohrium SciencePedia (百科) via open.bohrium.c
 
 ## 概述
 
-通过 `open.bohrium.com` 的 `/v1/literature-sage/wiki_v2/*` 端点访问 **Bohrium 百科**——一个科学主题的百科索引，按 `major` (大类) → `level` (分级) → `field` (领域) → `topic` (词条) 层级组织。
+通过 `open.bohrium.com` 的 `/v2/literature-sage/wiki_v2/*` 端点访问 **Bohrium 百科**——一个科学主题的百科索引，按 `major` (大类) → `level` (分级) → `field` (领域) → `topic` (词条) 层级组织。
 
 **典型场景**：
 
@@ -40,7 +40,7 @@ description: "Browse and search Bohrium SciencePedia (百科) via open.bohrium.c
 import os, requests
 
 AK = os.environ["BOHR_ACCESS_KEY"]
-BASE = "https://open.bohrium.com/openapi/v1/literature-sage/wiki_v2"
+BASE = "https://open.bohrium.com/openapi/v2/literature-sage/wiki_v2"
 H = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
 
 # 可选的全局默认参数
@@ -162,7 +162,7 @@ print(doc.get("main_content", "")[:2000])
 
 ```bash
 AK="$BOHR_ACCESS_KEY"
-BASE="https://open.bohrium.com/openapi/v1/literature-sage/wiki_v2"
+BASE="https://open.bohrium.com/openapi/v2/literature-sage/wiki_v2"
 
 # 按关键词搜词条
 curl -s -X POST "$BASE/search_index_name" \

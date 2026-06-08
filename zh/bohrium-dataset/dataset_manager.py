@@ -16,7 +16,7 @@ import sys
 import requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
-BASE = "https://openapi.dp.tech/openapi/v1/ds"
+BASE = "https://open.bohrium.com/openapi/v2/ds"
 HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 

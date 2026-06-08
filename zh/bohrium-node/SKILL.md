@@ -151,7 +151,7 @@ bohr node delete 1431145        # 删除节点（不可逆）
 import os, requests
 
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
-BASE = "https://open.bohrium.com/openapi/v1/node"
+BASE = "https://open.bohrium.com/openapi/v2/node"
 HEADERS = {"Authorization": f"Bearer {AK}"}
 HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 

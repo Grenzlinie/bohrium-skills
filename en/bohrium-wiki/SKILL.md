@@ -7,7 +7,7 @@ description: "Browse and search Bohrium SciencePedia (encyclopedia) via open.boh
 
 ## Overview
 
-Access **Bohrium SciencePedia** through the `/v1/literature-sage/wiki_v2/*` endpoints on `open.bohrium.com` — a hierarchical encyclopedia of scientific topics organized as `major` → `level` → `field` → `topic`.
+Access **Bohrium SciencePedia** through the `/v2/literature-sage/wiki_v2/*` endpoints on `open.bohrium.com` — a hierarchical encyclopedia of scientific topics organized as `major` → `level` → `field` → `topic`.
 
 **Use when**:
 
@@ -40,7 +40,7 @@ Access **Bohrium SciencePedia** through the `/v1/literature-sage/wiki_v2/*` endp
 import os, requests
 
 AK = os.environ["BOHR_ACCESS_KEY"]
-BASE = "https://open.bohrium.com/openapi/v1/literature-sage/wiki_v2"
+BASE = "https://open.bohrium.com/openapi/v2/literature-sage/wiki_v2"
 H = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
 
 # Optional global defaults
@@ -162,7 +162,7 @@ print(doc.get("main_content", "")[:2000])
 
 ```bash
 AK="$BOHR_ACCESS_KEY"
-BASE="https://open.bohrium.com/openapi/v1/literature-sage/wiki_v2"
+BASE="https://open.bohrium.com/openapi/v2/literature-sage/wiki_v2"
 
 # Search entries by keyword
 curl -s -X POST "$BASE/search_index_name" \
