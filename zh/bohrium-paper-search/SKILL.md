@@ -75,7 +75,7 @@ for p in data["data"]:
 r = requests.post(f"{PAPER_BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
     "words": ["deep learning", "protein structure"],
     "question": "deep learning protein structure prediction",
-    "type": 5,                          # 搜索版本（见下方说明）
+    "type": 1,                          # 搜索版本：0=普通, 1=加强版
     "startTime": "2024-01-01",          # 起始日期 YYYY-MM-DD
     "endTime": "2025-01-01",            # 截止日期
     "jcrZones": ["Q1", "Q2"],           # JCR 分区筛选
@@ -92,7 +92,7 @@ r = requests.post(f"{PAPER_BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
 |------|------|------|------|
 | `words` | string[] | 是 | 关键词列表，建议 3-8 个英文术语 |
 | `question` | string | 是 | 研究问题的自然语言描述 |
-| `type` | integer | 否 | keyword 接口搜索版本，最大为 5：0=普通, 1=加强版, 2=专业版, 3=pro2.0, 4=图片, 5=题目摘要语料图片靶点 |
+| `type` | integer | 否 | keyword 接口搜索版本，仅支持 0=普通、1=加强版 |
 | `startTime` | string | 否 | 起始日期 `YYYY-MM-DD`，空字符串表示不限 |
 | `endTime` | string | 否 | 截止日期 `YYYY-MM-DD` |
 | `jcrZones` | string[] | 否 | JCR 分区筛选，如 `["Q1","Q2"]` |
@@ -132,7 +132,7 @@ r = requests.post(f"{PAPER_BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{PAPER_BASE}/rag/pass/patent", headers=HEADERS_JSON, json={
-    "type": 3,
+    "type": 1,
     "words": ["neural network"],
     "question": "neural network",
     "pageSize": 5
@@ -142,13 +142,13 @@ for p in data["data"]:
     print(f"  Patent: {p}")
 ```
 
-**注意**: 专利搜索的 `type` 最大为 3；英文文献 keyword 搜索的 `type` 最大为 5。
+**注意**: keyword 与 patent 搜索的 `type` 目前均仅支持 0（普通）和 1（加强版），其余版本已下线。
 
 ### 专利请求参数
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `type` | integer | 否 | 专利搜索版本，最大为 3 |
+| `type` | integer | 否 | 专利搜索版本，仅支持 0、1 |
 | `words` | string[] | 是 | 关键词列表 |
 | `question` | string | 是 | 检索问题或关键词描述 |
 | `pageSize` | integer | 是 | 每页数量 |
@@ -209,13 +209,13 @@ PAPER_BASE="$BASE/openapi/v2/paper"
 curl -s -X POST "$PAPER_BASE/rag/pass/keyword" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $AK" \
-  -d '{"words":["deep learning","protein"],"question":"deep learning protein structure prediction","type":5,"startTime":"2024-01-01","endTime":"2025-01-01","jcrZones":["Q1"],"pageSize":5}'
+  -d '{"words":["deep learning","protein"],"question":"deep learning protein structure prediction","type":1,"startTime":"2024-01-01","endTime":"2025-01-01","jcrZones":["Q1"],"pageSize":5}'
 
 # 专利搜索
 curl -s -X POST "$PAPER_BASE/rag/pass/patent" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $AK" \
-  -d '{"type":3,"words":["neural network"],"question":"neural network","pageSize":5}'
+  -d '{"type":1,"words":["neural network"],"question":"neural network","pageSize":5}'
 ```
 
 ---

@@ -75,7 +75,7 @@ for p in data["data"]:
 r = requests.post(f"{PAPER_BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
     "words": ["deep learning", "protein structure"],
     "question": "deep learning protein structure prediction",
-    "type": 5,                          # Search version (see below)
+    "type": 1,                          # Search version: 0=basic, 1=enhanced
     "startTime": "2024-01-01",          # Start date YYYY-MM-DD
     "endTime": "2025-01-01",            # End date
     "jcrZones": ["Q1", "Q2"],           # JCR zone filter
@@ -92,7 +92,7 @@ r = requests.post(f"{PAPER_BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
 |-----------|------|----------|-------------|
 | `words` | string[] | Yes | Keyword list; recommend 3-8 English terms |
 | `question` | string | Yes | Natural language research question |
-| `type` | integer | No | Search version for the keyword endpoint, max 5: 0=basic, 1=enhanced, 2=pro, 3=pro2.0, 4=image, 5=title+abstract+corpus+image+target |
+| `type` | integer | No | Search version for the keyword endpoint; only 0=basic and 1=enhanced are supported |
 | `startTime` | string | No | Start date `YYYY-MM-DD`, empty string for no limit |
 | `endTime` | string | No | End date `YYYY-MM-DD` |
 | `jcrZones` | string[] | No | JCR zone filter, e.g. `["Q1","Q2"]` |
@@ -132,7 +132,7 @@ r = requests.post(f"{PAPER_BASE}/rag/pass/keyword", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{PAPER_BASE}/rag/pass/patent", headers=HEADERS_JSON, json={
-    "type": 3,
+    "type": 1,
     "words": ["neural network"],
     "question": "neural network",
     "pageSize": 5
@@ -142,13 +142,13 @@ for p in data["data"]:
     print(f"  Patent: {p}")
 ```
 
-**Note**: Patent search `type` is capped at 3; English paper keyword search `type` is capped at 5.
+**Note**: Both keyword and patent search currently support only type 0 (basic) and 1 (enhanced); other versions are retired.
 
 ### Patent Request Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `type` | integer | No | Patent search version, max 3 |
+| `type` | integer | No | Patent search version; only 0 and 1 are supported |
 | `words` | string[] | Yes | Keyword list |
 | `question` | string | Yes | Search question or keyword description |
 | `pageSize` | integer | Yes | Results per page |
@@ -209,13 +209,13 @@ PAPER_BASE="$BASE/openapi/v2/paper"
 curl -s -X POST "$PAPER_BASE/rag/pass/keyword" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $AK" \
-  -d '{"words":["deep learning","protein"],"question":"deep learning protein structure prediction","type":5,"startTime":"2024-01-01","endTime":"2025-01-01","jcrZones":["Q1"],"pageSize":5}'
+  -d '{"words":["deep learning","protein"],"question":"deep learning protein structure prediction","type":1,"startTime":"2024-01-01","endTime":"2025-01-01","jcrZones":["Q1"],"pageSize":5}'
 
 # Patent search
 curl -s -X POST "$PAPER_BASE/rag/pass/patent" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $AK" \
-  -d '{"type":3,"words":["neural network"],"question":"neural network","pageSize":5}'
+  -d '{"type":1,"words":["neural network"],"question":"neural network","pageSize":5}'
 ```
 
 ---

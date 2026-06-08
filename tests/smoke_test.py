@@ -226,7 +226,7 @@ record(
     "paper-search",
     "/v2/paper/rag/pass/patent",
     "POST",
-    body={"type": 3, "words": ["neural network"], "question": "neural network", "pageSize": 2},
+    body={"type": 1, "words": ["neural network"], "question": "neural network", "pageSize": 2},
 )
 
 # ---------------------------------------------------------------------------
