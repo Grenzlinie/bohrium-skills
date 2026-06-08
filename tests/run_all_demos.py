@@ -27,19 +27,15 @@ ORCHESTRATION_SKILLS = [
     for idx, path in enumerate(sorted(ZH_DIR.glob("*/SKILL.md")), start=1)
 ]
 
-# CLI arguments for scripts that require them
-SKILL_ARGS = {
-    "scholar-profiler": ["Weinan E", "Peking University"],
-    "pre-review": ["https://arxiv.org/pdf/2302.14231"],
-    "paper-dissector": ["https://arxiv.org/pdf/2302.14231", "quick"],
-    "citation-explorer": ["10.1038/s41586-021-03819-2", "both", "1"],
-    "collaborator-finder": ["电催化CO2还原", "需要in-situ表征能力", ""],
-    "review-assistant": ["https://arxiv.org/pdf/2302.14231", "NeurIPS"],
-    "academic-promo": ["https://arxiv.org/pdf/2302.14231"],
-}
+# CLI arguments for scripts that require them.
+# Current bohrium-* skills embed their demo inputs (QUERY/CONFIG) directly in the
+# SKILL.md code blocks, so no positional args are needed. Add entries only if a
+# skill's demo script reads sys.argv.
+SKILL_ARGS: dict[str, list[str]] = {}
 
 SKIP_DEMOS = {
     "bohrium-knowledge-base": "requires local input files and can mutate remote knowledge bases",
+    "bohrium-mentor": "creating a Sigma deep-search session bills account balance",
 }
 
 

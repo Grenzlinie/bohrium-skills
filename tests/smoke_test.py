@@ -2,13 +2,20 @@
 """
 Smoke-test every Bohrium skill's primary endpoint against open.bohrium.com.
 
+Gateway paths use the v2 prefix (aligned with the current skills). bohrium-job
+stays on v1 (its v2 upstream differs and job_group has no v2 route).
+
 Usage:
     export BOHR_ACCESS_KEY="..."
     python3 tests/smoke_test.py
 
 Exits with non-zero if any required-endpoint test fails.
-Skills that require optional CLIs or create billable resources are skipped with
-an explanation; they are documented but not part of the basic endpoint smoke.
+
+Billing: this hits real endpoints (it is not a mock). List/read endpoints are
+free. Endpoints that were already billed stay billed — paper-search (v2 paper/rag,
+balance) and pdf-parser (v2 parse, per-page balance) make real billable calls.
+bohrium-mentor (session creation bills balance) and bohrium-sandbox (optional CLI
+/ billable) are skipped.
 """
 
 from __future__ import annotations
@@ -140,7 +147,7 @@ print("=" * 72)
 
 
 # ---------------------------------------------------------------------------
-# bohrium-job
+# bohrium-job  (stays on v1: v2 upstream differs, job_group has no v2 route)
 # ---------------------------------------------------------------------------
 print("\n[bohrium-job]")
 record("job", "/v1/job/list", "GET", params={"page": 1, "pageSize": 1})
@@ -149,13 +156,13 @@ record("job", "/v1/job/list", "GET", params={"page": 1, "pageSize": 1})
 # bohrium-node
 # ---------------------------------------------------------------------------
 print("\n[bohrium-node]")
-record("node", "/v1/node/list", "GET", params={"page": 1, "pageSize": 1})
+record("node", "/v2/node/list", "GET", params={"page": 1, "pageSize": 1})
 
 # ---------------------------------------------------------------------------
 # bohrium-dataset
 # ---------------------------------------------------------------------------
 print("\n[bohrium-dataset]")
-record("dataset", "/v1/ds/", "GET", params={"page": 1, "pageSize": 1})
+record("dataset", "/v2/ds/", "GET", params={"page": 1, "pageSize": 1})
 
 # ---------------------------------------------------------------------------
 # bohrium-image  — image v2 endpoints live on open-platform
@@ -192,7 +199,7 @@ record_image()
 # bohrium-project
 # ---------------------------------------------------------------------------
 print("\n[bohrium-project]")
-record("project", "/v1/project/lite_list", "GET")
+record("project", "/v2/project/lite_list", "GET")
 
 # ---------------------------------------------------------------------------
 # bohrium-knowledge-base
@@ -200,13 +207,13 @@ record("project", "/v1/project/lite_list", "GET")
 print("\n[bohrium-knowledge-base]")
 record(
     "knowledge-base",
-    "/v1/knowledge/knowledge_base/list",
+    "/v2/knowledge/knowledge_base/list",
     "GET",
     params={"page": 1, "pageSize": 1},
 )
 
 # ---------------------------------------------------------------------------
-# bohrium-paper-search
+# bohrium-paper-search  (v2 paper/rag bills account balance — already billed)
 # ---------------------------------------------------------------------------
 print("\n[bohrium-paper-search]")
 record(
@@ -223,13 +230,13 @@ record(
 )
 
 # ---------------------------------------------------------------------------
-# bohrium-pdf-parser
+# bohrium-pdf-parser  (v2 parse bills per-page balance on trigger; was v1 quota)
 # ---------------------------------------------------------------------------
 print("\n[bohrium-pdf-parser]")
 # Trigger a cheap single-page parse and check we at least got a token back.
 code, data = http(
     "POST",
-    "/v1/parse/trigger-url-async",
+    "/v2/parse/trigger-url-async",
     body={
         "url": "https://arxiv.org/pdf/2107.06922",
         "sync": False,
@@ -256,27 +263,27 @@ if 200 <= code < 300 and isinstance(data, dict):
 else:
     status = "FAIL"
     note = f"no token; body={json.dumps(data)[:160]}"
-results.append(Result("pdf-parser", "/v1/parse/trigger-url-async", status, code, note))
-print(f"  [{status}] POST /v1/parse/trigger-url-async  HTTP={code}  {note}")
+results.append(Result("pdf-parser", "/v2/parse/trigger-url-async", status, code, note))
+print(f"  [{status}] POST /v2/parse/trigger-url-async  HTTP={code}  {note}")
 
 # ---------------------------------------------------------------------------
-# bohrium-web-search
+# bohrium-web-search  (v2 is free — v1 quota middleware removed)
 # ---------------------------------------------------------------------------
 print("\n[bohrium-web-search]")
 record(
     "web-search",
-    "/v1/search/web",
+    "/v2/search/web",
     "GET",
     params={"q": "deepmd-kit", "num": 3},
 )
 
 # ---------------------------------------------------------------------------
-# bohrium-scholar
+# bohrium-scholar-search
 # ---------------------------------------------------------------------------
-print("\n[bohrium-scholar]")
+print("\n[bohrium-scholar-search]")
 record(
-    "scholar",
-    "/v1/paper-server/scholar/search",
+    "scholar-search",
+    "/v2/paper-server/scholar/search",
     "POST",
     body={"name": "Yann LeCun", "page": 1, "pageSize": 3},
 )
@@ -287,9 +294,19 @@ record(
 print("\n[bohrium-wiki]")
 record(
     "wiki",
-    "/v1/literature-sage/wiki_v2/search_index_name",
+    "/v2/literature-sage/wiki_v2/search_index_name",
     "POST",
     body={"name": "graphene", "node_types": ["field"], "style": "Feynman"},
+)
+
+# ---------------------------------------------------------------------------
+# bohrium-mentor (Sigma deep search — creating a session bills balance, skipped)
+# ---------------------------------------------------------------------------
+print("\n[bohrium-mentor]")
+skip(
+    "mentor",
+    "/v2/sigma-search/api/v4/ai_search/sessions",
+    "Creating an AI-search session bills account balance (v2 SigmaBalanceBill)",
 )
 
 # ---------------------------------------------------------------------------

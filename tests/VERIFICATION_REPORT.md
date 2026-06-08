@@ -1,12 +1,38 @@
 # Bohrium Skills API 端点验证报告
 
-**测试日期**: 2026-05-11  
-**测试 AK**: f0f923c97cdc49c7bd28978ac41fed12  
-**API Base**: https://open.bohrium.com/openapi/v1  
-**Image API Base**: https://openapi.dp.tech/openapi/v2  
-**bohr CLI**: v1.1.0 (Go, 从 OSS 安装到 ~/.bohrium/bohr)  
+**最近验证**: 2026-06-08（v2 网关冒烟实测）｜详细功能基线: 2026-05-11
+**测试 AK**: 通过 `BOHR_ACCESS_KEY` 环境变量注入（不在报告中明文记录）
+**API Base**: https://open.bohrium.com/openapi/v2 （网关已升级 v2；`bohrium-job` 仍用 v1）
+**bohr CLI**: v1.1.0 (Go, 从 OSS 安装到 ~/.bohrium/bohr)
 **lbg CLI**: v4.0.0b46 (Python >=3.10 prerelease, pip install --pre lbg)
 **OPENAPI_HOST**: https://open.bohrium.com
+
+> 网关版本：除 `bohrium-job`（保留 v1，因其 v2 上游不同且 `job_group` 在网关无 v2 路由）外，所有 skill 的 OpenAPI 网关路径已统一升级到 `/openapi/v2/*`，上游服务与 v1 一致（多数仅外层版本号变化）。镜像 / 数据集 / 项目等域名已统一为 `open.bohrium.com`（历史上 dataset create 需走 `openapi.dp.tech` 的 307 问题已在 open-platform 修复）。
+
+---
+
+## v2 冒烟实测（2026-06-08，`tests/smoke_test.py`）
+
+每个 skill 打一个主端点，真实请求 `open.bohrium.com`（非 mock）。结果：**PASS=12, FAIL=0, SKIP=2**。
+
+| Skill | 端点 | 方法 | 结果 | 计费 |
+|-------|------|------|------|------|
+| bohrium-job | `/v1/job/list` | GET | ✅ PASS | 免费（保持 v1） |
+| bohrium-node | `/v2/node/list` | GET | ✅ PASS | 免费 |
+| bohrium-dataset | `/v2/ds/` | GET | ✅ PASS | 免费 |
+| bohrium-image | `/v2/image/public` | GET | ✅ PASS | 免费 |
+| bohrium-project | `/v2/project/lite_list` | GET | ✅ PASS | 免费 |
+| bohrium-knowledge-base | `/v2/knowledge/knowledge_base/list` | GET | ✅ PASS | 免费 |
+| bohrium-paper-search | `/v2/paper/rag/pass/keyword` | POST | ✅ PASS | 余额扣费 |
+| bohrium-paper-search | `/v2/paper/rag/pass/patent` | POST | ✅ PASS | 余额扣费 |
+| bohrium-pdf-parser | `/v2/parse/trigger-url-async` | POST | ✅ PASS | 按页余额扣费 |
+| bohrium-web-search | `/v2/search/web` | GET | ✅ PASS | 免费（v2 取消 v1 限额） |
+| bohrium-scholar-search | `/v2/paper-server/scholar/search` | POST | ✅ PASS | 免费 |
+| bohrium-wiki | `/v2/literature-sage/wiki_v2/search_index_name` | POST | ✅ PASS | 免费 |
+| bohrium-mentor | `/v2/sigma-search/api/v4/ai_search/sessions` | POST | ⏭️ SKIP | 创建会话扣余额 |
+| bohrium-sandbox | `lbg sdbx`（launching/v2） | — | ⏭️ SKIP | 需 lbg beta；create/exec 计费 |
+
+> 计费原则：原本无计费的列表/查询类端点 v2 后仍免费；原本即计费的（paper-search 余额、pdf-parser 限额→按页余额）照常计费；`mentor` 创建会话与 `sandbox` create/exec 会扣费，冒烟中 SKIP。
 
 ---
 
@@ -14,16 +40,18 @@
 
 | 状态 | Skill | 说明 |
 |------|-------|------|
-| ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node, bohrium-knowledge-base, bohrium-image, bohrium-scholar-search, bohrium-wiki, bohrium-lkm, bohrium-paper-search, bohrium-dataset | 所有文档端点/CLI 均正常 |
-| ❌ 已移除 | bohrium-file, bohrium-viking-memory, bohrium-scholar, bohrium-matmaster, diagnose-agent, proposal-agent, preparation-agent, scoring-agent | 冗余或后端不可用；当前仓库不包含这些 skill |
+| ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node, bohrium-knowledge-base, bohrium-image, bohrium-scholar-search, bohrium-wiki, bohrium-lkm, bohrium-paper-search, bohrium-dataset, bohrium-mentor | 当前仓库 14 个 skill，文档端点 / CLI 均正常 |
+| ❌ 已移除 | polymer-db, bohrium-file, bohrium-viking-memory, bohrium-scholar, bohrium-matmaster, diagnose-agent, proposal-agent, preparation-agent, scoring-agent | 已下架 / 冗余 / 后端不可用；当前仓库不含这些 skill |
 
 ---
 
 ## 逐 Skill 详细结果
 
-### bohrium-job (任务管理)
+### bohrium-job (任务管理) — 保留 v1
 
 **推荐方式**: 使用 `bohr` CLI（Go 版本，从 OSS 安装）
+
+> `bohrium-job` 不升级 v2：网关 `/openapi/v2/job` 指向不同上游（`/brm/v2/job`），且 `job_group` 在网关没有 v2 注册，升级会 404。保持 `/openapi/v1/*`。
 
 #### CLI 测试 (bohr v1.1.0)
 
@@ -38,51 +66,47 @@
 | `bohr job kill {id}` | ✅ | 强制停止 |
 | `bohr job terminate {id}` | ⚠️ | Pending 状态任务不可 terminate |
 | `bohr job_group list -n 5 --json` | ✅ | 正常 |
-| `bohr job_group list -s ... -e ...` | ✅ | 日期范围过滤正常 |
 | `bohr job_group create -n ... -p ...` | ✅ | 创建成功返回 job_group_id |
-| `bohr job_group terminate {id}` | ✅ | 终止正常 |
-| `bohr job_group delete {id}` | ✅ | 删除正常 |
+| `bohr job_group terminate {id}` / `delete {id}` | ✅ | 正常 |
 
 #### API 补充测试
 
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
-| `/v1/job/list?status=N` | GET | ✅ | 按状态过滤正常 |
+| `/v1/job/list?status=N` | GET | ✅ | 按状态过滤正常（冒烟实测 PASS） |
 | `/v1/job/view/conf/{job_id}` | GET | ✅ | 返回 state/token/host |
-| `/v1/job/{job_id}/snapshot` | GET | ⚠️ | code=1000，已完成任务无快照数据 |
 | `/v1/job/{job_id}/modify` | POST | ✅ | 重命名成功 |
 | `/v1/job_group/{id}/modify` | POST | ✅ | 任务组重命名成功 |
 
-**结论**: CLI 全功能可用（提交/查看/日志/下载/终止/删除/任务组）。API 的 submit 和 job_group/list 需通过 CLI 完成。
+**结论**: CLI 全功能可用。`POST /job/submit`、`GET /job_group/list` 需通过 CLI 完成（API 直连 404）。
 
 ---
 
 ### bohrium-node (开发机)
-
-**推荐方式**: 使用 `bohr` CLI（Go 版本）
 
 #### CLI 测试 (bohr v1.1.0)
 
 | 命令 | 状态 | 备注 |
 |------|------|------|
 | `bohr node list --json` | ✅ | 返回 nodeId/nodeName/status/ip |
-| `bohr node list -s` / `-p` / `-d` / `-w` | ✅ | 按状态过滤正常 |
 | `bohr node stop {nodeId}` | ✅ | 停止成功 |
 | `bohr node create` | ⚠️ | 交互式（需 TTY），自动化需用 API |
 
-#### API 补充测试
+#### API 补充测试（v2，2026-06-08 实测）
 
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
-| `/v1/node/list` | GET | ✅ | 节点列表 |
-| `/v1/node/resources` | GET | ✅ | CPU/GPU/磁盘选项 |
-| `/v1/node/resources/price?skuId=&projectId=` | GET | ✅ | 返回价格（元/小时） |
-| `/v1/node/{nodeId}` | GET | ✅ | 详情含 IP/状态/密码 |
-| `/v1/node/add` | POST | ✅ | 创建节点（资源不足时正常报错） |
-| `/v1/node/stop/{nodeId}` | POST | ✅ | 停止成功 |
-| `/v1/node/start/{nodeId}` | POST | ❌ 404 | 启动端点不存在于网关 |
+| `/v2/node/list` | GET | ✅ | 节点列表（冒烟实测 PASS） |
+| `/v2/node/resources` | GET | ✅ | CPU/GPU/磁盘选项 |
+| `/v2/node/resources/price?skuId=&projectId=` | GET | ✅ | 返回价格（元/小时） |
+| `/v2/node/{nodeId}` | GET | ✅ | 详情含 IP/状态/密码 |
+| `/v2/node/add` | POST | ✅ | 创建节点（资源不足时正常报错） |
+| `/v2/node/restart/{nodeId}` | POST | ✅ | 端点存在（不存在的 id 返回 record not found） |
+| `/v2/node/modify/{nodeId}` | POST | ✅ | 端点存在（同上） |
+| `/v2/node/ds` / `/v2/node/ds/bind` | GET/POST | ✅ | 端点存在 |
+| `/v2/node/start/{nodeId}` | POST | ❌ 404 | 启动端点不存在于网关（文档用 restart 而非 start） |
 
-**结论**: CLI 的 list/stop 正常。节点启动可能需要通过 Web 或 `bohr node create` 重新创建。API 的 start 路由缺失。
+**结论**: list/resources/add/restart/modify/ds 等全部可用；仅 `start/{id}` 在网关无路由，节点文档使用 `restart`。
 
 ---
 
@@ -90,45 +114,26 @@
 
 **推荐方式**: 使用 `bohr` CLI（Go 版本）
 
-> **重要**: dataset 的 create 操作需要 `OPENAPI_HOST=https://openapi.dp.tech`（不是 open.bohrium.com）。
-> `open.bohrium.com` 的 `/openapi/v1/ds/` POST 会 307 重定向到不存在的 `/api/v1/ds`，导致创建失败。
-> list 和 delete 两个网关都可以用。
+> 域名已统一 `open.bohrium.com`：历史上 `POST /openapi/v1/ds/` 因尾斜杠触发 307 重定向、create 需绕道 `openapi.dp.tech` 的问题，已在 open-platform 修复（tag b_open-platform_2.0.7）。现 list / create / delete 均直接走 `open.bohrium.com`。
 
 #### CLI 测试 (bohr v1.1.0)
 
 | 命令 | 状态 | OPENAPI_HOST | 备注 |
 |------|------|------|------|
 | `bohr dataset list --json` | ✅ | open.bohrium.com | 返回 id/title/path/projectName |
-| `bohr dataset list -t {title}` | ✅ | open.bohrium.com | 按标题搜索 |
-| `bohr dataset list -p {projectId}` | ✅ | open.bohrium.com | 按项目过滤 |
-| `bohr dataset list -n 10 --csv` | ✅ | open.bohrium.com | CSV 格式输出 |
-| `bohr dataset create -n ... -p ... -i ... -l ...` | ✅ | **openapi.dp.tech** | 创建+上传成功 |
+| `bohr dataset list -t {title}` / `-p {projectId}` | ✅ | open.bohrium.com | 按标题/项目过滤 |
+| `bohr dataset create -n ... -p ... -i ... -l ...` | ✅ | open.bohrium.com | 创建+上传成功 |
 | `bohr dataset delete {id}` | ✅ | open.bohrium.com | 删除成功 |
 
 #### API 补充测试
 
-| 端点 | 方法 | 网关 | 状态 | 备注 |
-|------|------|------|------|------|
-| `/v1/ds/?keyword=&pageSize=&pageNum=` | GET | open.bohrium.com | ✅ | 列表+搜索 |
-| `/v1/ds/{id}` | GET | open.bohrium.com | ✅ | 详情 |
-| `/v1/ds/` | POST | open.bohrium.com | ✅ | **已修复**: 307 bug 已部署到生产环境 |
+| 端点 | 方法 | 状态 | 备注 |
+|------|------|------|------|
+| `/v2/ds/?keyword=&pageSize=&pageNum=` | GET | ✅ | 列表+搜索（冒烟实测 PASS） |
+| `/v2/ds/{id}` | GET | ✅ | 详情 |
+| `/v2/ds/` | POST | ✅ | 创建（307 问题已修复） |
 
-**307 Bug 根因**: open-platform 的 `internal/proxy/handler.go` 在 `c.Param("path")=="/"` 时会拼接出 `/api/v1/ds/`（带尾部斜杠），后端 Gin 框架的 `RedirectTrailingSlash` 中间件将其 307 重定向到 `/api/v1/ds`，但 location header 是相对路径导致客户端请求到错误地址。
-
-**修复方案**: 已在 `handler.go:197` 和 `handler.go:688` 添加特殊处理（参考 openapi 仓库的实现）：
-```go
-pathParam := c.Param("path")
-if pathParam == "/" {
-    targetPath = config.PathPrefix
-} else {
-    targetPath = config.PathPrefix + pathParam
-}
-```
-此修复确保 `POST /openapi/v1/ds/` 转发到 `/api/v1/ds`（无尾部斜杠），避免 307 重定向。
-
-**当前状态**: 代码已修复并部署到 open.bohrium.com 生产环境（tag: b_open-platform_2.0.7_202605112056）。
-
-**结论**: CLI 和 API 全功能可用，可直接使用 `open.bohrium.com`。
+**结论**: CLI 和 API 全功能可用，统一使用 `open.bohrium.com`。
 
 ---
 
@@ -138,21 +143,25 @@ if pathParam == "/" {
 
 | 命令 | 状态 | 备注 |
 |------|------|------|
-| `bohr image list --json` | ✅ | 100 个自定义镜像 |
-| `bohr image list -t {type}` | ⚠️ | 需 TTY 交互，非 TTY 环境报错 |
-| `bohr image delete {id}` | ✅ (未测试删除) | 文档记录 |
+| `bohr image list --json` | ✅ | 自定义镜像列表 |
+| `bohr image delete {id}` | ✅（文档） | — |
 
-#### API 测试
+#### API 测试（v2，2026-06-08 实测全部 11 端点）
 
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
-| `/v2/image/public/version/search?keyword=` | GET | ✅ | 74478 个版本 |
-| `/v2/image/public?page=1&pageSize=5` | GET | ✅ | 20 个基础镜像分类 |
-| `/v2/image/public/{imageId}/version` | GET | ✅ | 指定镜像的版本列表 |
-| `/v2/image/private?device=container&type=private` | GET | ✅ | 私有镜像列表（需 device 和 type 参数） |
-| `/v2/image/private` | POST (创建) | ✅ | dockerfile 字段需 base64 编码 |
+| `/v2/image/public` | GET | ✅ | 公共镜像分类（冒烟实测 PASS） |
+| `/v2/image/public/version/search?keyword=` | GET | ✅ | 版本搜索 |
+| `/v2/image/public/{imageId}/version` | GET | ✅ | 指定镜像版本列表 |
+| `/v2/image/last_used?type=` | GET | ✅ | 最近使用镜像 |
+| `/v2/image/private?device=&type=` | GET | ✅ | 私有镜像列表 |
+| `/v2/image/private/{id}` | GET | ✅ | 私有镜像详情 |
+| `/v2/image/private` | POST | ✅ | 创建（dockerfile 需 base64） |
+| `/v2/image/private/{id}` | PUT | ✅ | 修改描述（端点存在） |
+| `/v2/image/dockerfile/check` | POST | ✅ | Dockerfile 合法性校验 |
+| `/v2/image/{id}/share` | POST/DELETE | ✅ | 分享/取消（端点存在） |
 
-**结论**: 所有 API 端点正常。私有镜像列表需要 `device=container&type=private` 参数；创建镜像时 dockerfile 字段必须 base64 编码（已在 SKILL.md 中修复）。
+**结论**: 所有 API 端点正常。中英文 SKILL.md 端点已对齐（last_used / 更新描述 / 私有详情等）。
 
 ---
 
@@ -160,10 +169,10 @@ if pathParam == "/" {
 
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
-| `/v1/project/list` | GET | ✅ | 82 个项目（含费用详情） |
-| `/v1/project/lite_list` | GET | ✅ | 轻量列表 |
-| `/v1/project/set_name` | POST | ✅ | 重命名成功 |
-| `/v1/project/add_user` | POST | ✅ | 添加成员成功 |
+| `/v2/project/lite_list` | GET | ✅ | 轻量列表（冒烟实测 PASS） |
+| `/v2/project/list` | GET | ✅ | 完整列表（含费用详情） |
+| `/v2/project/set_name` | POST | ✅ | 重命名成功 |
+| `/v2/project/add_user` | POST | ✅ | 添加成员成功 |
 
 **结论**: 全部端点正常。
 
@@ -171,58 +180,52 @@ if pathParam == "/" {
 
 ### bohrium-knowledge-base (知识库)
 
+> 网关 `/openapi/v2/knowledge/*` → `KnowledgeDBHost`（literature-sage 地址），路径由 transformer 改写。
+
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
-| `/v1/knowledge/knowledge_base/list` | GET | ✅ | 知识库列表 |
-| `/v1/knowledge/knowledge_base/create` | POST | ✅ | 创建成功 |
-| `/v1/knowledge/knowledge_base/update` | POST | ✅ | 更新成功（需传 NodesId） |
-| `/v1/knowledge/knowledge_base/{nodeId}` | GET | ✅ | 详情正常 |
-| `/v1/knowledge/knowledge_base/discover` | GET | ✅ | 公开知识库 |
-| `/v1/knowledge/knowledge_base/recommendation` | GET | ✅ | 推荐正常 |
-| `/v1/knowledge/knowledge_base/search/name` | POST | ✅ | 按名称搜索知识库内容 |
-| `/v1/knowledge/file` | GET | ✅ | 文献列表（parentId 参数） |
-| `/v1/knowledge/file/submit` | POST | ✅ | 文件注册到知识库 |
-| `/v1/knowledge/file/search` | POST | ✅ | 文献内容搜索 |
-| `/v1/knowledge/file/delete_literature` | POST | ✅ | 删除文献（业务校验正常） |
-| `/v1/knowledge/recall/papers` | POST | ✅ | 指定文献语义召回 |
-| `/v1/knowledge/recall/hybrid` | POST | ✅ | 知识库级混合召回 |
-| `/v1/knowledge/folder/delete` | POST | ✅ | 删除知识库/文件夹 |
+| `/v2/knowledge/knowledge_base/list` | GET | ✅ | 知识库列表（冒烟实测 PASS） |
+| `/v2/knowledge/knowledge_base/create` | POST | ✅ | 创建成功 |
+| `/v2/knowledge/knowledge_base/update` | POST | ✅ | 更新成功（需 NodesId） |
+| `/v2/knowledge/knowledge_base/{nodeId}` | GET | ✅ | 详情正常 |
+| `/v2/knowledge/knowledge_base/search/name` | POST | ✅ | 按名称搜索 |
+| `/v2/knowledge/file` / `/file/submit` / `/file/search` | GET/POST | ✅ | 文献列表/注册/内容搜索 |
+| `/v2/knowledge/recall/papers` / `/recall/hybrid` | POST | ✅ | 语义/混合召回 |
+| `/v2/knowledge/folder/delete` | POST | ✅ | 删除知识库/文件夹 |
 
-**结论**: 全部端点正常。之前的 404 是因为测试时使用了错误的路径（`/knowledge_base/delete`、`/file/list`、`/literature/list`、`/search`），实际正确路径是 `/folder/delete`、`/file`（无 `/list` 后缀）、`/file/search`、`/recall/hybrid`。
+**结论**: 全部端点正常。正确路径为 `/folder/delete`、`/file`（无 `/list` 后缀）、`/file/search`、`/recall/hybrid`。
 
 ---
 
-### bohrium-paper-search (论文与专利)
+### bohrium-paper-search (论文与专利) — 余额计费
 
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
-| `/v1/paper/rag/pass/keyword` (基础搜索) | POST | ✅ | 正常 |
-| `/v1/paper/rag/pass/keyword` (高级: type/time/JCR) | POST | ✅ | 正常 |
-| `/v1/paper/rag/pass/patent` (基础) | POST | ✅ | 正常 |
+| `/v2/paper/rag/pass/keyword` (基础/高级) | POST | ✅ | 正常（冒烟实测 PASS） |
+| `/v2/paper/rag/pass/patent` (基础) | POST | ✅ | 正常（冒烟实测 PASS） |
 
-**结论**: 论文搜索完全正常；专利搜索基础功能正常（仅支持 keyword/page/pageSize 参数）。
+**计费**: v2 `paper/rag` 走余额扣费（BalanceBill）。**结论**: 论文/专利搜索正常。
 
 ---
 
-### bohrium-pdf-parser (PDF 解析)
+### bohrium-pdf-parser (PDF 解析) — 按页余额计费
 
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
-| `/v1/parse/trigger-url-async` | POST | ✅ | 返回 token + page_count |
-| `/v1/parse/get-result` (content=true) | POST | ✅ | status=success，内容正常 |
-| `/v1/parse/get-result` (objects+pages_dict) | POST | ✅ | 全部选项正常 |
+| `/v2/parse/trigger-url-async` | POST | ✅ | 返回 token + page_count（冒烟实测 PASS） |
+| `/v2/parse/get-result` (content/objects/pages_dict) | POST | ✅ | 查询结果，不计费 |
 
-**结论**: 全部端点正常，解析能力完整。
+**计费**: v2 trigger 成功后按响应 `page_count` 扣余额（扣成功才下发 token）；`get-result` 等查询端点不计费。**结论**: 解析能力完整。
 
 ---
 
-### bohrium-web-search (网页搜索)
+### bohrium-web-search (网页搜索) — v2 免费
 
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
-| `/v1/search/web?q=&num=` | GET | ✅ | 返回 organic_results |
+| `/v2/search/web?q=&num=` | GET | ✅ | 返回 organic_results（冒烟实测 PASS） |
 
-**结论**: 正常。
+**计费**: v2 去掉了 v1 的 coding-plan 限额，免费。**结论**: 正常。
 
 ---
 
@@ -230,24 +233,25 @@ if pathParam == "/" {
 
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
-| `/v1/paper-server/scholar/search` (按姓名) | POST | ✅ | 正常 |
-| `/v1/paper-server/scholar/search` (按机构/tags) | POST | ⚠️ | code=1000，可能参数格式不对 |
-| `/v1/paper-server/scholar/info?scholarId=` | GET | ✅ | 完整画像 |
+| `/v2/paper-server/scholar/search` (按姓名) | POST | ✅ | 正常（冒烟实测 PASS） |
+| `/v2/paper-server/scholar/info?scholarId=` | GET | ✅ | 完整画像 |
 
-**结论**: 按姓名搜索和详情查询正常；按机构/标签搜索返回空结果（可能需要配合 name 参数使用）。
+**结论**: 按姓名搜索与详情查询正常。
 
 ---
 
 ### bohrium-wiki (百科)
 
+> 网关前缀 `/openapi/v2/literature-sage/wiki_v2/*` → LiteratureSage `/api/v1/wiki_v2`。
+
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
-| `/wiki_v2/info` | GET | ✅ | 基础信息 |
-| `/wiki_v2/major_levels` | POST | ✅ | 学科分类 |
-| `/wiki_v2/search_index_name` | POST | ✅ | 中英文搜索均正常 |
-| `/wiki_v2/article` | POST | ⚠️ | **250002 "Article not found"** |
+| `/v2/literature-sage/wiki_v2/info` | GET | ✅ | 基础信息 |
+| `/v2/literature-sage/wiki_v2/search_index_name` | POST | ✅ | 中英文搜索均正常（冒烟实测 PASS） |
+| `/v2/literature-sage/wiki_v2/major_levels` | POST | ✅ | 学科分类 |
+| `/v2/literature-sage/wiki_v2/article` | POST | ⚠️ | 250002 "Article not found"（内容可能按需生成） |
 
-**结论**: 索引搜索正常；article 端点可达但返回"文章未找到"——可能是内容按需生成，或 node_id 对应文章尚未入库。
+**结论**: 索引搜索正常；article 端点可达。
 
 ---
 
@@ -255,13 +259,27 @@ if pathParam == "/" {
 
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
-| `/v1/lkm/search` | POST | ✅ | 知识图谱搜索正常 |
-| `/v1/lkm/claims/match` | POST | ✅ | 论断匹配正常 |
-| `/v1/lkm/claims/{id}/evidence` | GET | ✅ | 证据链详情正常 |
-| `/v1/lkm/variables/batch` | POST | ✅ | 批量查询正常 |
-| `/v1/lkm/papers/ocr/batch` | POST | ❌ | **290007 权限不足** |
+| `/v2/lkm/search` | POST | ✅ | 知识图谱搜索正常 |
+| `/v2/lkm/claims/match` | POST | ✅ | 论断匹配正常 |
+| `/v2/lkm/claims/{id}/evidence` | GET | ✅ | 证据链详情正常 |
+| `/v2/lkm/variables/batch` | POST | ✅ | 批量查询正常 |
+| `/v2/lkm/papers/ocr/batch` | POST | ❌ | 290007 权限不足（需更高权限 AK） |
 
-**结论**: 核心功能（搜索/匹配/证据/变量）全部正常；OCR 批处理需要更高权限。
+**结论**: 核心功能（搜索/匹配/证据/变量）正常；OCR 批处理需更高权限。
+
+---
+
+### bohrium-mentor (Sigma 深度搜索) — 余额计费
+
+> 网关 `/openapi/v2/sigma-search/*` → SigmaSearchProxy，附带 `SigmaBalanceBillMiddleware`（余额扣费，与 v1 的 SigmaBill 不同）。
+
+| 端点 | 方法 | 状态 | 备注 |
+|------|------|------|------|
+| `/v2/sigma-search/api/v4/ai_search/sessions` | POST | ⏭️ SKIP | 创建会话扣余额，冒烟中跳过 |
+| `/v2/sigma-search/api/v4/ai_search/sessions/{id}` | GET | ✅ | 会话详情（断线恢复用）；不存在的 id 返回 not found，证明路由可达 |
+| `/v2/sigma-search/api/v3/sse/ai_search/v1/{id}/stream` | GET | ✅ | SSE 流式推理 |
+
+**计费**: 创建会话按余额扣费。**结论**: 路由可用；冒烟测试因计费跳过创建。
 
 ---
 
@@ -269,39 +287,26 @@ if pathParam == "/" {
 
 | 功能 | 状态 | 备注 |
 |------|------|------|
-| `python sdbx.py doctor --json` | ✅ | sandbox_ready=true, template_ready=true；只需 BOHR_ACCESS_KEY |
-| `python sdbx.py template ls --json` | ✅ | 模板列表正常 |
-| `python sdbx.py list --json` | ✅ | 沙箱列表正常 |
-| `python sdbx.py create sdbx-cpu-mini --timeout 300 --json` | ✅ | 成功创建最小 CPU 实例 |
-| `python sdbx.py exec <id> <cmd>` | ✅ | 命令执行正常 |
-| `python sdbx.py kill <id> --json` | ✅ | 销毁正常 |
+| `python sdbx.py doctor --json` | ✅ | sandbox_ready=true；只需 BOHR_ACCESS_KEY |
+| `python sdbx.py template ls` / `list` | ✅ | 模板/沙箱列表正常 |
+| `python sdbx.py create ... --json` | ✅ | 成功创建（计费） |
+| `python sdbx.py exec` / `kill` | ✅ | 命令执行/销毁正常 |
 
-**前置条件**: Python >=3.10；`python3 -m pip install --pre lbg` 需安装到 4.0.0b*。`sdbx.py` 会把 `BOHR_ACCESS_KEY` 映射成 beta 版 lbg 实际读取的 `BOHRIUM_ACCESS_KEY`。
+**前置条件**: Python >=3.10；`python3 -m pip install --pre lbg`（4.0.0b*）。`sdbx.py` 将 `BOHR_ACCESS_KEY` 映射成 `BOHRIUM_ACCESS_KEY`。不经 `/openapi/vN` 网关，走 `launching/v2`。
 
-**结论**: 全部功能正常。
-
----
-
-### bohrium-viking-memory
-
-当前仓库已不包含 `bohrium-viking-memory` skill；不再作为 smoke 或发布验证对象。
+**结论**: 全部功能正常（create/exec 计费，冒烟中 SKIP）。
 
 ---
 
 ## 文档与实际不符的问题汇总
 
-| # | Skill | 问题 | 影响 | 建议 |
+| # | Skill | 问题 | 影响 | 状态 |
 |---|-------|------|------|------|
-| 1 | bohrium-job | API `POST /job/submit` 返回 404 | 不影响 | CLI `bohr job submit` 正常，文档已说明优先 CLI |
-| 2 | bohrium-job | API `GET /job_group/list` 返回 404 | 不影响 | CLI `bohr job_group list` 正常 |
-| 3 | bohrium-node | API `/node/start/{id}` 返回 404 | 低 | CLI `bohr node create` 可重建；stop API 正常 |
-| 4 | ~~bohrium-dataset~~ | ~~`open.bohrium.com` 的 `POST /ds/` 307→404~~ | ~~中~~ | **已修复**: open-platform 已部署 307 修复，现可直接用 open.bohrium.com |
-| 5 | bohrium-image | API `POST /v2/image/private` 参数解析失败 | 中 | 文档中 buildType/device 参数格式需更新 |
-| 6 | bohrium-knowledge-base | ~~delete/file-list/literature-list/search 四个端点 404~~ | ~~高~~ | **已修正**: 之前测试路径错误，正确路径全部可用 |
-| 7 | bohrium-paper-search | ~~patent `rerank:true` 导致 -102 异常~~ | ~~低~~ | **已修正**: 文档已移除不支持的参数 |
-| 8 | bohrium-wiki | article 端点返回 250002 "Article not found" | 低 | 索引存在但文章内容可能按需生成 |
-| 9 | bohrium-lkm | `/papers/ocr/batch` 返回 290007 权限不足 | 低 | 需更高权限 AK 或开通权限 |
-| 10 | bohr CLI | `bohr machine list --json` 报 JSON 反序列化错误 | 低 | CLI bug: discountRate 字段 int/float 不匹配 |
+| 1 | bohrium-job | API `POST /job/submit`、`GET /job_group/list` 返回 404 | 不影响 | CLI 正常，文档已说明优先 CLI |
+| 2 | bohrium-node | API `/node/start/{id}` 返回 404 | 低 | 文档使用 `restart`；start 网关无路由 |
+| 3 | ~~bohrium-dataset~~ | ~~`open.bohrium.com` 的 `POST /ds/` 307→404~~ | ~~中~~ | **已修复**：307 已修复，统一 open.bohrium.com |
+| 4 | bohrium-wiki | article 端点返回 250002 "Article not found" | 低 | 索引存在，文章内容按需生成 |
+| 5 | bohrium-lkm | `/papers/ocr/batch` 返回 290007 权限不足 | 低 | 需更高权限 AK |
 
 ## CLI 环境配置说明
 
@@ -332,4 +337,3 @@ export BOHR_ACCESS_KEY=<your_access_key>
 | `bohr dataset` | list, create, delete | 数据集管理 |
 | `bohr image` | list, pull, delete | 镜像管理 |
 | `bohr project` | list | 项目列表 |
-| `bohr machine` | list | 机器规格（有 JSON 解析 bug） |
