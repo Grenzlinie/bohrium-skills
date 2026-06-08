@@ -79,6 +79,35 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 | [bohrium-web-search](en/bohrium-web-search/SKILL.md) | Web search — proxy to searchapi.io for open internet search |
 | [bohrium-sandbox](en/bohrium-sandbox/SKILL.md) | Cloud sandbox — on-demand temp VM for running shell/Python |
 | [bohrium-lkm](en/bohrium-lkm/SKILL.md) | Large Knowledge Model — knowledge graph search, claim verification, variable relationships, batch OCR |
+| [bohrium-mentor](en/bohrium-mentor/SKILL.md) | AI Science Mentor — deep-reasoning scientific Q&A with automatic literature retrieval, structured Markdown answers |
+
+---
+
+## Billing
+
+Some skills consume your Bohrium account quota or balance. Check your balance and bills on the [account page](https://www.bohrium.com/settings/account).
+
+**Free (API calls only, no charge)**
+
+bohrium-dataset, bohrium-image, bohrium-project, bohrium-knowledge-base, bohrium-scholar-search, bohrium-wiki, bohrium-web-search, bohrium-lkm; plus the read-only endpoints (list, detail) of bohrium-job / bohrium-node.
+
+**Charged to account balance (per call)**
+
+| Skill | Billing trigger |
+|-------|-----------------|
+| bohrium-paper-search | Paper / patent RAG search, billed per call |
+| bohrium-pdf-parser | PDF parsing billed per page (charged on trigger; fetching results is free) |
+| bohrium-mentor | Creating a deep-search session, billed per call |
+
+**Charged by compute resource** (standard Bohrium compute billing, machine type × duration)
+
+| Skill | Billing trigger |
+|-------|-----------------|
+| bohrium-job | Submitting compute jobs, billed by machine type × duration |
+| bohrium-node | Creating / running dev nodes, billed by machine type × duration |
+| bohrium-sandbox | Creating / running cloud sandbox VMs, billed by resource × duration |
+
+> Note: "free" means the API call itself is not charged; actual quotas / unit prices follow your platform bill.
 
 ---
 
