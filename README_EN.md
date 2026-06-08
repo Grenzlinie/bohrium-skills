@@ -85,29 +85,12 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 
 ## Billing
 
-Some skills consume your Bohrium account quota or balance. Check your balance and bills on the [account page](https://www.bohrium.com/settings/account).
+The following skills are charged to your account balance per call. Check your balance and bills on the [account page](https://www.bohrium.com/settings/account):
 
-**Free (API calls only, no charge)**
-
-bohrium-dataset, bohrium-image, bohrium-project, bohrium-knowledge-base, bohrium-scholar-search, bohrium-wiki, bohrium-web-search, bohrium-lkm; plus the read-only endpoints (list, detail) of bohrium-job / bohrium-node.
-
-**Charged to account balance (per call)**
-
-| Skill | Billing trigger |
-|-------|-----------------|
-| bohrium-paper-search | Paper / patent RAG search, billed per call |
-| bohrium-pdf-parser | PDF parsing billed per page (charged on trigger; fetching results is free) |
-| bohrium-mentor | Creating a deep-search session, billed per call |
-
-**Charged by compute resource** (standard Bohrium compute billing, machine type × duration)
-
-| Skill | Billing trigger |
-|-------|-----------------|
-| bohrium-job | Submitting compute jobs, billed by machine type × duration |
-| bohrium-node | Creating / running dev nodes, billed by machine type × duration |
-| bohrium-sandbox | Creating / running cloud sandbox VMs, billed by resource × duration |
-
-> Note: "free" means the API call itself is not charged; actual quotas / unit prices follow your platform bill.
+| Skill | Pricing |
+|-------|---------|
+| bohrium-paper-search | Paper / patent RAG search: type 0 = ¥0.4/call, type 1 = ¥0.8/call |
+| bohrium-pdf-parser | PDF parsing ¥0.05/page (charged on trigger; fetching results is free) |
 
 ---
 

@@ -85,29 +85,12 @@ export BOHR_ACCESS_KEY="your_access_key_here"
 
 ## 计费说明
 
-调用部分 Skill 会消耗 Bohrium 账户的额度或余额，请在 [账户页](https://www.bohrium.com/settings/account) 查看余额与账单。
+以下 Skill 按调用扣账户余额，可在 [账户页](https://www.bohrium.com/settings/account) 查看余额与账单：
 
-**免费（仅 API 调用，不计费）**
-
-bohrium-dataset、bohrium-image、bohrium-project、bohrium-knowledge-base、bohrium-scholar-search、bohrium-wiki、bohrium-web-search、bohrium-lkm；以及 bohrium-job / bohrium-node 的查询类接口（列表、详情）。
-
-**按调用扣账户余额**
-
-| Skill | 计费点 |
-|-------|--------|
-| bohrium-paper-search | 论文 / 专利 RAG 搜索，按次扣费 |
-| bohrium-pdf-parser | PDF 解析按页扣费（触发解析时扣，查询结果免费） |
-| bohrium-mentor | 创建深度搜索会话，按次扣费 |
-
-**按算力资源计费**（Bohrium 平台标准算力计费，按机型 × 时长）
-
-| Skill | 计费点 |
-|-------|--------|
-| bohrium-job | 提交计算任务，按机型时长计费 |
-| bohrium-node | 创建 / 运行开发机，按机型时长计费 |
-| bohrium-sandbox | 创建 / 运行云沙箱 VM，按资源时长计费 |
-
-> 注：免费接口仅指 API 调用本身不计费；具体额度 / 单价以平台账单为准。
+| Skill | 计费 |
+|-------|------|
+| bohrium-paper-search | 论文 / 专利 RAG 搜索：type 0 = 0.4 元/次，type 1 = 0.8 元/次 |
+| bohrium-pdf-parser | PDF 解析 0.05 元/页（触发解析时扣，查询结果免费） |
 
 ---
 
