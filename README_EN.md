@@ -85,7 +85,7 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 
 ## Billing
 
-The following skills are charged to your account balance per call. Check your balance and bills on the [account page](https://www.bohrium.com/settings/account):
+The following skills are charged to your account balance per call. Check your balance and bills on the [Research Assets](https://www.bohrium.com/en/assets):
 
 | Skill | Type | Price |
 |-------|------|-------|

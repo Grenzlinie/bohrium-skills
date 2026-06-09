@@ -85,7 +85,7 @@ export BOHR_ACCESS_KEY="your_access_key_here"
 
 ## 计费说明
 
-以下 Skill 按调用扣账户余额，可在 [账户页](https://www.bohrium.com/settings/account) 查看余额与账单：
+以下 Skill 按调用扣账户余额，可在 [科研资产](https://www.bohrium.com/assets) 查看余额与账单：
 
 | Skill | 类型 | 价格 |
 |-------|------|------|
