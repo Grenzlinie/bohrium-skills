@@ -54,7 +54,7 @@ This repo is also a Claude Code plugin marketplace:
 /plugin install bohrium-skills@bohrium
 ```
 
-This installs 14 Bohrium skills (English versions).
+This installs 15 Bohrium skills (English versions).
 
 ---
 
@@ -76,6 +76,7 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 | [bohrium-pdf-parser](en/bohrium-pdf-parser/SKILL.md) | PDF parsing — extract text, tables, charts, formulas |
 | [bohrium-scholar-search](en/bohrium-scholar-search/SKILL.md) | Scholar search & profile — find scholars by name/affiliation, view papers/citations/h-index/research directions |
 | [bohrium-wiki](en/bohrium-wiki/SKILL.md) | SciencePedia — browse scientific topics by hierarchy |
+| [bohrium-tools](en/bohrium-tools/SKILL.md) | Scientific Tools library — browse by domain/subdomain, hybrid-search tools, view tool details & taxonomy |
 | [bohrium-web-search](en/bohrium-web-search/SKILL.md) | Web search — proxy to searchapi.io for open internet search |
 | [bohrium-sandbox](en/bohrium-sandbox/SKILL.md) | Cloud sandbox — on-demand temp VM for running shell/Python |
 | [bohrium-lkm](en/bohrium-lkm/SKILL.md) | Large Knowledge Model — knowledge graph search, claim verification, variable relationships, batch OCR |
