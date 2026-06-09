@@ -142,13 +142,13 @@ for p in data["data"]:
     print(f"  Patent: {p}")
 ```
 
-**注意**: keyword 与 patent 搜索的 `type` 目前均仅支持 0（普通）和 1（加强版），其余版本已下线。
+**注意**: keyword 搜索的 `type` 仅支持 0（普通）、1（加强版）；patent 搜索的 `type` 支持 0、1、2。
 
 ### 专利请求参数
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `type` | integer | 否 | 专利搜索版本，仅支持 0、1 |
+| `type` | integer | 否 | 专利搜索版本，仅支持 0、1、2 |
 | `words` | string[] | 是 | 关键词列表 |
 | `question` | string | 是 | 检索问题或关键词描述 |
 | `pageSize` | integer | 是 | 每页数量 |
