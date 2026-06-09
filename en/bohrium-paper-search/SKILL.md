@@ -142,13 +142,13 @@ for p in data["data"]:
     print(f"  Patent: {p}")
 ```
 
-**Note**: Both keyword and patent search currently support only type 0 (basic) and 1 (enhanced); other versions are retired.
+**Note**: keyword search supports type 0 (basic) and 1 (enhanced); patent search supports type 0, 1, and 2.
 
 ### Patent Request Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `type` | integer | No | Patent search version; only 0 and 1 are supported |
+| `type` | integer | No | Patent search version; only 0, 1, 2 are supported |
 | `words` | string[] | Yes | Keyword list |
 | `question` | string | Yes | Search question or keyword description |
 | `pageSize` | integer | Yes | Results per page |

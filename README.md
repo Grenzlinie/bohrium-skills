@@ -87,10 +87,11 @@ export BOHR_ACCESS_KEY="your_access_key_here"
 
 以下 Skill 按调用扣账户余额，可在 [账户页](https://www.bohrium.com/settings/account) 查看余额与账单：
 
-| Skill | 计费 |
-|-------|------|
-| bohrium-paper-search | 论文 / 专利 RAG 搜索：type 0 = 0.4 元/次，type 1 = 0.8 元/次 |
-| bohrium-pdf-parser | PDF 解析 0.05 元/页（触发解析时扣，查询结果免费） |
+| Skill | 类型 | 价格 |
+|-------|------|------|
+| bohrium-paper-search | 论文搜索（keyword） | type 0 = 0.4 元/次；type 1 = 0.8 元/次 |
+| bohrium-paper-search | 专利搜索（patent） | type 0 = 0.1 元/次；type 1 = 0.6 元/次；type 2 = 1 元/次 |
+| bohrium-pdf-parser | PDF 解析 | 0.05 元/页（触发解析时扣，查询结果免费） |
 
 ---
 

@@ -87,10 +87,11 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 
 The following skills are charged to your account balance per call. Check your balance and bills on the [account page](https://www.bohrium.com/settings/account):
 
-| Skill | Pricing |
-|-------|---------|
-| bohrium-paper-search | Paper / patent RAG search: type 0 = ¥0.4/call, type 1 = ¥0.8/call |
-| bohrium-pdf-parser | PDF parsing ¥0.05/page (charged on trigger; fetching results is free) |
+| Skill | Type | Price |
+|-------|------|-------|
+| bohrium-paper-search | Paper search (keyword) | type 0 = ¥0.4/call; type 1 = ¥0.8/call |
+| bohrium-paper-search | Patent search (patent) | type 0 = ¥0.1/call; type 1 = ¥0.6/call; type 2 = ¥1/call |
+| bohrium-pdf-parser | PDF parsing | ¥0.05/page (charged on trigger; fetching results is free) |
 
 ---
 
