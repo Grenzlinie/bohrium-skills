@@ -59,7 +59,7 @@ bohr job submit \
   -t "c4_m15_1 * NVIDIA T4" \
   -c "python train.py" \
   -p ./input_dir/ \
-  --project_id 154 \
+  --project_id YOUR_PROJECT_ID \
   -n "my-job-name"
 ```
 
@@ -94,7 +94,7 @@ bohr job submit -i job.json -p ./input_dir/
   "command": "python train.py --epochs 10",
   "log_file": "train.log",
   "backward_files": ["model.pt", "results/"],
-  "project_id": 154,
+  "project_id": YOUR_PROJECT_ID,
   "machine_type": "c4_m15_1 * NVIDIA T4",
   "image_address": "registry.dp.tech/dptech/deepmd-kit:3.1.1",
   "job_type": "container",
@@ -115,7 +115,7 @@ bohr job submit -i job.json -p ./input_dir/
 | `command` | Command; use **relative paths** | `"cd se_e2_a && dp train input.json"` |
 | `log_file` | Log viewable in real-time | `"train.log"` |
 | `backward_files` | Files to download; empty = keep all | `["model.pt", "results/"]` |
-| `project_id` | Project ID | `154` |
+| `project_id` | Project ID | `YOUR_PROJECT_ID` |
 | `machine_type` | Machine spec | `"c4_m15_1 * NVIDIA T4"` |
 | `image_address` | Full image URL (not just name) | `"registry.dp.tech/dptech/deepmd-kit:2.1.5-cuda11.6"` |
 | `job_type` | Must be `"container"` | `"container"` |
@@ -149,28 +149,28 @@ bohr job list -r                 # Running only
 bohr job list -f                 # Failed only
 bohr job list -i                 # Finished only
 bohr job list -p                 # Pending only
-bohr job list -j 15954383        # Jobs in a specific group
+bohr job list -j YOUR_JOB_GROUP_ID        # Jobs in a specific group
 ```
 
 ### Job Details
 
 ```bash
-bohr job describe -j 22153612 --json
-bohr job describe -j 22153612 -l        # Full details
+bohr job describe -j YOUR_JOB_ID --json
+bohr job describe -j YOUR_JOB_ID -l        # Full details
 ```
 
 ### View/Download Logs
 
 ```bash
-bohr job log -j 22153612                # View
-bohr job log -j 22153612 -o ./logs/     # Download
+bohr job log -j YOUR_JOB_ID                # View
+bohr job log -j YOUR_JOB_ID -o ./logs/     # Download
 ```
 
 ### Download Results
 
 ```bash
-bohr job download -j 22153612 -o ./results/
-bohr job_group download -j 15954383 -o ./results/
+bohr job download -j YOUR_JOB_ID -o ./results/
+bohr job_group download -j YOUR_JOB_GROUP_ID -o ./results/
 ```
 
 ---
@@ -178,11 +178,11 @@ bohr job_group download -j 15954383 -o ./results/
 ## Manage Jobs
 
 ```bash
-bohr job terminate 22153612             # Terminate (keep results -> completed)
-bohr job kill 22153612                  # Force stop (discard results, keep record)
-bohr job delete 22153612                # Delete (remove everything)
-bohr job terminate 22153612 22153613    # Batch terminate
-bohr job delete 22153612 22153613       # Batch delete
+bohr job terminate YOUR_JOB_ID             # Terminate (keep results -> completed)
+bohr job kill YOUR_JOB_ID                  # Force stop (discard results, keep record)
+bohr job delete YOUR_JOB_ID                # Delete (remove everything)
+bohr job terminate YOUR_JOB_ID YOUR_JOB_ID_2    # Batch terminate
+bohr job delete YOUR_JOB_ID YOUR_JOB_ID_2       # Batch delete
 ```
 
 **terminate vs kill vs delete:**
@@ -200,10 +200,10 @@ bohr job delete 22153612 22153613       # Batch delete
 ```bash
 bohr job_group list -n 10 --json
 bohr job_group list -s 2026-01-01 -e 2026-03-14     # Date range
-bohr job_group create -n "experiment-v1" -p 154
-bohr job_group terminate 15954383
-bohr job_group delete 15954383
-bohr job_group download -j 15954383 -o ./results/
+bohr job_group create -n "experiment-v1" -p YOUR_PROJECT_ID
+bohr job_group terminate YOUR_JOB_GROUP_ID
+bohr job_group delete YOUR_JOB_GROUP_ID
+bohr job_group download -j YOUR_JOB_GROUP_ID -o ./results/
 ```
 
 > **Note**: `job_group_id` from `bohr job_group create` is for CLI only (`bohr job submit -g <id>`). It differs from the web UI job group ID.
@@ -220,7 +220,7 @@ bohr job_group download -j 15954383 -o ./results/
   "command": "cd se_e2_a && dp train input.json > tmp_log 2>&1 && dp freeze -o graph.pb",
   "log_file": "se_e2_a/tmp_log",
   "backward_files": ["se_e2_a/lcurve.out", "se_e2_a/graph.pb"],
-  "project_id": 154,
+  "project_id": YOUR_PROJECT_ID,
   "machine_type": "c4_m15_1 * NVIDIA T4",
   "job_type": "container",
   "image_address": "registry.dp.tech/dptech/deepmd-kit:2.1.5-cuda11.6"
@@ -235,7 +235,7 @@ bohr job_group download -j 15954383 -o ./results/
   "command": "mpirun -n 32 lmp_mpi -i in.shear > log",
   "log_file": "log",
   "backward_files": [],
-  "project_id": 154,
+  "project_id": YOUR_PROJECT_ID,
   "machine_type": "c32_m64_cpu",
   "job_type": "container",
   "image_address": "registry.dp.tech/dptech/lammps:29Sep2021"
@@ -250,7 +250,7 @@ bohr job_group download -j 15954383 -o ./results/
   "command": "OMP_NUM_THREADS=1 mpirun -np 8 abacus > log",
   "log_file": "log",
   "backward_files": [],
-  "project_id": 154,
+  "project_id": YOUR_PROJECT_ID,
   "machine_type": "c16_m32_cpu",
   "job_type": "container",
   "image_address": "registry.dp.tech/dptech/abacus:3.0.0"
@@ -265,7 +265,7 @@ bohr job_group download -j 15954383 -o ./results/
   "command": "bash rungmx.sh > log",
   "log_file": "log",
   "backward_files": [],
-  "project_id": 154,
+  "project_id": YOUR_PROJECT_ID,
   "machine_type": "c16_m62_1 * NVIDIA T4",
   "job_type": "container",
   "image_address": "registry.dp.tech/dptech/gromacs:2022.2"
@@ -280,7 +280,7 @@ bohr job_group download -j 15954383 -o ./results/
   "command": "source /cp2k-7.1/tools/toolchain/install/setup && mpirun -n 16 --allow-run-as-root --oversubscribe cp2k.popt -i input.inp -o output.log",
   "log_file": "output.log",
   "backward_files": ["output.log"],
-  "project_id": 154,
+  "project_id": YOUR_PROJECT_ID,
   "machine_type": "c16_m32_cpu",
   "job_type": "container",
   "image_address": "registry.dp.tech/dptech/cp2k:7.1"

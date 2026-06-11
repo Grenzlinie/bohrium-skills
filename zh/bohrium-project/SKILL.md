@@ -80,7 +80,7 @@ bohr project create -n "my-experiment" -t 10000         # 设置总费上限
 ## 删除项目
 
 ```bash
-bohr project delete 154
+bohr project delete YOUR_PROJECT_ID
 ```
 
 > **警告**：删除项目是**不可逆操作**，会删除项目下所有任务和镜像，且无法恢复。
@@ -133,7 +133,7 @@ Bohrium 项目有 3 种角色：
 通过 API 设置项目费用上限：
 ```python
 requests.post(f"{BASE}/set_cost_limit", headers=HEADERS_JSON,
-    json={"projectId": 154, "costLimit": 5000})
+    json={"projectId": YOUR_PROJECT_ID, "costLimit": 5000})
 ```
 
 ---
@@ -205,32 +205,32 @@ r = requests.get(f"{BASE}/lite_list", headers=HEADERS)
 
 # ── 重命名项目 ──
 requests.post(f"{BASE}/set_name", headers=HEADERS_JSON,
-    json={"projectId": 154, "name": "new-name"})
+    json={"projectId": YOUR_PROJECT_ID, "name": "new-name"})
 
 # ── 设置费用上限 ──
 requests.post(f"{BASE}/set_cost_limit", headers=HEADERS_JSON,
-    json={"projectId": 154, "costLimit": 5000})
+    json={"projectId": YOUR_PROJECT_ID, "costLimit": 5000})
 
 # ── 查看项目成员 ──
-r = requests.get(f"{BASE}/154/users", headers=HEADERS)
+r = requests.get(f"{BASE}/YOUR_PROJECT_ID/users", headers=HEADERS)
 # 返回: {items: [{userId, userName, email, projectRole, cost, ...}]}
 
 # ── 添加成员（通过 email） ──
 requests.post(f"{BASE}/add_user", headers=HEADERS_JSON,
-    json={"projectId": 154, "email": "user@example.com"})
+    json={"projectId": YOUR_PROJECT_ID, "email": "user@example.com"})
 
 # ── 删除成员 ──
 requests.post(f"{BASE}/del_user", headers=HEADERS_JSON,
-    json={"projectId": 154, "userId": 12345})
+    json={"projectId": YOUR_PROJECT_ID, "userId": 12345})
 
 # ── 添加/删除管理员 ──
 requests.post(f"{BASE}/manager/add", headers=HEADERS_JSON,
-    json={"projectId": 154, "userId": 12345})
+    json={"projectId": YOUR_PROJECT_ID, "userId": 12345})
 requests.post(f"{BASE}/manager/del", headers=HEADERS_JSON,
-    json={"projectId": 154, "userId": 12345})
+    json={"projectId": YOUR_PROJECT_ID, "userId": 12345})
 
 # ── 恢复已删除成员 ──
-requests.put(f"{BASE}/154/recovery_user", headers=HEADERS_JSON,
+requests.put(f"{BASE}/YOUR_PROJECT_ID/recovery_user", headers=HEADERS_JSON,
     json={"userId": 12345})
 ```
 

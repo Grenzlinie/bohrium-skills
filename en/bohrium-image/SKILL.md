@@ -128,8 +128,8 @@ docker pull registry.bohrium.dp.tech/dptech/ubuntu:22.04-py3.10-intel2022
 ## Delete Custom Images
 
 ```bash
-bohr image delete 121510
-bohr image delete 121510 121395         # Batch
+bohr image delete YOUR_IMAGE_ID
+bohr image delete YOUR_IMAGE_ID YOUR_IMAGE_ID_2         # Batch
 ```
 
 ---
@@ -182,7 +182,7 @@ dockerfile_b64 = base64.b64encode(dockerfile_content.encode()).decode()
 
 r = requests.post("https://open.bohrium.com/openapi/v2/image/private",
     headers=HEADERS_JSON, json={
-        "name": "my-image", "projectId": 154, "device": "container",
+        "name": "my-image", "projectId": YOUR_PROJECT_ID, "device": "container",
         "desc": "Custom training image", "buildType": 1,
         "dockerfile": dockerfile_b64,
     })

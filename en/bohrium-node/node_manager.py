@@ -4,9 +4,9 @@ Programmatic node management: create, query pricing, get SSH credentials.
 Usage:
     python node_manager.py list
     python node_manager.py resources
-    python node_manager.py price --sku 388 --project_id 154
-    python node_manager.py create --project_id 154 --name dev-box --image_id 2168 --sku 388
-    python node_manager.py ssh --machine_id 1427300
+    python node_manager.py price --sku 388 --project_id YOUR_PROJECT_ID
+    python node_manager.py create --project_id YOUR_PROJECT_ID --name dev-box --image_id YOUR_BASE_IMAGE_ID --sku 388
+    python node_manager.py ssh --machine_id YOUR_MACHINE_ID
 """
 
 import argparse

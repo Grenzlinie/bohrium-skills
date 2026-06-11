@@ -5,7 +5,7 @@ Poll running jobs and print status updates.
 
 Usage:
     python poll_jobs.py                    # poll all running jobs
-    python poll_jobs.py --project_id 154   # filter by project
+    python poll_jobs.py --project_id YOUR_PROJECT_ID   # filter by project
     python poll_jobs.py --interval 30      # check every 30 seconds
 """
 

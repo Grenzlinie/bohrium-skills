@@ -78,7 +78,7 @@ bohr project create -n "my-experiment" -t 10000         # Total cost limit
 ## Delete Project
 
 ```bash
-bohr project delete 154
+bohr project delete YOUR_PROJECT_ID
 ```
 
 > **Warning**: Deleting a project is **irreversible** — all jobs and images under the project will be removed and cannot be recovered.
@@ -131,7 +131,7 @@ Individual spending limits can be assigned per member:
 Set project cost limit via API:
 ```python
 requests.post(f"{BASE}/set_cost_limit", headers=HEADERS_JSON,
-    json={"projectId": 154, "costLimit": 5000})
+    json={"projectId": YOUR_PROJECT_ID, "costLimit": 5000})
 ```
 
 ---
@@ -203,32 +203,32 @@ r = requests.get(f"{BASE}/lite_list", headers=HEADERS)
 
 # Rename project
 requests.post(f"{BASE}/set_name", headers=HEADERS_JSON,
-    json={"projectId": 154, "name": "new-name"})
+    json={"projectId": YOUR_PROJECT_ID, "name": "new-name"})
 
 # Set cost limit
 requests.post(f"{BASE}/set_cost_limit", headers=HEADERS_JSON,
-    json={"projectId": 154, "costLimit": 5000})
+    json={"projectId": YOUR_PROJECT_ID, "costLimit": 5000})
 
 # View project members
-r = requests.get(f"{BASE}/154/users", headers=HEADERS)
+r = requests.get(f"{BASE}/YOUR_PROJECT_ID/users", headers=HEADERS)
 # Returns: {items: [{userId, userName, email, projectRole, cost, ...}]}
 
 # Add member (by email)
 requests.post(f"{BASE}/add_user", headers=HEADERS_JSON,
-    json={"projectId": 154, "email": "user@example.com"})
+    json={"projectId": YOUR_PROJECT_ID, "email": "user@example.com"})
 
 # Remove member
 requests.post(f"{BASE}/del_user", headers=HEADERS_JSON,
-    json={"projectId": 154, "userId": 12345})
+    json={"projectId": YOUR_PROJECT_ID, "userId": 12345})
 
 # Promote/demote admin
 requests.post(f"{BASE}/manager/add", headers=HEADERS_JSON,
-    json={"projectId": 154, "userId": 12345})
+    json={"projectId": YOUR_PROJECT_ID, "userId": 12345})
 requests.post(f"{BASE}/manager/del", headers=HEADERS_JSON,
-    json={"projectId": 154, "userId": 12345})
+    json={"projectId": YOUR_PROJECT_ID, "userId": 12345})
 
 # Recover deleted member
-requests.put(f"{BASE}/154/recovery_user", headers=HEADERS_JSON,
+requests.put(f"{BASE}/YOUR_PROJECT_ID/recovery_user", headers=HEADERS_JSON,
     json={"userId": 12345})
 ```
 

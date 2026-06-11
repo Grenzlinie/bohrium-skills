@@ -5,7 +5,7 @@ Usage:
     python search_images.py search deepmd
     python search_images.py search lammps --limit 10
     python search_images.py browse
-    python search_images.py build --project_id 154 --name my-image --dockerfile Dockerfile
+    python search_images.py build --project_id YOUR_PROJECT_ID --name my-image --dockerfile Dockerfile
 """
 
 import argparse

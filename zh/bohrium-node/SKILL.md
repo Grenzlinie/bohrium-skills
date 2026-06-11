@@ -74,7 +74,7 @@ bohr node create
 ### 免密 SSH（推荐）
 
 ```bash
-bohr node connect 1431145       # 通过 nodeId 直接 SSH 连接
+bohr node connect YOUR_NODE_ID       # 通过 nodeId 直接 SSH 连接
 ```
 
 > 无需记忆 SSH 密码，bohr 自动处理认证。
@@ -96,8 +96,8 @@ ssh root@<domain_name>
 ## 停止/删除节点
 
 ```bash
-bohr node stop 1431145          # 停止节点（不计费，数据保留）
-bohr node delete 1431145        # 删除节点（不可逆）
+bohr node stop YOUR_NODE_ID          # 停止节点（不计费，数据保留）
+bohr node delete YOUR_NODE_ID        # 删除节点（不可逆）
 ```
 
 > **重要**：节点启动后持续计费，不使用时请及时停止或删除。
@@ -157,13 +157,13 @@ HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
 # ── 程序化创建节点（非交互式） ──
 r = requests.post(f"{BASE}/add", headers=HEADERS_JSON, json={
-    "projectId": 154,
+    "projectId": YOUR_PROJECT_ID,
     "name": "my-node",
-    "imageId": 2168,  # 从 bohr image list --json 获取
+    "imageId": YOUR_BASE_IMAGE_ID,  # 从 bohr image list --json 获取
     "machineConfig": {"type": 0, "value": 388, "label": "c2_m4_cpu"},
     "diskSize": 20,
 })
-# 返回: {"code": 0, "data": {"machineId": 1427300}}
+# 返回: {"code": 0, "data": {"machineId": YOUR_MACHINE_ID}}
 
 # ── 查询可用机器资源 ──
 r = requests.get(f"{BASE}/resources", headers=HEADERS)
@@ -172,7 +172,7 @@ r = requests.get(f"{BASE}/resources", headers=HEADERS)
 
 # ── 查询资源价格 ──
 r = requests.get(f"{BASE}/resources/price",
-    headers=HEADERS, params={"skuId": 388, "projectId": 154})
+    headers=HEADERS, params={"skuId": 388, "projectId": YOUR_PROJECT_ID})
 # 返回: {"data": {"price": "0.4"}}  (元/小时)
 
 # ── 获取节点详情（含 SSH 密码） ──

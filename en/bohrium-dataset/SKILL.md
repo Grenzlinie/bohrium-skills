@@ -46,7 +46,7 @@ export OPENAPI_HOST=https://open.bohrium.com
 ```bash
 bohr dataset list                       # Default: recent 50
 bohr dataset list -n 10 --json          # JSON, top 10
-bohr dataset list -p 154                # Filter by project ID
+bohr dataset list -p YOUR_PROJECT_ID                # Filter by project ID
 bohr dataset list -t "my-dataset"       # Search by title
 ```
 
@@ -60,7 +60,7 @@ bohr dataset list -t "my-dataset"       # Search by title
 bohr dataset create \
   -n "my-dataset" \
   -p "my-dataset" \
-  -i 154 \
+  -i YOUR_PROJECT_ID \
   -l "/path/to/local/data"
 ```
 
@@ -86,7 +86,7 @@ Add `dataset_path` to `job.json`:
 {
   "job_name": "DeePMD-kit test",
   "command": "cd se_e2_a && dp train input.json",
-  "project_id": 154,
+  "project_id": YOUR_PROJECT_ID,
   "machine_type": "c4_m15_1 * NVIDIA T4",
   "job_type": "container",
   "image_address": "registry.dp.tech/dptech/deepmd-kit:2.1.5-cuda11.6",
@@ -134,8 +134,8 @@ Preparation time depends on file size and count.
 ## Delete Datasets
 
 ```bash
-bohr dataset delete 138201              # Single
-bohr dataset delete 138201 108601       # Batch
+bohr dataset delete YOUR_DATASET_ID              # Single
+bohr dataset delete YOUR_DATASET_ID YOUR_DATASET_ID_2       # Batch
 ```
 
 > Deleted versions cannot be recovered.
@@ -175,7 +175,7 @@ r = requests.get(f"{BASE}/{dataset_id}/version/{version_id}", headers=HEADERS)
 
 # Create via API
 r = requests.post(f"{BASE}/", headers=HEADERS_JSON, json={
-    "title": "my-dataset", "projectId": 154,
+    "title": "my-dataset", "projectId": YOUR_PROJECT_ID,
     "identifier": "my-dataset",  # Required, unique ID
 })
 # Returns: {datasetId, tiefbluePath, requestId}
@@ -198,12 +198,12 @@ requests.delete(f"{BASE}/{dataset_id}/version/{version_id}", headers=HEADERS)
 
 # Check quota
 r = requests.get(f"{BASE}/quota/check", headers=HEADERS,
-    params={"projectId": 154})
+    params={"projectId": YOUR_PROJECT_ID})
 # Returns: {result: true, limit: 30, used: 5}
 
 # Upload token (for tiefblue)
 r = requests.get(f"{BASE}/input/token", headers=HEADERS,
-    params={"projectId": 154, "path": "/bohr/my-dataset"})
+    params={"projectId": YOUR_PROJECT_ID, "path": "/bohr/my-dataset"})
 
 # Permissions
 r = requests.get(f"{BASE}/{dataset_id}/permission", headers=HEADERS)

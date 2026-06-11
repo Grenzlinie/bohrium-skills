@@ -53,7 +53,7 @@ export OPENAPI_HOST=https://open.bohrium.com
 ```bash
 bohr dataset list                       # 默认最近 50 个
 bohr dataset list -n 10 --json          # JSON 格式，前 10 个
-bohr dataset list -p 154                # 按项目 ID 过滤
+bohr dataset list -p YOUR_PROJECT_ID                # 按项目 ID 过滤
 bohr dataset list -t "my-dataset"       # 按标题搜索
 ```
 
@@ -77,7 +77,7 @@ bohr dataset list -t "my-dataset"       # 按标题搜索
 bohr dataset create \
   -n "my-dataset" \
   -p "my-dataset" \
-  -i 154 \
+  -i YOUR_PROJECT_ID \
   -l "/path/to/local/data"
 ```
 
@@ -105,7 +105,7 @@ bohr dataset create \
 {
   "job_name": "DeePMD-kit test",
   "command": "cd se_e2_a && dp train input.json > tmp_log 2>&1",
-  "project_id": 154,
+  "project_id": YOUR_PROJECT_ID,
   "machine_type": "c4_m15_1 * NVIDIA T4",
   "job_type": "container",
   "image_address": "registry.dp.tech/dptech/deepmd-kit:2.1.5-cuda11.6",
@@ -163,8 +163,8 @@ requests.post(f"{BASE}/{dataset_id}/version", headers=HEADERS_JSON,
 ## 删除数据集
 
 ```bash
-bohr dataset delete 138201              # 删除单个
-bohr dataset delete 138201 108601       # 批量删除
+bohr dataset delete YOUR_DATASET_ID              # 删除单个
+bohr dataset delete YOUR_DATASET_ID YOUR_DATASET_ID_2       # 批量删除
 ```
 
 > 删除的版本无法恢复。
@@ -208,7 +208,7 @@ r = requests.get(f"{BASE}/{dataset_id}/version/{version_id}", headers=HEADERS)
 # ── 通过 API 创建数据集（程序化） ──
 r = requests.post(f"{BASE}/", headers=HEADERS_JSON, json={
     "title": "my-dataset",
-    "projectId": 154,
+    "projectId": YOUR_PROJECT_ID,
     "identifier": "my-dataset",  # 必填，唯一标识（英文+数字）
 })
 # 返回: {datasetId, tiefbluePath, requestId}
@@ -231,12 +231,12 @@ requests.delete(f"{BASE}/{dataset_id}/version/{version_id}", headers=HEADERS)
 
 # ── 检查配额 ──
 r = requests.get(f"{BASE}/quota/check", headers=HEADERS,
-    params={"projectId": 154})
+    params={"projectId": YOUR_PROJECT_ID})
 # 返回: {result: true, limit: 30, used: 5}
 
 # ── 获取上传 Token（用于 tiefblue 上传） ──
 r = requests.get(f"{BASE}/input/token", headers=HEADERS,
-    params={"projectId": 154, "path": "/bohr/my-dataset"})
+    params={"projectId": YOUR_PROJECT_ID, "path": "/bohr/my-dataset"})
 # 返回: {token, path, host}
 
 # ── 查看数据集权限 ──

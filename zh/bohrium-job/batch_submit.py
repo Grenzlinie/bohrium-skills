@@ -4,8 +4,8 @@ from __future__ import annotations
 Batch submit jobs to Bohrium with the same config but different input directories.
 
 Usage:
-    python batch_submit.py --project_id 154 --input_dirs exp1/ exp2/ exp3/
-    python batch_submit.py --project_id 154 --input_dirs exp*/ --group "batch-run"
+    python batch_submit.py --project_id YOUR_PROJECT_ID --input_dirs exp1/ exp2/ exp3/
+    python batch_submit.py --project_id YOUR_PROJECT_ID --input_dirs exp*/ --group "batch-run"
 """
 
 import argparse

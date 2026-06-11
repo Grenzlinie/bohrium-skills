@@ -2,10 +2,10 @@
 Dataset lifecycle management: detail, versions, quota, permissions.
 
 Usage:
-    python dataset_manager.py quota --project_id 154
-    python dataset_manager.py detail --id 138201
-    python dataset_manager.py versions --id 138201
-    python dataset_manager.py new_version --id 138201 --desc "v2 with more data"
+    python dataset_manager.py quota --project_id YOUR_PROJECT_ID
+    python dataset_manager.py detail --id YOUR_DATASET_ID
+    python dataset_manager.py versions --id YOUR_DATASET_ID
+    python dataset_manager.py new_version --id YOUR_DATASET_ID --desc "v2 with more data"
 """
 
 import argparse

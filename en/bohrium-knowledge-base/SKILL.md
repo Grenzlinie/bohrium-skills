@@ -148,8 +148,8 @@ r = requests.get(f"{BASE}/knowledge_base/recommendation", headers=HEADERS)
 ### Favorite / Unfavorite
 
 ```python
-requests.post(f"{BASE}/knowledge_base/favorite",   headers=HEADERS_JSON, json={"nodesId": 11743137})
-requests.post(f"{BASE}/knowledge_base/unfavorite", headers=HEADERS_JSON, json={"nodesId": 11743137})
+requests.post(f"{BASE}/knowledge_base/favorite",   headers=HEADERS_JSON, json={"nodesId": YOUR_KB_NODES_ID})
+requests.post(f"{BASE}/knowledge_base/unfavorite", headers=HEADERS_JSON, json={"nodesId": YOUR_KB_NODES_ID})
 
 # List my favorited KBs
 r = requests.get(f"{BASE}/knowledge_base/favorite", headers=HEADERS,
@@ -163,9 +163,9 @@ r = requests.get(f"{BASE}/knowledge_base/favorite", headers=HEADERS,
 requests.post(f"{BASE}/knowledge_base/browse/add", headers=HEADERS_JSON, json={
     "fileId": 12345,
     "fileType": 1,
-    "parentId": 11743137,
-    "rootFolderId": 11743137,
-    "nodesId": 11743137
+    "parentId": YOUR_KB_NODES_ID,
+    "rootFolderId": YOUR_KB_NODES_ID,
+    "nodesId": YOUR_KB_NODES_ID
 })
 
 # Query browse / search history
@@ -195,7 +195,7 @@ There is no dedicated `knowledge_base/delete` endpoint. Deleting a KB = deleting
 
 ```python
 r = requests.post(f"{BASE}/folder/delete", headers=HEADERS_JSON, json={
-    "nodesId": 11743137   # KB's nodesID
+    "nodesId": YOUR_KB_NODES_ID   # KB's nodesID
 })
 # Only Owner role can delete.
 ```
@@ -874,7 +874,7 @@ r = requests.post(f"{BASE}/recall/hybrid", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.get(f"{BASE}/account/acl", headers=HEADERS,
-    params={"nodesId": 11743137})
+    params={"nodesId": YOUR_KB_NODES_ID})
 # data: {privilege, shareMode, userList: [{id, role, isCreator, userName, ...}]}
 ```
 
@@ -882,7 +882,7 @@ r = requests.get(f"{BASE}/account/acl", headers=HEADERS,
 
 ```python
 r = requests.post(f"{BASE}/account/share_status", headers=HEADERS_JSON, json={
-    "nodesId": 11743137,
+    "nodesId": YOUR_KB_NODES_ID,
     "privilege": 1,    # 1=public, 2=private
     "shareMode": 1     # 1=no share, 2=link share
 })
@@ -892,7 +892,7 @@ r = requests.post(f"{BASE}/account/share_status", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{BASE}/account/user_role", headers=HEADERS_JSON, json={
-    "nodesId": 11743137,
+    "nodesId": YOUR_KB_NODES_ID,
     "userId": 456,
     "role": 67801    # See role reference below
 })
@@ -902,7 +902,7 @@ r = requests.post(f"{BASE}/account/user_role", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.delete(f"{BASE}/account/user_role", headers=HEADERS_JSON, json={
-    "nodesId": 11743137,
+    "nodesId": YOUR_KB_NODES_ID,
     "userId": 456
 })
 ```
@@ -911,7 +911,7 @@ r = requests.delete(f"{BASE}/account/user_role", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.post(f"{BASE}/account/batch_add_readers", headers=HEADERS_JSON, json={
-    "nodesId": 11743137,
+    "nodesId": YOUR_KB_NODES_ID,
     "userList": [
         {"id": 456, "role": 67801},
         {"id": 789, "role": 67801}
@@ -925,7 +925,7 @@ r = requests.post(f"{BASE}/account/batch_add_readers", headers=HEADERS_JSON, jso
 
 ```python
 r = requests.post(f"{BASE}/account/join_request", headers=HEADERS_JSON, json={
-    "nodesId": 11743137
+    "nodesId": YOUR_KB_NODES_ID
 })
 ```
 
@@ -933,7 +933,7 @@ r = requests.post(f"{BASE}/account/join_request", headers=HEADERS_JSON, json={
 
 ```python
 r = requests.get(f"{BASE}/account/user_knowledge_base_role", headers=HEADERS,
-    params={"nodesId": 11743137})
+    params={"nodesId": YOUR_KB_NODES_ID})
 # data: {roles: [int, ...]}
 ```
 

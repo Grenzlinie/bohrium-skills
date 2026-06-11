@@ -56,7 +56,7 @@ bohr node create    # Interactive: Project -> Image -> Machine -> Name -> Disk
 ## Connect to Node
 
 ```bash
-bohr node connect 1431145       # Passwordless SSH via nodeId
+bohr node connect YOUR_NODE_ID       # Passwordless SSH via nodeId
 ```
 
 Alternative: **Web Shell** via the Bohrium web UI (auto-login as root), or manual SSH using credentials from the API.
@@ -66,8 +66,8 @@ Alternative: **Web Shell** via the Bohrium web UI (auto-login as root), or manua
 ## Stop / Delete
 
 ```bash
-bohr node stop 1431145          # Stop (pause billing, data preserved)
-bohr node delete 1431145        # Delete (irreversible)
+bohr node stop YOUR_NODE_ID          # Stop (pause billing, data preserved)
+bohr node delete YOUR_NODE_ID        # Delete (irreversible)
 ```
 
 > **Important**: Nodes are billed continuously while running. Stop or delete when not in use.
@@ -125,11 +125,11 @@ HEADERS_JSON = {**HEADERS, "Content-Type": "application/json"}
 
 # Programmatic node creation (non-interactive)
 r = requests.post(f"{BASE}/add", headers=HEADERS_JSON, json={
-    "projectId": 154, "name": "my-node", "imageId": 2168,
+    "projectId": YOUR_PROJECT_ID, "name": "my-node", "imageId": YOUR_BASE_IMAGE_ID,
     "machineConfig": {"type": 0, "value": 388, "label": "c2_m4_cpu"},
     "diskSize": 20,
 })
-# Returns: {"code": 0, "data": {"machineId": 1427300}}
+# Returns: {"code": 0, "data": {"machineId": YOUR_MACHINE_ID}}
 
 # Available resources
 r = requests.get(f"{BASE}/resources", headers=HEADERS)
@@ -137,7 +137,7 @@ r = requests.get(f"{BASE}/resources", headers=HEADERS)
 
 # Resource pricing
 r = requests.get(f"{BASE}/resources/price", headers=HEADERS,
-    params={"skuId": 388, "projectId": 154})
+    params={"skuId": 388, "projectId": YOUR_PROJECT_ID})
 # Returns: {"data": {"price": "0.4"}}  (CNY/hour)
 
 # Node details (includes SSH password)

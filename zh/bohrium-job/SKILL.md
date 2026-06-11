@@ -59,7 +59,7 @@ bohr job submit \
   -t "c4_m15_1 * NVIDIA T4" \
   -c "python train.py" \
   -p ./input_dir/ \
-  --project_id 154 \
+  --project_id YOUR_PROJECT_ID \
   -n "my-job-name"
 ```
 
@@ -94,7 +94,7 @@ bohr job submit -i job.json -p ./input_dir/
   "command": "python train.py --epochs 10",
   "log_file": "train.log",
   "backward_files": ["model.pt", "results/"],
-  "project_id": 154,
+  "project_id": YOUR_PROJECT_ID,
   "machine_type": "c4_m15_1 * NVIDIA T4",
   "image_address": "registry.dp.tech/dptech/deepmd-kit:3.1.1",
   "job_type": "container",
@@ -115,7 +115,7 @@ bohr job submit -i job.json -p ./input_dir/
 | `command` | 执行命令，用**相对路径** | `"cd se_e2_a && dp train input.json"` |
 | `log_file` | 运行期间可实时查看的日志文件 | `"train.log"` |
 | `backward_files` | 需要下载的结果文件，为空则保留全部 | `["model.pt", "results/"]` |
-| `project_id` | 项目 ID | `154` |
+| `project_id` | 项目 ID | `YOUR_PROJECT_ID` |
 | `machine_type` | 机器规格 | `"c4_m15_1 * NVIDIA T4"` |
 | `image_address` | 完整镜像地址（非镜像名） | `"registry.dp.tech/dptech/deepmd-kit:2.1.5-cuda11.6"` |
 | `job_type` | 必须为 `"container"` | `"container"` |
@@ -149,28 +149,28 @@ bohr job list -r                 # 只看运行中
 bohr job list -f                 # 只看失败的
 bohr job list -i                 # 只看已完成
 bohr job list -p                 # 只看等待中
-bohr job list -j 15954383        # 查看指定 job group 下的任务
+bohr job list -j YOUR_JOB_GROUP_ID        # 查看指定 job group 下的任务
 ```
 
 ### 查看任务详情
 
 ```bash
-bohr job describe -j 22153612 --json    # JSON 格式详情
-bohr job describe -j 22153612 -l        # 完整详细信息
+bohr job describe -j YOUR_JOB_ID --json    # JSON 格式详情
+bohr job describe -j YOUR_JOB_ID -l        # 完整详细信息
 ```
 
 ### 查看/下载日志
 
 ```bash
-bohr job log -j 22153612                # 查看日志
-bohr job log -j 22153612 -o ./logs/     # 下载日志到本地目录
+bohr job log -j YOUR_JOB_ID                # 查看日志
+bohr job log -j YOUR_JOB_ID -o ./logs/     # 下载日志到本地目录
 ```
 
 ### 下载任务结果
 
 ```bash
-bohr job download -j 22153612 -o ./results/
-bohr job_group download -j 15954383 -o ./results/   # 下载整组结果
+bohr job download -j YOUR_JOB_ID -o ./results/
+bohr job_group download -j YOUR_JOB_GROUP_ID -o ./results/   # 下载整组结果
 ```
 
 ---
@@ -178,11 +178,11 @@ bohr job_group download -j 15954383 -o ./results/   # 下载整组结果
 ## 管理任务
 
 ```bash
-bohr job terminate 22153612             # 终止任务（保留结果文件，状态变为 completed）
-bohr job kill 22153612                  # 强制停止（不保留结果文件，不删除任务记录）
-bohr job delete 22153612                # 删除任务（状态变为 failed，结果文件删除，记录消失）
-bohr job terminate 22153612 22153613    # 批量终止
-bohr job delete 22153612 22153613       # 批量删除
+bohr job terminate YOUR_JOB_ID             # 终止任务（保留结果文件，状态变为 completed）
+bohr job kill YOUR_JOB_ID                  # 强制停止（不保留结果文件，不删除任务记录）
+bohr job delete YOUR_JOB_ID                # 删除任务（状态变为 failed，结果文件删除，记录消失）
+bohr job terminate YOUR_JOB_ID YOUR_JOB_ID_2    # 批量终止
+bohr job delete YOUR_JOB_ID YOUR_JOB_ID_2       # 批量删除
 ```
 
 **terminate vs kill vs delete：**
@@ -200,10 +200,10 @@ bohr job delete 22153612 22153613       # 批量删除
 ```bash
 bohr job_group list -n 10 --json                    # 列出任务组
 bohr job_group list -s 2026-01-01 -e 2026-03-14     # 按日期范围过滤
-bohr job_group create -n "experiment-v1" -p 154      # 创建任务组
-bohr job_group terminate 15954383                    # 终止任务组
-bohr job_group delete 15954383                       # 删除任务组
-bohr job_group download -j 15954383 -o ./results/    # 下载任务组结果
+bohr job_group create -n "experiment-v1" -p YOUR_PROJECT_ID      # 创建任务组
+bohr job_group terminate YOUR_JOB_GROUP_ID                    # 终止任务组
+bohr job_group delete YOUR_JOB_GROUP_ID                       # 删除任务组
+bohr job_group download -j YOUR_JOB_GROUP_ID -o ./results/    # 下载任务组结果
 ```
 
 > **注意**：`bohr job_group create` 创建的 `job_group_id` 用于 `bohr job submit -g <id>` 将多个任务归入同一组。此 ID 与 Web 界面上的任务组 ID 不同，仅适用于 CLI 提交。
@@ -220,7 +220,7 @@ bohr job_group download -j 15954383 -o ./results/    # 下载任务组结果
   "command": "cd se_e2_a && dp train input.json > tmp_log 2>&1 && dp freeze -o graph.pb",
   "log_file": "se_e2_a/tmp_log",
   "backward_files": ["se_e2_a/lcurve.out", "se_e2_a/graph.pb"],
-  "project_id": 154,
+  "project_id": YOUR_PROJECT_ID,
   "machine_type": "c4_m15_1 * NVIDIA T4",
   "job_type": "container",
   "image_address": "registry.dp.tech/dptech/deepmd-kit:2.1.5-cuda11.6"
@@ -235,7 +235,7 @@ bohr job_group download -j 15954383 -o ./results/    # 下载任务组结果
   "command": "mpirun -n 32 lmp_mpi -i in.shear > log",
   "log_file": "log",
   "backward_files": [],
-  "project_id": 154,
+  "project_id": YOUR_PROJECT_ID,
   "machine_type": "c32_m64_cpu",
   "job_type": "container",
   "image_address": "registry.dp.tech/dptech/lammps:29Sep2021"
@@ -250,7 +250,7 @@ bohr job_group download -j 15954383 -o ./results/    # 下载任务组结果
   "command": "OMP_NUM_THREADS=1 mpirun -np 8 abacus > log",
   "log_file": "log",
   "backward_files": [],
-  "project_id": 154,
+  "project_id": YOUR_PROJECT_ID,
   "machine_type": "c16_m32_cpu",
   "job_type": "container",
   "image_address": "registry.dp.tech/dptech/abacus:3.0.0"
@@ -265,7 +265,7 @@ bohr job_group download -j 15954383 -o ./results/    # 下载任务组结果
   "command": "bash rungmx.sh > log",
   "log_file": "log",
   "backward_files": [],
-  "project_id": 154,
+  "project_id": YOUR_PROJECT_ID,
   "machine_type": "c16_m62_1 * NVIDIA T4",
   "job_type": "container",
   "image_address": "registry.dp.tech/dptech/gromacs:2022.2"
@@ -280,7 +280,7 @@ bohr job_group download -j 15954383 -o ./results/    # 下载任务组结果
   "command": "source /cp2k-7.1/tools/toolchain/install/setup && mpirun -n 16 --allow-run-as-root --oversubscribe cp2k.popt -i input.inp -o output.log",
   "log_file": "output.log",
   "backward_files": ["output.log"],
-  "project_id": 154,
+  "project_id": YOUR_PROJECT_ID,
   "machine_type": "c16_m32_cpu",
   "job_type": "container",
   "image_address": "registry.dp.tech/dptech/cp2k:7.1"

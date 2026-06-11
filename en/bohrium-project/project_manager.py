@@ -3,12 +3,12 @@ Project member and budget management via Bohrium API.
 
 Usage:
     python project_manager.py list
-    python project_manager.py members --project_id 154
-    python project_manager.py add_member --project_id 154 --email user@example.com
-    python project_manager.py remove_member --project_id 154 --user_id 12345
-    python project_manager.py set_budget --project_id 154 --limit 10000
-    python project_manager.py promote --project_id 154 --user_id 12345
-    python project_manager.py demote --project_id 154 --user_id 12345
+    python project_manager.py members --project_id YOUR_PROJECT_ID
+    python project_manager.py add_member --project_id YOUR_PROJECT_ID --email user@example.com
+    python project_manager.py remove_member --project_id YOUR_PROJECT_ID --user_id 12345
+    python project_manager.py set_budget --project_id YOUR_PROJECT_ID --limit 10000
+    python project_manager.py promote --project_id YOUR_PROJECT_ID --user_id 12345
+    python project_manager.py demote --project_id YOUR_PROJECT_ID --user_id 12345
 """
 
 import argparse
