@@ -37,7 +37,17 @@ LKM (Large Knowledge Model) v1 endpoints on `open.bohrium.com` let you search an
 
 ## Auth configuration
 
-BOHR_ACCESS_KEY is read from the OpenClaw config file `~/.openclaw/openclaw.json`:
+The code reads the access key from the `BOHR_ACCESS_KEY` environment variable. Provide it in one of two ways depending on the runtime:
+
+**Option A: set the environment variable directly** (when not running under OpenClaw)
+
+```bash
+export BOHR_ACCESS_KEY=<YOUR_BOHR_ACCESS_KEY>
+```
+
+**Option B: inject via OpenClaw** (when running inside OpenClaw)
+
+Configure `~/.openclaw/openclaw.json`; OpenClaw injects `env.BOHR_ACCESS_KEY` into the runtime environment automatically:
 
 ```json
 "bohrium-lkm": {
@@ -48,8 +58,6 @@ BOHR_ACCESS_KEY is read from the OpenClaw config file `~/.openclaw/openclaw.json
   }
 }
 ```
-
-OpenClaw injects `env.BOHR_ACCESS_KEY` into the runtime environment automatically.
 
 ## Common template
 
