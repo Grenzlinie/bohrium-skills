@@ -35,6 +35,45 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com (v1). Use when: u
 
 **无 CLI 支持** — 通过 HTTP API 操作。
 
+## 接口调用关系
+
+把 5 个接口分成两类：
+
+- **自然语言检索入口**（只需 `query`，无需预先知道任何 ID）：`/search`、`/reasoning/search`
+- **基于标识/ID 的查询**（需先有论文标识或节点 ID）：`/papers/graph`（论文 `package_id`/`paper_id`/`doi`/`title`）、`/claims/{id}/reasoning`（claim `gcn_` ID）、`/variables/batch`（节点 `gcn_` ID）
+
+> `/papers/graph` 若已知 DOI 或标题，也可不依赖其它接口、直接作为起点；否则其 `package_id`/`paper_id` 通常来自 `/search`、`/reasoning/search` 返回的论文元数据。
+
+检索入口的输出（节点 ID、论文 ID）正是下游接口的输入，数据流如下：
+
+```mermaid
+flowchart TD
+    search["/search 节点检索"]
+    rsearch["/reasoning/search 推理链检索"]
+    pgraph["/papers/graph 论文图谱"]
+    creason["/claims/{id}/reasoning 单条推理链"]
+    batch["/variables/batch 批量水合"]
+
+    search -->|"variables[].id (gcn_)"| creason
+    search -->|"variables[].id (gcn_)"| batch
+    search -->|"papers 的 package_id / paper_id"| pgraph
+    rsearch -->|"conclusion 节点 global_id"| creason
+    rsearch -->|"任意节点 global_id (gcn_)"| batch
+    rsearch -->|"paper_id (纯数字)"| pgraph
+    pgraph -->|"conclusion 节点 global_id"| creason
+    pgraph -->|"任意节点 global_id (gcn_)"| batch
+    creason -->|"任意节点 global_id (gcn_)"| batch
+```
+
+**ID 流转：**
+
+| 上游输出 | ID 类型 | 下游可用接口 |
+|------|------|------|
+| `search` 的 `variables[].id`；graph 节点的 `global_id` | 全局节点 ID `gcn_...` | `variables/batch`（任意节点）；`claims/{id}/reasoning`（仅 `has_reasoning=true` 的 conclusion） |
+| 各接口 `papers`/`paper` 元数据；`reasoning_chains[].paper_id` | 论文 ID（`paper:<数字>` 或纯数字串） | `papers/graph`（`package_id`/`paper_id`）；`reasoning/search` 的 `filters.paper_ids`（纯数字、无 `paper:` 前缀） |
+
+**陷阱：** 不要把 graph 本地节点 ID（如 `paper:...::conclusion_3`）当成全局 `gcn_` ID 或论文 ID 往下游传——`claims/{id}/reasoning` 会返回 `290004`，`variables/batch` 会把它放进 `not_found`。
+
 ## 认证配置
 
 代码统一从环境变量 `BOHR_ACCESS_KEY` 读取 access key。根据运行环境，二选一方式提供该变量：
@@ -318,6 +357,37 @@ print("not_found:", data["not_found"])
 
 ---
 
+## 典型工作流：验证并追溯一个科学结论
+
+> 思路：先用 `/search`（`reasoning_only=true`）找到"有推理链支撑的结论"，再用 `/claims/{id}/reasoning` 看它为什么成立。
+
+```python
+# 1) 检索：只要有推理链支撑的 conclusion claim
+res = requests.post(f"{BASE}/search", headers=H, json={
+    "query": "perovskite thermal stability at 85 C",
+    "keywords": ["FAPbI3", "thermal stability"],
+    "retrieval_mode": "hybrid",
+    "reasoning_only": True,
+    "limit": 10,
+}).json()["data"]
+
+# 2) 取第一个可追溯的结论
+claim = next((v for v in res["variables"] if v.get("has_reasoning")), None)
+if not claim:
+    print("未找到可追溯推理链的结论")
+else:
+    print("结论:", claim["content"][:120])
+    # 3) 追溯：查这条 claim 的推理链
+    chains = requests.get(f"{BASE}/claims/{claim['id']}/reasoning",
+                          headers=H, params={"format": "graph"}).json()["data"]
+    for c in chains["reasoning_chains"]:
+        print("来源论文:", c["paper"]["en_title"])
+        for n in c["graph"]["nodes"]:
+            print(f"  [{n['kind']}] {(n.get('title') or n['content'])[:80]}")
+```
+
+---
+
 ## curl 示例
 
 ```bash
@@ -368,7 +438,8 @@ curl -s -X POST "$BASE/variables/batch" \
 
 ## 搭配使用
 
-- **search** 拿到 `gcn_...` ID → **variables/batch** 批量补全详情
-- **search** 找到 conclusion（`has_reasoning=true`）→ **claims/{id}/reasoning** 查推理链
-- **reasoning/search** / **papers/graph** 拿到节点 `global_id` → **variables/batch** 水合
-- **lkm** 定位相关论文 → **bohrium-paper-search** 找全文 / **bohrium-pdf-parser** 解析单篇
+> LKM 各接口之间的串联见上文「接口调用关系」与「典型工作流」。这里只列跨 skill 的搭配。
+
+- **lkm** 验证/追溯结论后 → **bohrium-paper-search** 找原始论文全文
+- **lkm** 定位到具体论文后 → **bohrium-pdf-parser** 解析单篇 PDF
+- **lkm** 批量水合/图谱结果 → **bohrium-knowledge-base** 归档存储

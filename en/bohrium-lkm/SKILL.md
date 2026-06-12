@@ -35,6 +35,45 @@ LKM (Large Knowledge Model) v1 endpoints on `open.bohrium.com` let you search an
 
 **No CLI support** — HTTP API only.
 
+## How the endpoints connect
+
+The 5 endpoints fall into two groups:
+
+- **Natural-language search entry points** (only need `query`, no ID up front): `/search`, `/reasoning/search`
+- **Identifier/ID-based lookups** (need a paper identifier or node ID first): `/papers/graph` (paper `package_id`/`paper_id`/`doi`/`title`), `/claims/{id}/reasoning` (claim `gcn_` ID), `/variables/batch` (node `gcn_` ID)
+
+> `/papers/graph` can be a standalone starting point if you already have a DOI or title; otherwise its `package_id`/`paper_id` typically comes from paper metadata returned by `/search` or `/reasoning/search`.
+
+A search entry point's output (node IDs, paper IDs) is exactly the downstream input. Data flow:
+
+```mermaid
+flowchart TD
+    search["/search node search"]
+    rsearch["/reasoning/search chain search"]
+    pgraph["/papers/graph paper graph"]
+    creason["/claims/{id}/reasoning single chain"]
+    batch["/variables/batch hydration"]
+
+    search -->|"variables[].id (gcn_)"| creason
+    search -->|"variables[].id (gcn_)"| batch
+    search -->|"papers package_id / paper_id"| pgraph
+    rsearch -->|"conclusion node global_id"| creason
+    rsearch -->|"any node global_id (gcn_)"| batch
+    rsearch -->|"paper_id (numeric)"| pgraph
+    pgraph -->|"conclusion node global_id"| creason
+    pgraph -->|"any node global_id (gcn_)"| batch
+    creason -->|"any node global_id (gcn_)"| batch
+```
+
+**ID flow:**
+
+| Upstream output | ID type | Usable downstream |
+|------|------|------|
+| `search` `variables[].id`; graph node `global_id` | global node ID `gcn_...` | `variables/batch` (any node); `claims/{id}/reasoning` (only `has_reasoning=true` conclusions) |
+| `papers`/`paper` metadata; `reasoning_chains[].paper_id` | paper ID (`paper:<number>` or plain numeric) | `papers/graph` (`package_id`/`paper_id`); `reasoning/search` `filters.paper_ids` (plain numeric, no `paper:` prefix) |
+
+**Pitfall:** do not pass a graph local node ID (e.g. `paper:...::conclusion_3`) as a global `gcn_` ID or paper ID downstream — `claims/{id}/reasoning` returns `290004`, and `variables/batch` puts it in `not_found`.
+
 ## Auth configuration
 
 The code reads the access key from the `BOHR_ACCESS_KEY` environment variable. Provide it in one of two ways depending on the runtime:
@@ -318,6 +357,37 @@ print("not_found:", data["not_found"])
 
 ---
 
+## Worked example: verify and trace a scientific conclusion
+
+> Idea: use `/search` (`reasoning_only=true`) to find a conclusion backed by a reasoning chain, then use `/claims/{id}/reasoning` to see why it holds.
+
+```python
+# 1) Search: only conclusion claims backed by a reasoning chain
+res = requests.post(f"{BASE}/search", headers=H, json={
+    "query": "perovskite thermal stability at 85 C",
+    "keywords": ["FAPbI3", "thermal stability"],
+    "retrieval_mode": "hybrid",
+    "reasoning_only": True,
+    "limit": 10,
+}).json()["data"]
+
+# 2) Pick the first traceable conclusion
+claim = next((v for v in res["variables"] if v.get("has_reasoning")), None)
+if not claim:
+    print("No conclusion with a traceable reasoning chain")
+else:
+    print("Conclusion:", claim["content"][:120])
+    # 3) Trace: fetch the reasoning chain for this claim
+    chains = requests.get(f"{BASE}/claims/{claim['id']}/reasoning",
+                          headers=H, params={"format": "graph"}).json()["data"]
+    for c in chains["reasoning_chains"]:
+        print("Source paper:", c["paper"]["en_title"])
+        for n in c["graph"]["nodes"]:
+            print(f"  [{n['kind']}] {(n.get('title') or n['content'])[:80]}")
+```
+
+---
+
 ## curl examples
 
 ```bash
@@ -368,7 +438,8 @@ curl -s -X POST "$BASE/variables/batch" \
 
 ## Pairs well with
 
-- **search** → get `gcn_...` IDs → **variables/batch** to hydrate details
-- **search** → find a conclusion (`has_reasoning=true`) → **claims/{id}/reasoning** for the chain
-- **reasoning/search** / **papers/graph** → get node `global_id` → **variables/batch** to hydrate
-- **lkm** locate relevant papers → **bohrium-paper-search** for full text / **bohrium-pdf-parser** to parse one
+> For chaining between LKM endpoints, see "How the endpoints connect" and the "Worked example" above. This section lists cross-skill pairings only.
+
+- **lkm** after verifying/tracing a conclusion → **bohrium-paper-search** for the original full text
+- **lkm** after locating a specific paper → **bohrium-pdf-parser** to parse a single PDF
+- **lkm** batch-hydration / graph results → **bohrium-knowledge-base** to archive
