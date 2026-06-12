@@ -22,7 +22,7 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com (v1). Use when: u
 **怎么选入口：**
 
 - 按关键词/语义找命题或问题 → `/search`
-- 找相似论证过程/实验逻辑 → `/reasoning/search`
+- 想找"论证/实验过程"相似的整条推理链（而非单个命题）→ `/reasoning/search`
 - 打开一篇论文看完整结构化图谱 → `/papers/graph`
 - 已有 claim ID，想看推理链 → `/claims/{id}/reasoning`
 - 已有一组节点 ID，想批量补全详情 → `/variables/batch`
@@ -128,7 +128,7 @@ for v in data["variables"]:
 
 ## 2. 推理链检索 — `POST /reasoning/search`
 
-按"论证过程相似性"召回整条推理链（不是单个节点）。新调用方统一传 `format: "graph"`。
+召回整条推理链——即论文"得出某个结论的研究过程"（理论推导、数值计算、实验流程等），按该过程与 query 的相似度排序，而不是按单个节点的文本相似度。新调用方统一传 `format: "graph"`。
 
 ```python
 r = requests.post(f"{BASE}/reasoning/search", headers=H, json={

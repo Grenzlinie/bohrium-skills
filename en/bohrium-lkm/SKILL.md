@@ -22,7 +22,7 @@ LKM (Large Knowledge Model) v1 endpoints on `open.bohrium.com` let you search an
 **Choosing an entry point:**
 
 - Find claims/questions by keyword/semantics → `/search`
-- Find similar argument processes / experimental logic → `/reasoning/search`
+- Find whole reasoning chains whose research/experimental process is similar (not just a single matching claim) → `/reasoning/search`
 - Open one paper and view its full structured graph → `/papers/graph`
 - Have a claim ID, want its reasoning chain → `/claims/{id}/reasoning`
 - Have a set of node IDs, want to hydrate details → `/variables/batch`
@@ -128,7 +128,7 @@ for v in data["variables"]:
 
 ## 2. Reasoning chain search — `POST /reasoning/search`
 
-Recall whole reasoning chains by argument-process similarity (not single nodes). New callers should always pass `format: "graph"`.
+Recall whole reasoning chains — the research process a paper used to reach a conclusion (theoretical derivation, numerical computation, experimental procedure) — ranked by how similar that process is to your query, not by single-node text match. New callers should always pass `format: "graph"`.
 
 ```python
 r = requests.post(f"{BASE}/reasoning/search", headers=H, json={
