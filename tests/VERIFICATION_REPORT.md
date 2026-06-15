@@ -1,6 +1,6 @@
 # Bohrium Skills API 端点验证报告
 
-**最近验证**: 2026-06-08（v2 网关冒烟实测）｜详细功能基线: 2026-05-11
+**最近验证**: 2026-06-11（bohrium-tools 真实实测）｜2026-06-08（v2 网关冒烟实测）｜详细功能基线: 2026-05-11
 **测试 AK**: 通过 `BOHR_ACCESS_KEY` 环境变量注入（不在报告中明文记录）
 **API Base**: https://open.bohrium.com/openapi/v2 （网关已升级 v2；`bohrium-job` 仍用 v1）
 **bohr CLI**: v1.1.0 (Go, 从 OSS 安装到 ~/.bohrium/bohr)
@@ -13,7 +13,7 @@
 
 ## v2 冒烟实测（2026-06-08，`tests/smoke_test.py`）
 
-每个 skill 打一个主端点，真实请求 `open.bohrium.com`（非 mock）。结果：**PASS=12, FAIL=0, SKIP=2**。
+每个 skill 打一个主端点，真实请求 `open.bohrium.com`（非 mock）。结果：**PASS=14, FAIL=0, SKIP=2**（其中 `bohrium-tools` 两行于 2026-06-11 单独真实实测，HTTP=200 / `code=0`）。
 
 | Skill | 端点 | 方法 | 结果 | 计费 |
 |-------|------|------|------|------|
@@ -29,6 +29,8 @@
 | bohrium-web-search | `/v2/search/web` | GET | ✅ PASS | 免费（v2 取消 v1 限额） |
 | bohrium-scholar-search | `/v2/paper-server/scholar/search` | POST | ✅ PASS | 免费 |
 | bohrium-wiki | `/v2/literature-sage/wiki_v2/search_index_name` | POST | ✅ PASS | 免费 |
+| bohrium-tools | `/v2/literature-sage/tool/domain` | GET | ✅ PASS | 免费 |
+| bohrium-tools | `/v2/literature-sage/tool/search/hybrid` | POST | ✅ PASS | 免费 |
 | bohrium-mentor | `/v2/sigma-search/api/v4/ai_search/sessions` | POST | ⏭️ SKIP | 创建会话扣余额 |
 | bohrium-sandbox | `lbg sdbx`（launching/v2） | — | ⏭️ SKIP | 需 lbg beta；create/exec 计费 |
 
@@ -40,7 +42,7 @@
 
 | 状态 | Skill | 说明 |
 |------|-------|------|
-| ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node, bohrium-knowledge-base, bohrium-image, bohrium-scholar-search, bohrium-wiki, bohrium-lkm, bohrium-paper-search, bohrium-dataset, bohrium-mentor | 当前仓库 14 个 skill，文档端点 / CLI 均正常 |
+| ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node, bohrium-knowledge-base, bohrium-image, bohrium-scholar-search, bohrium-wiki, bohrium-tools, bohrium-lkm, bohrium-paper-search, bohrium-dataset, bohrium-mentor | 当前仓库 15 个 skill，文档端点 / CLI 均正常 |
 | ❌ 已移除 | polymer-db, bohrium-file, bohrium-viking-memory, bohrium-scholar, bohrium-matmaster, diagnose-agent, proposal-agent, preparation-agent, scoring-agent | 已下架 / 冗余 / 后端不可用；当前仓库不含这些 skill |
 
 ---
@@ -252,6 +254,27 @@
 | `/v2/literature-sage/wiki_v2/article` | POST | ⚠️ | 250002 "Article not found"（内容可能按需生成） |
 
 **结论**: 索引搜索正常；article 端点可达。
+
+---
+
+### bohrium-tools (科学工具库) — 2026-06-11 真实实测（9 端点全通）
+
+> 网关前缀 `/openapi/v2/literature-sage/tool/*` → LiteratureSage 工具库（与 wiki 同上游）。实测 v1/v2 均返回 HTTP=200 / `code=0`，仓库统一走 v2。
+> **响应包裹层（已实测确认）**：所有端点返回 `{"code": 0, "data": {...}, "trace_id": "..."}`，真实数据在 `data` 下，SKILL.md 示例已统一通过 `data()` 辅助函数解包。
+
+| 端点 | 方法 | 状态 | 实测返回（`data` 下的键） |
+|------|------|------|------|
+| `/v2/literature-sage/tool/domain` | GET | ✅ | `items[]`：`node_id`/`node_name`/`tool_num`（如 Scientific AI Methods, 6274 个工具） |
+| `/v2/literature-sage/tool/domain/summary` | GET | ✅ | `total_num` |
+| `/v2/literature-sage/tool/subdomain` | POST | ✅ | `items` / `page` / `pageSize` / `total` |
+| `/v2/literature-sage/tool/subdomain/detail` | POST | ✅ | `node_id` / `node_name` |
+| `/v2/literature-sage/tool/list` | POST | ✅ | `items` / `page` / `pageSize` / `total`（如 DeepSpeed ★41838） |
+| `/v2/literature-sage/tool/tags` | POST | ✅ | `items` |
+| `/v2/literature-sage/tool/detail` | GET | ✅ | `name`/`star_count`/`fork_count`/`overview`/`tutorial`/`mcp_url`/`docker_image_uri`/`repo_url`/… |
+| `/v2/literature-sage/tool/search/hybrid` | POST | ✅ | `tools` / `total`（注：实测 `tools[].score` 可能为 `null`，示例已做空值防护） |
+| `/v2/literature-sage/tool/search/subdomain` | POST | ✅ | `subdomains` / `total` |
+
+**结论**: 9 个端点（domain → subdomain → list/tags → detail，以及 hybrid / subdomain 检索）全部 HTTP=200 / `code=0`，`{code, data, trace_id}` 包裹层与文档一致；统一使用 v2 并解包 `data`。
 
 ---
 

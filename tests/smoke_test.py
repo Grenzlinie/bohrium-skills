@@ -27,6 +27,7 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+import ssl
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -35,6 +36,29 @@ import urllib.error
 BASE = os.environ.get("BOHR_API_BASE_URL", "https://open.bohrium.com/openapi")
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
 TIMEOUT = 60
+
+# Display/recall language is resolved server-side from the Content-Language
+# header (enum.LanguageHeaderKey). Values are lowercase: en-us / zh-cn. This is
+# the shared mechanism for both wiki (/wiki_v2/*) and tool (/tool/*) endpoints;
+# tool/wiki bodies may also override it with a mixed-case `language` (en-US/zh-CN).
+LANG_HEADER = os.environ.get("BOHR_CONTENT_LANGUAGE", "en-us")
+
+
+def _make_ssl_context() -> ssl.SSLContext:
+    """Build an SSL context with a working CA bundle.
+
+    macOS Python builds frequently fail with CERTIFICATE_VERIFY_FAILED because
+    they cannot locate system CA certs. Prefer certifi's bundle when available.
+    """
+    try:
+        import certifi
+
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:  # noqa: BLE001
+        return ssl.create_default_context()
+
+
+SSL_CTX = _make_ssl_context()
 
 
 if not AK:
@@ -62,13 +86,13 @@ def http(
     if params:
         url = url + "?" + urllib.parse.urlencode(params)
     data: bytes | None = None
-    headers = {"Authorization": f"Bearer {AK}"}
+    headers = {"Authorization": f"Bearer {AK}", "Content-Language": LANG_HEADER}
     if body is not None:
         data = json.dumps(body).encode()
         headers["Content-Type"] = "application/json"
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        with urllib.request.urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
             raw = resp.read().decode("utf-8", errors="replace")
             try:
                 return resp.status, json.loads(raw) if raw else {}
@@ -173,9 +197,11 @@ IMAGE_BASE = "https://open.bohrium.com/openapi"
 
 def record_image() -> None:
     url = IMAGE_BASE + "/v2/image/public?page=1&pageSize=1"
-    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {AK}"})
+    req = urllib.request.Request(
+        url, headers={"Authorization": f"Bearer {AK}", "Content-Language": LANG_HEADER}
+    )
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        with urllib.request.urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
             code = resp.status
             data = json.loads(resp.read().decode("utf-8", errors="replace") or "{}")
     except urllib.error.HTTPError as e:
@@ -297,6 +323,24 @@ record(
     "/v2/literature-sage/wiki_v2/search_index_name",
     "POST",
     body={"name": "graphene", "node_types": ["field"], "style": "Feynman"},
+)
+
+# ---------------------------------------------------------------------------
+# bohrium-tools  (literature-sage tool library — list/search are free)
+# Responses use the {code, data, trace_id} envelope; data lives under "data".
+# ---------------------------------------------------------------------------
+print("\n[bohrium-tools]")
+record("tools", "/v2/literature-sage/tool/domain", "GET")
+record(
+    "tools",
+    "/v2/literature-sage/tool/search/hybrid",
+    "POST",
+    body={
+        "text": "molecular dynamics simulation",
+        "keywords": {"molecular dynamics": 1.0},
+        "language": "en-US",
+        "k": 5,
+    },
 )
 
 # ---------------------------------------------------------------------------

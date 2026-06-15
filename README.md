@@ -54,7 +54,7 @@ export BOHR_ACCESS_KEY="your_access_key_here"
 /plugin install bohrium-skills@bohrium
 ```
 
-装完会得到 14 个 Bohrium skill（英文版）。
+装完会得到 15 个 Bohrium skill（英文版）。
 
 ---
 
@@ -76,6 +76,7 @@ export BOHR_ACCESS_KEY="your_access_key_here"
 | [bohrium-pdf-parser](zh/bohrium-pdf-parser/SKILL.md) | PDF 解析 — 提取文本、表格、图表、公式 |
 | [bohrium-scholar-search](zh/bohrium-scholar-search/SKILL.md) | 学者搜索与画像 — 按姓名/机构检索，查看发文/引用/h-index/研究方向 |
 | [bohrium-wiki](zh/bohrium-wiki/SKILL.md) | 科学百科 — 按层级浏览科学词条 |
+| [bohrium-tools](zh/bohrium-tools/SKILL.md) | 科学工具库 — 按领域/子领域浏览、混合检索工具、查看工具详情与分类 |
 | [bohrium-web-search](zh/bohrium-web-search/SKILL.md) | 网页搜索 — 代理 searchapi.io 做开放互联网检索 |
 | [bohrium-sandbox](zh/bohrium-sandbox/SKILL.md) | 云沙箱 — 按需创建临时云 VM，运行 shell/Python |
 | [bohrium-lkm](zh/bohrium-lkm/SKILL.md) | 大知识模型 — 知识图谱搜索、论断验证、变量关系、批量 OCR |

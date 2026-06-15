@@ -7,7 +7,9 @@ description: "Browse and search Bohrium SciencePedia (百科) via open.bohrium.c
 
 ## 概述
 
-通过 `open.bohrium.com` 的 `/v2/literature-sage/wiki_v2/*` 端点访问 **Bohrium 百科**——一个科学主题的百科索引，按 `major` (大类) → `level` (分级) → `field` (领域) → `topic` (词条) 层级组织。
+通过 `open.bohrium.com` 的 `/v2/literature-sage/wiki_v2/*` 端点访问 **Bohrium 百科**——一个科学主题的百科索引，按 `major` (大类) → `level` (分级) → `field` (领域) → `topic` (词条) 层级组织（一个 `topic` 即一篇文章/词条）。
+
+> **两个 Host，各司其职**：调用 **API** 用 `open.bohrium.com`；给人看的**可点击阅读链接**用 `https://www.bohrium.com`（见[构造页面链接](#构造页面链接)）。二者是不同的 Host——不要把 API URL 直接发给用户。
 
 **典型场景**：
 
@@ -62,6 +64,43 @@ DEFAULTS = {"language": "en-US", "style": "Feynman"}
 | `search_index_name` | POST | 按关键词搜索词条索引 |
 | `level_fields` | POST | 在一组 level 节点下列出领域 |
 | `article` | POST | 获取某个节点/词条的正文 |
+
+---
+
+## 如何选择 Action（意图 → Action）
+
+把用户的诉求映射到正确的调用。大多数流程都是：**先拿到 id → 再取内容**。
+
+| 用户想要…… | 用 | 拿到 |
+|-----------|----|------|
+| “有哪些学科 / 大类？”（树的顶层） | `major_levels` | 大类及其 `node_id`、分级 |
+| “某大类/分级下有哪些领域？” | `level_fields`（批量分页）或 `get_level_wiki_index`（按 `node_types`） | 领域行 / 节点 |
+| “找关于 **X** 的词条或领域” | `search_index_name` | 含 `node_id`、`node_type`，领域节点带 `field_id` |
+| “这个领域的大纲 / 有哪些词条？” | `get_wiki_index`（`field_id` 或 `node_id`） | 词条树，每个词条带 `entry_id` |
+| “解释 / 给我 **X** 的正文” | `article`（`entry_id` 或 `node_id`） | `document.article_name` + `main_content` + …… |
+| “服务是否可用 / 基础信息” | `info` | 服务信息 |
+
+**经验法则**：还没有 id 就先用 `search_index_name`；用户在浏览学科则从 `major_levels` 开始。
+
+## 工作流
+
+### A. 解释一个概念（最常见）
+
+1. `search_index_name`，传 `{"name": "<概念>", "node_types": ["field","topic"]}` → 取最佳命中的 `node_id`（如有 `entry_id`/`field_id` 一并记下）。
+2. `article` 传该 id → 概括 `document.main_content`。
+3. 返回解释 **并附上**阅读链接（见[构造页面链接](#构造页面链接)）。
+
+### B. 浏览一个学科
+
+1. `major_levels` → 选定大类/分级。
+2. `level_fields`（传该 level 的 `node_id`）→ 列出领域。
+3. `get_wiki_index` 传 `field_id` → 列出词条；为领域附 `course_url`，为每个词条附 `article_url`。
+
+### C. 为某领域规划学习路径
+
+1. 用 `search_index_name`（`node_types: ["field"]`）定位领域。
+2. `get_wiki_index` → 按树顺序读取词条。
+3. 以 基础 → 核心 → 进阶 呈现，每个词条都带链接。
 
 ---
 
@@ -173,6 +212,36 @@ curl -s -X POST "$BASE/search_index_name" \
 
 ---
 
+## 构造页面链接
+
+每当你把词条或领域展示给人看时，都要附上 `https://www.bohrium.com` 上的可点击阅读链接（**不是** API host）。这才是让回答对人有用的关键。
+
+- **页面 Host**：`https://www.bohrium.com`
+- **风格段**：`Feynman → feynman`，`Hardcore → hardcore`
+- **语言前缀**：`zh-CN` → 无前缀；`en-US` → 加前缀 `/en`
+- 动态 id 需 **URL 编码**。
+
+| 链接 | 模板 | id 来源 |
+|------|------|---------|
+| 文章（词条） | `{lang}/sciencepedia/{style}/{entry_id}` | `get_wiki_index` 词条节点的 `entry_id`（或你传给 `article` 的 `entry_id`） |
+| 领域（课程） | `{lang}/sciencepedia/field/{style}/{field_id}` | `search_index_name` 领域结果 / `level_fields` 的 `field_id` |
+
+```text
+文章（en, Feynman）： https://www.bohrium.com/en/sciencepedia/feynman/<entry_id>
+领域（zh, Feynman）： https://www.bohrium.com/sciencepedia/field/feynman/solid_state_physics
+```
+
+> 本 skill 只开放文章/领域阅读，没有关键词（keyword）页面链接。
+
+## 回答规范
+
+- 优先**教学式**回答：定义 → 直觉 → 要点 → 在知识树中的位置。
+- 凡是提到的词条或领域，都附上阅读链接（`article_url` / `course_url`）。
+- 若所请求的 `language`/`style` 无结果，按序回退：同语言换另一风格 → `zh-CN`+`Feynman` → `en-US`+`Feynman`，并告知用户已切换。
+- API 失败要如实说明；无结果时给出近义词建议和一个备选语言/风格。
+
+---
+
 ## 常见问题
 
 | 问题 | 原因 | 解决 |
@@ -180,6 +249,7 @@ curl -s -X POST "$BASE/search_index_name" \
 | `No matches for "..."` | 关键词在索引里不存在 | 换近义词；打开 `node_types` 为 `["field","topic","major","level"]` 扩大搜索 |
 | `article` 返回空 | nodeId/entryId 错或该节点无正文 | 先用 `search_index_name` 拿到正确的 `node_id` |
 | 结果全是英文（或全是中文） | `language` 不对 | 指定 `"language": "en-US"` 或 `"zh-CN"` |
+| 阅读链接拼到了 `open.bohrium.com` 上 | 混淆了 API host 与页面 host | 页面链接用 `https://www.bohrium.com`（见“构造页面链接”） |
 
 ## 搭配使用
 

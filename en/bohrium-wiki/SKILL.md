@@ -7,7 +7,9 @@ description: "Browse and search Bohrium SciencePedia (encyclopedia) via open.boh
 
 ## Overview
 
-Access **Bohrium SciencePedia** through the `/v2/literature-sage/wiki_v2/*` endpoints on `open.bohrium.com` — a hierarchical encyclopedia of scientific topics organized as `major` → `level` → `field` → `topic`.
+Access **Bohrium SciencePedia** through the `/v2/literature-sage/wiki_v2/*` endpoints on `open.bohrium.com` — a hierarchical encyclopedia of scientific topics organized as `major` → `level` → `field` → `topic` (a `topic` is one article/entry).
+
+> **Two hosts, two jobs**: call the **API** on `open.bohrium.com`; build the **clickable reader link** you show to a human on `https://www.bohrium.com` (see [Building page links](#building-page-links)). They are different hosts — don't paste the API URL to a user.
 
 **Use when**:
 
@@ -62,6 +64,43 @@ DEFAULTS = {"language": "en-US", "style": "Feynman"}
 | `search_index_name` | POST | Keyword search of index entries |
 | `level_fields` | POST | List fields under a set of level nodes |
 | `article` | POST | Fetch the article body of a node / entry |
+
+---
+
+## Choosing an action (intent → action)
+
+Map what the user is asking for to the right call. Most flows are: **find an id → fetch content**.
+
+| The user wants… | Use | You get back |
+|-----------------|-----|--------------|
+| "What disciplines / majors exist?" (top of the tree) | `major_levels` | majors + their `node_id` and levels |
+| "What fields are under this major/level?" | `level_fields` (bulk, paged) or `get_level_wiki_index` (by `node_types`) | field rows / nodes |
+| "Find the entry or field about **X**" | `search_index_name` | nodes with `node_id`, `node_type`, and `field_id` (for fields) |
+| "Show the outline / topics of this field" | `get_wiki_index` (`field_id` or `node_id`) | topic tree, each topic carries an `entry_id` |
+| "Explain / give me the article on **X**" | `article` (`entry_id` or `node_id`) | `document.article_name` + `main_content` + … |
+| "Is the service up? basic metadata" | `info` | service info |
+
+**Rule of thumb**: if you don't have an id yet, start with `search_index_name`; if the user is browsing a discipline, start with `major_levels`.
+
+## Workflows
+
+### A. Explain a concept (most common)
+
+1. `search_index_name` with `{"name": "<concept>", "node_types": ["field","topic"]}` → take the best match's `node_id` (and `entry_id`/`field_id` if present).
+2. `article` with that id → summarize `document.main_content`.
+3. Return the explanation **plus** the reader link (see [Building page links](#building-page-links)).
+
+### B. Browse a discipline
+
+1. `major_levels` → pick a major/level.
+2. `level_fields` (pass that level's `node_id`) → list fields.
+3. `get_wiki_index` on a `field_id` → list the topics; attach a `course_url` for the field and `article_url` per topic.
+
+### C. Build a learning path for a field
+
+1. Resolve the field via `search_index_name` (`node_types: ["field"]`).
+2. `get_wiki_index` → read topics in tree order.
+3. Present as fundamentals → core → advanced, each topic linked.
 
 ---
 
@@ -173,6 +212,36 @@ curl -s -X POST "$BASE/search_index_name" \
 
 ---
 
+## Building page links
+
+Whenever you show an entry or field to a human, attach the clickable reader link on `https://www.bohrium.com` (NOT the API host). This is what makes the answer useful to a person.
+
+- **Page host**: `https://www.bohrium.com`
+- **Style segment**: `Feynman → feynman`, `Hardcore → hardcore`
+- **Language prefix**: `zh-CN` → no prefix; `en-US` → prefix with `/en`
+- **URL-encode** dynamic ids.
+
+| Link | Pattern | id source |
+|------|---------|-----------|
+| Article (topic) | `{lang}/sciencepedia/{style}/{entry_id}` | `entry_id` from `get_wiki_index` topic nodes (or the `entry_id` you pass to `article`) |
+| Field (course) | `{lang}/sciencepedia/field/{style}/{field_id}` | `field_id` from `search_index_name` field results / `level_fields` |
+
+```text
+Article (en, Feynman):  https://www.bohrium.com/en/sciencepedia/feynman/<entry_id>
+Field   (zh, Feynman):  https://www.bohrium.com/sciencepedia/field/feynman/solid_state_physics
+```
+
+> This skill exposes only article/field reading — there are no keyword page links here.
+
+## Response standards
+
+- Prefer a **teaching-style** answer: definition → intuition → key points → where it sits in the tree.
+- Always include the reader link (`article_url` / `course_url`) for any entry or field you mention.
+- If the requested `language`/`style` returns nothing, fall back in order: same language with the other style → `zh-CN`+`Feynman` → `en-US`+`Feynman`, and tell the user you switched.
+- Keep API failures transparent; on empty results, suggest synonyms and one alternate language/style.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
@@ -180,6 +249,7 @@ curl -s -X POST "$BASE/search_index_name" \
 | `No matches for "..."` | Keyword not in index | Try synonyms; expand `node_types` to `["field","topic","major","level"]` |
 | Empty `article` | Wrong nodeId/entryId or no body | First call `search_index_name` to obtain the correct `node_id` |
 | All-English (or all-Chinese) results | Wrong `language` | Set `"language": "en-US"` or `"zh-CN"` |
+| Built a reader link on `open.bohrium.com` | Mixed up API host and page host | Page links use `https://www.bohrium.com` (see *Building page links*) |
 
 ## Pairs well with
 
