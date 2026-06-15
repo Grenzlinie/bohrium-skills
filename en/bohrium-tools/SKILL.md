@@ -9,6 +9,8 @@ description: "Browse and search the Bohrium scientific Tools library via open.bo
 
 Access the **Bohrium Tools library** through the `/v2/literature-sage/tool/*` endpoints on `open.bohrium.com` — a directory of scientific computing software/tools organized as `domain` → `subdomain` → `tool`, with hybrid retrieval (BM25 + vector recall).
 
+> **Two hosts, two jobs**: call the **API** on `open.bohrium.com`; build the **clickable reader link** you show to a human on `https://www.bohrium.com` (see [Building page links](#building-page-links)). They are different hosts — don't paste the API URL to a user.
+
 **Use when**:
 
 - Browsing tools under a domain (e.g., all tools under molecular dynamics)
@@ -80,6 +82,41 @@ def data(r):
 
 ---
 
+## Choosing an action (intent → action)
+
+| The user wants… | Use | You get back |
+|-----------------|-----|--------------|
+| "What tool domains exist?" / "How many tools?" | `domain` / `domain/summary` | domains with `node_id`; total count |
+| "What subdomains are under this domain?" | `subdomain` | subdomains with `node_id`, `tool_num`, `tags` |
+| "List tools in this subdomain" (sort / filter) | `list` | tools with `name`, `star_count`, `tool_unique_key` |
+| "Filter that list by tag" | `tags` → then `list` with `tag_ids` | tag ids, then filtered tools |
+| "Find a tool that does **X**" (natural language) | `search/hybrid` | ranked tools with `score` + `tool_unique_key` |
+| "Which subdomain matches **X**?" | `search/subdomain` | matching subdomains |
+| "Details / GitHub / MCP / Docker / tutorial of this tool" | `detail` (`tool_unique_key`) | full tool profile |
+
+**Rule of thumb**: open-ended "find me a tool for…" → `search/hybrid`; structured "browse this domain" → `domain` → `subdomain` → `list`. Always finish with `detail` before recommending a tool.
+
+## Workflows
+
+### A. Find a tool by need (most common)
+
+1. `search/hybrid` with a natural-language `text` + weighted `keywords`.
+2. Take the top `tool_unique_key`(s) → `detail` for repo / metrics / how-to-run.
+3. Recommend, each with its `tool_url` (see [Building page links](#building-page-links)).
+
+### B. Browse a domain top-down
+
+1. `domain` → pick a domain `node_id`.
+2. `subdomain` (pass `domain_node_ids`) → pick a subdomain.
+3. `list` (`sort_by: "popular"`) → top tools → `detail` on the winner.
+
+### C. Locate a subdomain, then dig in
+
+1. `search/subdomain` to map a fuzzy topic to a subdomain `node_id`.
+2. `list` that subdomain → `detail`.
+
+---
+
 ## 1. List domains — `domain`
 
 ```python
@@ -136,7 +173,7 @@ print(data(r))   # data: {"node_id": "...", "node_name": "..."}
 r = requests.post(f"{BASE}/list", headers=H, json={
     "subdomain_node_id": "SUBDOMAIN_NODE_ID",   # required
     "tag_ids": [],            # optional: filter by tag ids
-    "sort_by": "star_count",  # optional sort field, e.g. star_count / last_commit_time
+    "sort_by": "popular",     # optional: popular (by star count) / latest (by last commit) / similarity; default popular
     "sort_type": "desc",      # asc / desc
     "page": 1,
     "page_size": 10,
@@ -239,11 +276,40 @@ curl -s "$BASE/domain" \
 
 ---
 
+## Building page links
+
+When you show a tool or subdomain to a human, attach the clickable reader link on `https://www.bohrium.com` (NOT the API host).
+
+- **Page host**: `https://www.bohrium.com`
+- **Language prefix**: `zh-CN` → no prefix; `en-US` → prefix with `/en`
+
+| Link | Pattern | id source |
+|------|---------|-----------|
+| Tool detail | `{lang}/sciencepedia/agent-tools/{tool_unique_key}` | `tool_unique_key` from `list` / `search/hybrid` / `detail` |
+| Subdomain | `{lang}/sciencepedia/agent-tools/c/{subdomain_node_id}` | `node_id` from `subdomain` / `search/subdomain` |
+| Tools home | `{lang}/sciencepedia/agent-tools` | — (domain has no standalone page; link to home) |
+
+```text
+Tool (en):       https://www.bohrium.com/en/sciencepedia/agent-tools/openmanus
+Subdomain (zh):  https://www.bohrium.com/sciencepedia/agent-tools/c/subdomain-llm-frameworks
+```
+
+## Response standards
+
+- For each tool / subdomain you list, render it as a markdown link: `[name](tool_url)`.
+- When recommending a tool, summarize: what it is (`profile`), traction (`star_count`/`fork_count`), and how to run it (`mcp_url` / `docker_image_uri` / `tutorial`).
+- Drive display language with the `Content-Language` header (`zh-cn` for Chinese output); a few search endpoints also accept `language` in the body.
+- Be explicit when a field is missing or an endpoint can't deliver the requested granularity.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | All-English (or all-Chinese) results | Wrong `Content-Language` / `language` | Set header `Content-Language: zh-cn` or pass `"language":"zh-CN"` in the search body |
+| `list` ignores my `sort_by` | Used a raw column name | Valid values are `popular` / `latest` / `similarity` (not `star_count`/`last_commit_time`); unknown values fall back to `popular` |
+| Built a reader link on `open.bohrium.com` | Mixed up API host and page host | Page links use `https://www.bohrium.com` (see *Building page links*) |
 | `search/hybrid` returns `text is required` | Missing `text` | Both `text` and `keywords` are required |
 | `search/hybrid` / `search/subdomain` returns `language is required` | Neither body `language` nor `Content-Language` header was provided | Add `"language":"en-US"` (or `zh-CN`) to the body, or send a `Content-Language: en-us` header |
 | `k` truncated | `search/hybrid` caps `k` at 500 | Keep `k` ≤ 500 |

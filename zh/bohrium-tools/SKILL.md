@@ -9,6 +9,8 @@ description: "浏览与检索 Bohrium 科学工具库（Tools），通过 open.b
 
 通过 `open.bohrium.com` 的 `/v2/literature-sage/tool/*` 端点访问 **Bohrium 科学工具库**——一个按 `domain`(领域) → `subdomain`(子领域) → `tool`(工具) 层级组织的科学计算软件/工具目录，并提供混合检索（BM25 + 向量召回）能力。
 
+> **两个 Host，各司其职**：调用 **API** 用 `open.bohrium.com`；给人看的**可点击阅读链接**用 `https://www.bohrium.com`（见[构造页面链接](#构造页面链接)）。二者是不同的 Host——不要把 API URL 直接发给用户。
+
 **典型场景**：
 
 - 浏览某个领域下的工具（如分子动力学领域下的所有工具）
@@ -80,6 +82,41 @@ def data(r):
 
 ---
 
+## 如何选择 Action（意图 → Action）
+
+| 用户想要…… | 用 | 拿到 |
+|-----------|----|------|
+| “有哪些工具领域？” / “工具总量？” | `domain` / `domain/summary` | 领域及其 `node_id`；总数 |
+| “这个领域下有哪些子领域？” | `subdomain` | 子领域及 `node_id`、`tool_num`、`tags` |
+| “列出该子领域下的工具”（排序/筛选） | `list` | 工具的 `name`、`star_count`、`tool_unique_key` |
+| “再按标签筛这个列表” | `tags` → 再 `list` 传 `tag_ids` | 标签 id，再得筛选后的工具 |
+| “找一个能做 **X** 的工具”（自然语言） | `search/hybrid` | 带 `score` + `tool_unique_key` 的工具排名 |
+| “**X** 对应哪个子领域？” | `search/subdomain` | 匹配的子领域 |
+| “某工具的详情 / GitHub / MCP / Docker / 教程” | `detail`（`tool_unique_key`） | 完整工具档案 |
+
+**经验法则**：开放式“帮我找个做……的工具”→ `search/hybrid`；结构化“浏览这个领域”→ `domain` → `subdomain` → `list`。推荐工具前务必先 `detail`。
+
+## 工作流
+
+### A. 按需求找工具（最常见）
+
+1. `search/hybrid`，传自然语言 `text` + 带权重的 `keywords`。
+2. 取 Top 的 `tool_unique_key` → `detail` 拿仓库 / 指标 / 运行方式。
+3. 给出推荐，每个都附 `tool_url`（见[构造页面链接](#构造页面链接)）。
+
+### B. 自顶向下浏览领域
+
+1. `domain` → 选定领域 `node_id`。
+2. `subdomain`（传 `domain_node_ids`）→ 选定子领域。
+3. `list`（`sort_by: "popular"`）→ 热门工具 → 对优胜者 `detail`。
+
+### C. 先定位子领域再深入
+
+1. `search/subdomain` 把模糊主题映射到子领域 `node_id`。
+2. `list` 该子领域 → `detail`。
+
+---
+
 ## 1. 列出领域 — `domain`
 
 ```python
@@ -136,7 +173,7 @@ print(data(r))   # data: {"node_id": "...", "node_name": "..."}
 r = requests.post(f"{BASE}/list", headers=H, json={
     "subdomain_node_id": "SUBDOMAIN_NODE_ID",   # 必填
     "tag_ids": [],            # 可选：按标签 id 过滤
-    "sort_by": "star_count",  # 可选排序字段，如 star_count / last_commit_time
+    "sort_by": "popular",     # 可选：popular(按星数) / latest(按最近提交) / similarity；默认 popular
     "sort_type": "desc",      # asc / desc
     "page": 1,
     "page_size": 10,
@@ -239,11 +276,40 @@ curl -s "$BASE/domain" \
 
 ---
 
+## 构造页面链接
+
+把工具或子领域展示给人看时，附上 `https://www.bohrium.com` 上的可点击阅读链接（**不是** API host）。
+
+- **页面 Host**：`https://www.bohrium.com`
+- **语言前缀**：`zh-CN` → 无前缀；`en-US` → 加前缀 `/en`
+
+| 链接 | 模板 | id 来源 |
+|------|------|---------|
+| 工具详情 | `{lang}/sciencepedia/agent-tools/{tool_unique_key}` | `list` / `search/hybrid` / `detail` 的 `tool_unique_key` |
+| 子领域 | `{lang}/sciencepedia/agent-tools/c/{subdomain_node_id}` | `subdomain` / `search/subdomain` 的 `node_id` |
+| 工具首页 | `{lang}/sciencepedia/agent-tools` | —（领域无独立页面，指向首页） |
+
+```text
+工具（en）：   https://www.bohrium.com/en/sciencepedia/agent-tools/openmanus
+子领域（zh）： https://www.bohrium.com/sciencepedia/agent-tools/c/subdomain-llm-frameworks
+```
+
+## 回答规范
+
+- 列出的每个工具/子领域，都用 markdown 链接呈现：`[名称](tool_url)`。
+- 推荐工具时，概括：是什么（`profile`）、热度（`star_count`/`fork_count`）、怎么跑（`mcp_url` / `docker_image_uri` / `tutorial`）。
+- 用 `Content-Language` 头控制展示语言（中文输出设 `zh-cn`）；少数检索接口也接受请求体里的 `language`。
+- 字段缺失或接口无法满足所需粒度时，要如实说明。
+
+---
+
 ## 常见问题
 
 | 问题 | 原因 | 解决 |
 |------|------|------|
 | 检索结果全英文（或全中文） | `Content-Language` / `language` 不对 | 设置头 `Content-Language: zh-cn` 或在检索体内传 `"language":"zh-CN"` |
+| `list` 的 `sort_by` 不生效 | 用了原始列名 | 合法值为 `popular` / `latest` / `similarity`（不是 `star_count`/`last_commit_time`）；未知值回退为 `popular` |
+| 阅读链接拼到了 `open.bohrium.com` 上 | 混淆了 API host 与页面 host | 页面链接用 `https://www.bohrium.com`（见“构造页面链接”） |
 | `search/hybrid` 报 `text is required` | 缺少 `text` | `text` 与 `keywords` 均为必填 |
 | `search/hybrid` / `search/subdomain` 报 `language is required` | 既没传请求体 `language`，也没带 `Content-Language` 头 | 请求体加 `"language":"en-US"`（或 `zh-CN`），或带上 `Content-Language: en-us` 头 |
 | `k` 过大被截断 | `search/hybrid` 的 `k` 上限 500 | 控制在 500 以内 |
