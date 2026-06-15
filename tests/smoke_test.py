@@ -7,24 +7,29 @@ stays on v1 (its v2 upstream differs and job_group has no v2 route).
 
 Usage:
     export BOHR_ACCESS_KEY="..."
+    # Sandbox smoke requires Python >=3.10 with prerelease lbg installed.
+    # Optional: export BOHR_SANDBOX_PYTHON=/path/to/python
+    # Optional: export BOHR_SANDBOX_TEMPLATE=doc-compiler
     python3 tests/smoke_test.py
 
 Exits with non-zero if any required-endpoint test fails.
 
 Billing: this hits real endpoints (it is not a mock). List/read endpoints are
 free. Endpoints that were already billed stay billed — paper-search (v2 paper/rag,
-balance) and pdf-parser (v2 parse, per-page balance) make real billable calls.
-bohrium-mentor (session creation bills balance) and bohrium-sandbox (optional CLI
-/ billable) are skipped.
+balance), pdf-parser (v2 parse, per-page balance), bohrium-mentor (session
+creation), and bohrium-sandbox (create/exec/kill) make real billable calls.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 import time
+import uuid
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import ssl
@@ -36,6 +41,7 @@ import urllib.error
 BASE = os.environ.get("BOHR_API_BASE_URL", "https://open.bohrium.com/openapi")
 AK = os.environ.get("BOHR_ACCESS_KEY", "")
 TIMEOUT = 60
+ROOT = Path(__file__).resolve().parents[1]
 
 # Display/recall language is resolved server-side from the Content-Language
 # header (enum.LanguageHeaderKey). Values are lowercase: en-us / zh-cn. This is
@@ -159,6 +165,131 @@ def record(
 def skip(skill: str, endpoint: str, reason: str) -> None:
     results.append(Result(skill, endpoint, "SKIP", None, reason))
     print(f"  [SKIP] {endpoint}  {reason}")
+
+
+def mentor_smoke() -> None:
+    query = "Smoke test: answer in one short sentence, what is molecular dynamics?"
+    message_id = str(uuid.uuid4())
+    answer_id = str(uuid.uuid4())
+    payload = {
+        "query": query,
+        "model": "reason",
+        "discipline": "All",
+        "scene": "adk_science_navigator",
+        "journal_type": "foreign",
+        "snp_version": "1.0.0",
+        "resource_id_list": [],
+        "SNPReq": {
+            "sessionId": "",
+            "channel": {
+                "schema": "fe",
+                "version": "v1",
+                "role": "user",
+                "auth": 1,
+                "messageId": message_id,
+                "answerId": answer_id,
+                "uiInfo": {
+                    "layout": "main",
+                    "type": "ui",
+                    "subType": "@bohrium-chat/common/markdown",
+                    "content": {"text": query},
+                    "actionList": [{"key": "text", "action": "append"}],
+                },
+                "entities": [],
+                "state": {},
+                "meta": {},
+            },
+            "system": {
+                "payload": {
+                    "model": "reason",
+                    "agentId": "science_navigator",
+                    "sessionId": "",
+                    "scene": "adk_science_navigator",
+                    "streaming": True,
+                    "biz": {
+                        "uploadList": [],
+                        "sn": {"discipline": "All", "journal_type": "foreign", "model": "reason"},
+                    },
+                }
+            },
+        },
+    }
+
+    endpoint = "/v2/sigma-search/api/v4/ai_search/sessions"
+    code, data = http("POST", endpoint, body=payload)
+    status, note = classify(code, data)
+    if status == "PASS":
+        session_id = ((data.get("data") or {}).get("sessionId") or "") if isinstance(data, dict) else ""
+        if not session_id:
+            status, note = "FAIL", f"no sessionId; body={json.dumps(data)[:160]}"
+        else:
+            detail_code, detail = http("GET", f"{endpoint}/{session_id}")
+            detail_status, detail_note = classify(detail_code, detail)
+            if detail_status != "PASS":
+                status, note = "FAIL", f"detail failed HTTP={detail_code} {detail_note}"
+            else:
+                note = f"sessionId={session_id[:8]}..."
+    results.append(Result("mentor", endpoint, status, code, note))
+    print(f"  [{status}] POST {endpoint}  HTTP={code}  {note}")
+
+
+def _run_sdbx(args: list[str], *, timeout: int = 600) -> tuple[int, dict, str]:
+    python = os.environ.get("BOHR_SANDBOX_PYTHON", sys.executable)
+    script = ROOT / "zh" / "bohrium-sandbox" / "sdbx.py"
+    env = os.environ.copy()
+    env.setdefault("BOHRIUM_ACCESS_KEY", AK)
+    completed = subprocess.run(
+        [python, str(script), *args],
+        text=True,
+        capture_output=True,
+        timeout=timeout,
+        check=False,
+        env=env,
+    )
+    raw = (completed.stdout or completed.stderr or "").strip()
+    try:
+        data = json.loads(completed.stdout) if completed.stdout.strip() else {}
+    except json.JSONDecodeError:
+        data = {"_raw": raw[:400]}
+    return completed.returncode, data, raw
+
+
+def sandbox_smoke() -> None:
+    endpoint = "lbg sdbx create/exec/kill"
+    template = os.environ.get("BOHR_SANDBOX_TEMPLATE", "doc-compiler")
+    sandbox_id = ""
+    status = "FAIL"
+    note = ""
+
+    try:
+        rc, created, raw = _run_sdbx(["create", template, "--timeout", "600", "--json"])
+        if rc != 0:
+            note = f"create failed rc={rc}; {raw[:120]}"
+            return
+        sandbox_id = created.get("sandboxID", "")
+        if not sandbox_id:
+            note = f"create returned no sandboxID; body={json.dumps(created)[:160]}"
+            return
+
+        command = "echo bohrium-sandbox-smoke && python --version"
+        rc, executed, raw = _run_sdbx(["exec", "--json", sandbox_id, command])
+        if rc != 0 or executed.get("exit_code") != 0:
+            note = f"exec failed rc={rc} exit={executed.get('exit_code')}; {raw[:120]}"
+            return
+        stdout = executed.get("stdout", "")
+        if "bohrium-sandbox-smoke" not in stdout:
+            note = f"missing smoke marker; stdout={stdout[:120]}"
+            return
+        status = "PASS"
+        note = f"sandboxID={sandbox_id[:18]}...  exec=0"
+    finally:
+        if sandbox_id:
+            rc, killed, raw = _run_sdbx(["kill", "--force", "--json", sandbox_id])
+            if status == "PASS" and (rc != 0 or not killed.get("killed")):
+                status = "FAIL"
+                note = f"kill failed rc={rc}; {raw[:120]}"
+        results.append(Result("sandbox", endpoint, status, 0 if status == "PASS" else None, note))
+        print(f"  [{status}] {endpoint}  {note}")
 
 
 # ---------------------------------------------------------------------------
@@ -344,24 +475,16 @@ record(
 )
 
 # ---------------------------------------------------------------------------
-# bohrium-mentor (Sigma deep search — creating a session bills balance, skipped)
+# bohrium-mentor (Sigma deep search — creates a billable session)
 # ---------------------------------------------------------------------------
 print("\n[bohrium-mentor]")
-skip(
-    "mentor",
-    "/v2/sigma-search/api/v4/ai_search/sessions",
-    "Creating an AI-search session bills account balance (v2 SigmaBalanceBill)",
-)
+mentor_smoke()
 
 # ---------------------------------------------------------------------------
-# bohrium-sandbox (optional CLI / billable sandbox, skipped)
+# bohrium-sandbox (billable create/exec/kill via lbg sdbx)
 # ---------------------------------------------------------------------------
 print("\n[bohrium-sandbox]")
-skip(
-    "sandbox",
-    "lbg sdbx / open.bohrium.com/openapi/launching/v2/*",
-    "Requires Python >=3.10 and lbg 4.0.0b*; create/exec can be billable",
-)
+sandbox_smoke()
 
 
 # ---------------------------------------------------------------------------

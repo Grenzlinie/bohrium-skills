@@ -1,19 +1,19 @@
 # Bohrium Skills API 端点验证报告
 
-**最近验证**: 2026-06-11（bohrium-tools 真实实测）｜2026-06-08（v2 网关冒烟实测）｜详细功能基线: 2026-05-11
+**最近验证**: 2026-06-15（全量真实冒烟，含 mentor/sandbox）｜2026-06-11（bohrium-tools 真实实测）｜2026-06-08（v2 网关冒烟实测）｜详细功能基线: 2026-05-11
 **测试 AK**: 通过 `BOHR_ACCESS_KEY` 环境变量注入（不在报告中明文记录）
 **API Base**: https://open.bohrium.com/openapi/v2 （网关已升级 v2；`bohrium-job` 仍用 v1）
 **bohr CLI**: v1.1.0 (Go, 从 OSS 安装到 ~/.bohrium/bohr)
-**lbg CLI**: v4.0.0b46 (Python >=3.10 prerelease, pip install --pre lbg)
+**lbg CLI**: v4.0.0b47 (Python >=3.10 prerelease, pip install --pre lbg)
 **OPENAPI_HOST**: https://open.bohrium.com
 
 > 网关版本：除 `bohrium-job`（保留 v1，因其 v2 上游不同且 `job_group` 在网关无 v2 路由）外，所有 skill 的 OpenAPI 网关路径已统一升级到 `/openapi/v2/*`，上游服务与 v1 一致（多数仅外层版本号变化）。镜像 / 数据集 / 项目等域名已统一为 `open.bohrium.com`（历史上 dataset create 需走 `openapi.dp.tech` 的 307 问题已在 open-platform 修复）。
 
 ---
 
-## v2 冒烟实测（2026-06-08，`tests/smoke_test.py`）
+## v2 冒烟实测（2026-06-15，`tests/smoke_test.py`）
 
-每个 skill 打一个主端点，真实请求 `open.bohrium.com`（非 mock）。结果：**PASS=14, FAIL=0, SKIP=2**（其中 `bohrium-tools` 两行于 2026-06-11 单独真实实测，HTTP=200 / `code=0`）。
+每个 skill 打一个主端点，真实请求 `open.bohrium.com`（非 mock）。结果：**PASS=16, FAIL=0, SKIP=0**（`mentor` 创建会话，`sandbox` 创建短时沙箱并执行命令后销毁）。
 
 | Skill | 端点 | 方法 | 结果 | 计费 |
 |-------|------|------|------|------|
@@ -31,10 +31,10 @@
 | bohrium-wiki | `/v2/literature-sage/wiki_v2/search_index_name` | POST | ✅ PASS | 免费 |
 | bohrium-tools | `/v2/literature-sage/tool/domain` | GET | ✅ PASS | 免费 |
 | bohrium-tools | `/v2/literature-sage/tool/search/hybrid` | POST | ✅ PASS | 免费 |
-| bohrium-mentor | `/v2/sigma-search/api/v4/ai_search/sessions` | POST | ⏭️ SKIP | 创建会话扣余额 |
-| bohrium-sandbox | `lbg sdbx`（launching/v2） | — | ⏭️ SKIP | 需 lbg beta；create/exec 计费 |
+| bohrium-mentor | `/v2/sigma-search/api/v4/ai_search/sessions` | POST | ✅ PASS | 创建会话扣余额 |
+| bohrium-sandbox | `lbg sdbx create/exec/kill`（launching/v2） | CLI | ✅ PASS | 需 lbg beta；create/exec 计费 |
 
-> 计费原则：原本无计费的列表/查询类端点 v2 后仍免费；原本即计费的（paper-search 余额、pdf-parser 限额→按页余额）照常计费；`mentor` 创建会话与 `sandbox` create/exec 会扣费，冒烟中 SKIP。
+> 计费原则：原本无计费的列表/查询类端点 v2 后仍免费；原本即计费的（paper-search 余额、pdf-parser 限额→按页余额）照常计费；`mentor` 创建会话与 `sandbox` create/exec 会扣费，当前冒烟会真实执行。
 
 ---
 
@@ -298,11 +298,11 @@
 
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
-| `/v2/sigma-search/api/v4/ai_search/sessions` | POST | ⏭️ SKIP | 创建会话扣余额，冒烟中跳过 |
+| `/v2/sigma-search/api/v4/ai_search/sessions` | POST | ✅ | 创建会话成功，返回 sessionId（冒烟实测 PASS） |
 | `/v2/sigma-search/api/v4/ai_search/sessions/{id}` | GET | ✅ | 会话详情（断线恢复用）；不存在的 id 返回 not found，证明路由可达 |
 | `/v2/sigma-search/api/v3/sse/ai_search/v1/{id}/stream` | GET | ✅ | SSE 流式推理 |
 
-**计费**: 创建会话按余额扣费。**结论**: 路由可用；冒烟测试因计费跳过创建。
+**计费**: 创建会话按余额扣费。**结论**: 路由可用；冒烟测试会真实创建 session 并校验详情接口。
 
 ---
 
@@ -317,7 +317,7 @@
 
 **前置条件**: Python >=3.10；`python3 -m pip install --pre lbg`（4.0.0b*）。`sdbx.py` 将 `BOHR_ACCESS_KEY` 映射成 `BOHRIUM_ACCESS_KEY`。不经 `/openapi/vN` 网关，走 `launching/v2`。
 
-**结论**: 全部功能正常（create/exec 计费，冒烟中 SKIP）。
+**结论**: 全部功能正常；冒烟测试会真实 `create` 短时沙箱、`exec` 一条轻量命令，并在结束时 `kill --force` 清理。
 
 ---
 
