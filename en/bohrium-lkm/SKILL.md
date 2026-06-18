@@ -106,7 +106,16 @@ import os, requests
 AK = os.environ["BOHR_ACCESS_KEY"]
 BASE = "https://open.bohrium.com/openapi/v1/lkm"
 H = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
+
+def lkm_data(r):
+    """Unwrap an LKM response: return data when code == 0, else raise with code/message."""
+    body = r.json()
+    if body.get("code") != 0:
+        raise RuntimeError(f"LKM error {body.get('code')}: {body.get('message')}")
+    return body["data"]
 ```
+
+The examples below call `lkm_data(r)` so the documented `code` contract is always enforced.
 
 **Business status:** HTTP usually returns 200; success is determined by `code` in the response body, where `code == 0` means success. See the error-code table at the end.
 
@@ -121,14 +130,19 @@ r = requests.post(f"{BASE}/search", headers=H, json={
     "query": "perovskite thermal stability",
     "keywords": ["FAPbI3", "Cs doping"],
     "retrieval_mode": "hybrid",
+    "sort_by": "comprehensive",  # optional; default comprehensive; or relevance/recent/journal
     "scopes": ["claim", "question"],
+    # "filters": {               # optional; ONLY when restricting recall to specific papers
+    #     "paper_ids": ["811977903947382784"],  # plain numeric, no paper: prefix, ≤50
+    #     "dois": ["10.1038/s41586-021-03381-x"]  # ≤50, can combine with paper_ids
+    # },
     "reasoning_only": False,
     "offset": 0,
     "limit": 20
 })
-data = r.json()["data"]
+data = lkm_data(r)
 for v in data["variables"]:
-    print(v["id"], v["type"], v.get("role"), v["has_reasoning"], v["content"][:80])
+    print(v["id"], v["type"], v.get("role"), v["has_reasoning"], (v.get("content") or "")[:80])
 # data["papers"]: paper metadata referenced by hits (key like paper:<id>)
 # data["has_more"]: whether more pages exist
 ```
@@ -181,14 +195,14 @@ r = requests.post(f"{BASE}/reasoning/search", headers=H, json={
     "retrieval_mode": "hybrid",
     "sort_by": "comprehensive",  # optional; default comprehensive; or relevance/recent/journal
     "format": "graph",
-    "filters": {                 # optional; restrict recall to papers
-        "paper_ids": ["811977903947382784"],  # plain numeric, no paper: prefix, ≤50
-        "dois": ["10.1038/s41586-021-03381-x"]  # ≤50, can combine with paper_ids
-    },
+    # "filters": {               # optional; ONLY when restricting recall to specific papers
+    #     "paper_ids": ["811977903947382784"],  # plain numeric, no paper: prefix, ≤50
+    #     "dois": ["10.1038/s41586-021-03381-x"]  # ≤50, can combine with paper_ids
+    # },
     "offset": 0,
     "limit": 20
 })
-data = r.json()["data"]
+data = lkm_data(r)
 for c in data["reasoning_chains"]:
     print(c["chain_id"], c["paper_id"], c["score"])
     print("  nodes:", len(c["graph"]["nodes"]), "edges:", len(c["graph"]["edges"]))
@@ -233,7 +247,7 @@ Given a paper, return the full graph LKM extracted from it (conclusions, reasoni
 r = requests.post(f"{BASE}/papers/graph", headers=H, json={
     "package_id": "paper:1020661015349559308"   # one of four identifiers, see below
 })
-data = r.json()["data"]
+data = lkm_data(r)
 for p in data["papers"]:
     print(p["paper"]["en_title"])
     print("  nodes:", len(p["graph"]["nodes"]), "edges:", len(p["graph"]["edges"]))
@@ -273,7 +287,7 @@ Given a global claim ID (`gcn_...`), return the reasoning steps and premises tha
 claim_id = "gcn_73e13bb548f847bd"
 r = requests.get(f"{BASE}/claims/{claim_id}/reasoning", headers=H,
                  params={"format": "graph", "max_chains": 10, "sort_by": "comprehensive"})
-data = r.json()["data"]
+data = lkm_data(r)
 print(data["claim"]["id"], "total_chains:", data["total_chains"])
 for c in data["reasoning_chains"]:
     print("  paper:", c["paper"]["en_title"])
@@ -311,9 +325,9 @@ Fetch node details by ID list. Get IDs from a search endpoint first, then hydrat
 r = requests.post(f"{BASE}/variables/batch", headers=H, json={
     "ids": ["gcn_654cd35dcb814a0c", "gcn_9523aa7f1fd04d8a"]
 })
-data = r.json()["data"]
+data = lkm_data(r)
 for v in data["variables"]:
-    print(v["id"], v["type"], v["content"][:80])
+    print(v["id"], v["type"], (v.get("content") or "")[:80])
 print("not_found:", data["not_found"])
 # data["papers"]: paper metadata organized by package_id
 ```
@@ -376,23 +390,23 @@ print("not_found:", data["not_found"])
 
 ```python
 # 1) Search: only conclusion claims backed by a reasoning chain
-res = requests.post(f"{BASE}/search", headers=H, json={
+res = lkm_data(requests.post(f"{BASE}/search", headers=H, json={
     "query": "perovskite thermal stability at 85 C",
     "keywords": ["FAPbI3", "thermal stability"],
     "retrieval_mode": "hybrid",
     "reasoning_only": True,
     "limit": 10,
-}).json()["data"]
+}))
 
 # 2) Pick the first traceable conclusion
 claim = next((v for v in res["variables"] if v.get("has_reasoning")), None)
 if not claim:
     print("No conclusion with a traceable reasoning chain")
 else:
-    print("Conclusion:", claim["content"][:120])
+    print("Conclusion:", (claim.get("content") or "")[:120])
     # 3) Trace: fetch the reasoning chain for this claim
-    chains = requests.get(f"{BASE}/claims/{claim['id']}/reasoning",
-                          headers=H, params={"format": "graph"}).json()["data"]
+    chains = lkm_data(requests.get(f"{BASE}/claims/{claim['id']}/reasoning",
+                                   headers=H, params={"format": "graph"}))
     for c in chains["reasoning_chains"]:
         print("Source paper:", c["paper"]["en_title"])
         for n in c["graph"]["nodes"]:
@@ -407,10 +421,10 @@ else:
 AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com/openapi/v1/lkm"
 
-# 1. Node search (sort_by optional, default comprehensive; filters.paper_ids/dois optional to restrict papers)
+# 1. Node search (sort_by optional, default comprehensive; filters.paper_ids/dois optional to restrict papers, ≤50 each)
 curl -s -X POST "$BASE/search" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"query":"perovskite thermal stability","keywords":["FAPbI3","Cs doping"],"retrieval_mode":"hybrid","sort_by":"comprehensive","limit":20}' | jq .
+  -d '{"query":"perovskite thermal stability","keywords":["FAPbI3","Cs doping"],"retrieval_mode":"hybrid","sort_by":"comprehensive","filters":{"paper_ids":["811977903947382784"],"dois":["10.1038/s41586-021-03381-x"]},"limit":20}' | jq .
 
 # 2. Reasoning chain search (sort_by optional; filters.paper_ids/dois optional, ≤50 each)
 curl -s -X POST "$BASE/reasoning/search" \

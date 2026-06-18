@@ -78,7 +78,7 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 | [bohrium-wiki](en/bohrium-wiki/SKILL.md) | SciencePedia — browse scientific topics by hierarchy |
 | [bohrium-web-search](en/bohrium-web-search/SKILL.md) | Web search — proxy to searchapi.io for open internet search |
 | [bohrium-sandbox](en/bohrium-sandbox/SKILL.md) | Cloud sandbox — on-demand temp VM for running shell/Python |
-| [bohrium-lkm](en/bohrium-lkm/SKILL.md) | Large Knowledge Model — knowledge graph search, claim verification, variable relationships, batch OCR |
+| [bohrium-lkm](en/bohrium-lkm/SKILL.md) | Large Knowledge Model — node search, reasoning-chain retrieval, paper knowledge graphs, claim provenance tracing, batch node hydration |
 | [bohrium-mentor](en/bohrium-mentor/SKILL.md) | AI Science Mentor — deep-reasoning scientific Q&A with automatic literature retrieval, structured Markdown answers |
 
 ---

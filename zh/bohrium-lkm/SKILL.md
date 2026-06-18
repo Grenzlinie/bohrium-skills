@@ -106,7 +106,16 @@ import os, requests
 AK = os.environ["BOHR_ACCESS_KEY"]
 BASE = "https://open.bohrium.com/openapi/v1/lkm"
 H = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
+
+def lkm_data(r):
+    """解包 LKM 响应：code == 0 时返回 data，否则带 code/message 抛错。"""
+    body = r.json()
+    if body.get("code") != 0:
+        raise RuntimeError(f"LKM error {body.get('code')}: {body.get('message')}")
+    return body["data"]
 ```
+
+下面的示例统一走 `lkm_data(r)`，确保始终遵守上面说的 `code` 判定约定。
 
 **业务状态判定：** HTTP 通常返回 200，是否成功看响应体里的 `code`，`code == 0` 才算成功。常见错误码见末尾错误码表。
 
@@ -121,14 +130,19 @@ r = requests.post(f"{BASE}/search", headers=H, json={
     "query": "perovskite thermal stability",
     "keywords": ["FAPbI3", "Cs doping"],
     "retrieval_mode": "hybrid",
+    "sort_by": "comprehensive",  # 可选，默认 comprehensive；可选 relevance/recent/journal
     "scopes": ["claim", "question"],
+    # "filters": {               # 可选，仅在需要把召回限定到指定论文时才传
+    #     "paper_ids": ["811977903947382784"],  # 纯数字串，无 paper: 前缀，≤50 个
+    #     "dois": ["10.1038/s41586-021-03381-x"]  # ≤50 个，可与 paper_ids 同时用
+    # },
     "reasoning_only": False,
     "offset": 0,
     "limit": 20
 })
-data = r.json()["data"]
+data = lkm_data(r)
 for v in data["variables"]:
-    print(v["id"], v["type"], v.get("role"), v["has_reasoning"], v["content"][:80])
+    print(v["id"], v["type"], v.get("role"), v["has_reasoning"], (v.get("content") or "")[:80])
 # data["papers"]: 命中节点引用到的论文元数据（key 形如 paper:<id>）
 # data["has_more"]: 是否还有下一页
 ```
@@ -181,14 +195,14 @@ r = requests.post(f"{BASE}/reasoning/search", headers=H, json={
     "retrieval_mode": "hybrid",
     "sort_by": "comprehensive",  # 可选，默认 comprehensive；可选 relevance/recent/journal
     "format": "graph",
-    "filters": {                 # 可选，按论文维度限定召回范围
-        "paper_ids": ["811977903947382784"],  # 纯数字串，无 paper: 前缀，≤50 个
-        "dois": ["10.1038/s41586-021-03381-x"]  # ≤50 个，可与 paper_ids 同时用
-    },
+    # "filters": {               # 可选，仅在需要把召回限定到指定论文时才传
+    #     "paper_ids": ["811977903947382784"],  # 纯数字串，无 paper: 前缀，≤50 个
+    #     "dois": ["10.1038/s41586-021-03381-x"]  # ≤50 个，可与 paper_ids 同时用
+    # },
     "offset": 0,
     "limit": 20
 })
-data = r.json()["data"]
+data = lkm_data(r)
 for c in data["reasoning_chains"]:
     print(c["chain_id"], c["paper_id"], c["score"])
     print("  nodes:", len(c["graph"]["nodes"]), "edges:", len(c["graph"]["edges"]))
@@ -233,7 +247,7 @@ for c in data["reasoning_chains"]:
 r = requests.post(f"{BASE}/papers/graph", headers=H, json={
     "package_id": "paper:1020661015349559308"   # 四选一，见下表
 })
-data = r.json()["data"]
+data = lkm_data(r)
 for p in data["papers"]:
     print(p["paper"]["en_title"])
     print("  nodes:", len(p["graph"]["nodes"]), "edges:", len(p["graph"]["edges"]))
@@ -273,7 +287,7 @@ for p in data["papers"]:
 claim_id = "gcn_73e13bb548f847bd"
 r = requests.get(f"{BASE}/claims/{claim_id}/reasoning", headers=H,
                  params={"format": "graph", "max_chains": 10, "sort_by": "comprehensive"})
-data = r.json()["data"]
+data = lkm_data(r)
 print(data["claim"]["id"], "total_chains:", data["total_chains"])
 for c in data["reasoning_chains"]:
     print("  paper:", c["paper"]["en_title"])
@@ -311,9 +325,9 @@ for c in data["reasoning_chains"]:
 r = requests.post(f"{BASE}/variables/batch", headers=H, json={
     "ids": ["gcn_654cd35dcb814a0c", "gcn_9523aa7f1fd04d8a"]
 })
-data = r.json()["data"]
+data = lkm_data(r)
 for v in data["variables"]:
-    print(v["id"], v["type"], v["content"][:80])
+    print(v["id"], v["type"], (v.get("content") or "")[:80])
 print("not_found:", data["not_found"])
 # data["papers"]: 按 package_id 组织的论文元数据
 ```
@@ -376,23 +390,23 @@ print("not_found:", data["not_found"])
 
 ```python
 # 1) 检索：只要有推理链支撑的 conclusion claim
-res = requests.post(f"{BASE}/search", headers=H, json={
+res = lkm_data(requests.post(f"{BASE}/search", headers=H, json={
     "query": "perovskite thermal stability at 85 C",
     "keywords": ["FAPbI3", "thermal stability"],
     "retrieval_mode": "hybrid",
     "reasoning_only": True,
     "limit": 10,
-}).json()["data"]
+}))
 
 # 2) 取第一个可追溯的结论
 claim = next((v for v in res["variables"] if v.get("has_reasoning")), None)
 if not claim:
     print("未找到可追溯推理链的结论")
 else:
-    print("结论:", claim["content"][:120])
+    print("结论:", (claim.get("content") or "")[:120])
     # 3) 追溯：查这条 claim 的推理链
-    chains = requests.get(f"{BASE}/claims/{claim['id']}/reasoning",
-                          headers=H, params={"format": "graph"}).json()["data"]
+    chains = lkm_data(requests.get(f"{BASE}/claims/{claim['id']}/reasoning",
+                                   headers=H, params={"format": "graph"}))
     for c in chains["reasoning_chains"]:
         print("来源论文:", c["paper"]["en_title"])
         for n in c["graph"]["nodes"]:
@@ -407,10 +421,10 @@ else:
 AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com/openapi/v1/lkm"
 
-# 1. 知识节点检索（sort_by 可选，默认 comprehensive；filters.paper_ids/dois 可选限定论文范围）
+# 1. 知识节点检索（sort_by 可选，默认 comprehensive；filters.paper_ids/dois 可选限定论文范围，各 ≤50）
 curl -s -X POST "$BASE/search" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"query":"perovskite thermal stability","keywords":["FAPbI3","Cs doping"],"retrieval_mode":"hybrid","sort_by":"comprehensive","limit":20}' | jq .
+  -d '{"query":"perovskite thermal stability","keywords":["FAPbI3","Cs doping"],"retrieval_mode":"hybrid","sort_by":"comprehensive","filters":{"paper_ids":["811977903947382784"],"dois":["10.1038/s41586-021-03381-x"]},"limit":20}' | jq .
 
 # 2. 推理链检索（sort_by 可选；filters.paper_ids/dois 可选，各 ≤50）
 curl -s -X POST "$BASE/reasoning/search" \
