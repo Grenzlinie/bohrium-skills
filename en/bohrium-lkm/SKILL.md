@@ -140,9 +140,12 @@ for v in data["variables"]:
 | `query` | string | yes | Natural language query, ≤200 chars recommended |
 | `keywords` | string[] | no | Up to 10, ≤100 chars each; put terms/materials/methods/abbreviations, not full sentences |
 | `retrieval_mode` | string | no | `hybrid`(default, semantic+lexical) / `semantic`(vector only, faster) / `lexical`(keyword only) |
+| `sort_by` | string | no | Sort strategy, default `comprehensive` when omitted: `relevance`(pure relevance, most on-target top hit) / `recent`(prefers newer once relevance bar is met) / `journal`(prefers high-quality journals once relevance bar is met) / `comprehensive`(relevance+recency+quality+diversity combined) |
 | `scopes` | string[] | no | Restrict node type: `claim`, `question`; omit = no restriction |
 | `filters.visibility` | string | no | Content visibility, usually `public` |
 | `filters.role` | string | no | Restrict claim role: `conclusion`/`premise`/`highlight` |
+| `filters.paper_ids` | string[] | no | Restrict recall to papers, plain numeric IDs, **no `paper:` prefix**, up to 50 |
+| `filters.dois` | string[] | no | Restrict recall to papers by DOI, up to 50; server resolves each to a paper_id then merges with `paper_ids` for filtering; can be combined with `paper_ids`, omit = no paper restriction |
 | `reasoning_only` | bool | no | `true` returns only conclusion claims backed by a reasoning chain (legacy alias `evidence_only`) |
 | `include_paper_enrich` | bool | no | `true` returns richer paper metadata (larger response; use only when needed) |
 | `offset` | int | no | Page start, max 10000 |
@@ -163,6 +166,8 @@ for v in data["variables"]:
 
 **Constraint:** when `reasoning_only=true`, `scopes` must be omitted or `["claim"]`, and `filters.role` must be omitted or `conclusion`; conflicts return `290002`.
 
+> **Sorting note:** the recency/quality boosts in `recent`/`journal`/`comprehensive` are all relevance-gated, so they never pull in irrelevant content; existing callers that omit `sort_by` automatically get the better `comprehensive` default ordering.
+
 ---
 
 ## 2. Reasoning chain search — `POST /reasoning/search`
@@ -174,8 +179,12 @@ r = requests.post(f"{BASE}/reasoning/search", headers=H, json={
     "query": "infer phase stability from XRD evidence",
     "keywords": ["powder XRD", "Rietveld refinement", "phase transition"],
     "retrieval_mode": "hybrid",
+    "sort_by": "comprehensive",  # optional; default comprehensive; or relevance/recent/journal
     "format": "graph",
-    "filters": {"paper_ids": ["811977903947382784"]},  # optional; plain numeric, no paper: prefix
+    "filters": {                 # optional; restrict recall to papers
+        "paper_ids": ["811977903947382784"],  # plain numeric, no paper: prefix, ≤50
+        "dois": ["10.1038/s41586-021-03381-x"]  # ≤50, can combine with paper_ids
+    },
     "offset": 0,
     "limit": 20
 })
@@ -193,7 +202,9 @@ for c in data["reasoning_chains"]:
 | `query` | string | yes | Describe the reasoning process you want, ≤200 chars recommended |
 | `keywords` | string[] | no | Up to 10; put method/material/condition/metric/abbreviation names |
 | `retrieval_mode` | string | no | `hybrid`(default) / `semantic` / `lexical` |
-| `filters.paper_ids` | string[] | no | Restrict to papers, up to 100; must be plain numeric, **no `paper:` prefix** |
+| `sort_by` | string | no | Sort strategy, default `comprehensive` when omitted: `relevance`(pure relevance, most on-target top hit) / `recent`(prefers newer once relevance bar is met) / `journal`(prefers high-quality journals once relevance bar is met) / `comprehensive`(relevance+recency+quality+diversity combined) |
+| `filters.paper_ids` | string[] | no | Restrict recall to papers, plain numeric, **no `paper:` prefix**, up to 50 |
+| `filters.dois` | string[] | no | Restrict recall to papers by DOI, up to 50; server resolves each to a paper_id then merges with `paper_ids`; can be combined with `paper_ids`, omit = no paper restriction |
 | `format` | string | no | Recommended `graph`, returns `graph.nodes`/`graph.edges`; omit returns legacy structure |
 | `offset` | int | no | Page start, max 10000 |
 | `limit` | int | no | Page size, default 20, max 100 |
@@ -209,6 +220,8 @@ for c in data["reasoning_chains"]:
 | `data.reasoning_chains[].paper` | Source paper metadata |
 | `data.reasoning_chains[].addressed_problems` / `open_questions` | Problems addressed / open questions |
 | `data.total` | Total hits; pagination: more pages if `offset + page count < total` |
+
+> **Sorting note:** same semantics as `/search` — the recency/quality boosts in `recent`/`journal`/`comprehensive` are relevance-gated and never introduce irrelevant content; omitting `sort_by` defaults to `comprehensive`.
 
 ---
 
@@ -394,15 +407,15 @@ else:
 AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com/openapi/v1/lkm"
 
-# 1. Node search
+# 1. Node search (sort_by optional, default comprehensive; filters.paper_ids/dois optional to restrict papers)
 curl -s -X POST "$BASE/search" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"query":"perovskite thermal stability","keywords":["FAPbI3","Cs doping"],"retrieval_mode":"hybrid","limit":20}' | jq .
+  -d '{"query":"perovskite thermal stability","keywords":["FAPbI3","Cs doping"],"retrieval_mode":"hybrid","sort_by":"comprehensive","limit":20}' | jq .
 
-# 2. Reasoning chain search
+# 2. Reasoning chain search (sort_by optional; filters.paper_ids/dois optional, ≤50 each)
 curl -s -X POST "$BASE/reasoning/search" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"query":"infer phase stability from XRD","keywords":["powder XRD"],"format":"graph","limit":20}' | jq .
+  -d '{"query":"infer phase stability from XRD","keywords":["powder XRD"],"format":"graph","sort_by":"journal","filters":{"dois":["10.1038/s41586-021-03381-x"]},"limit":20}' | jq .
 
 # 3. Paper-level knowledge graph
 curl -s -X POST "$BASE/papers/graph" \

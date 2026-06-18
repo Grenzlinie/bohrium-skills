@@ -140,9 +140,12 @@ for v in data["variables"]:
 | `query` | string | 是 | 自然语言检索语句，建议 ≤200 字 |
 | `keywords` | string[] | 否 | 关键词，最多 10 个、每个 ≤100 字；放术语/材料名/方法名/缩写，不要塞整句 |
 | `retrieval_mode` | string | 否 | `hybrid`(默认,语义+关键词) / `semantic`(仅语义,更快) / `lexical`(仅关键词) |
+| `sort_by` | string | 否 | 排序策略，不传默认 `comprehensive`：`relevance`(纯相关性,首位最准) / `recent`(相关达标前提下偏新) / `journal`(相关达标前提下偏高质量期刊) / `comprehensive`(相关+时效+质量+多样性综合) |
 | `scopes` | string[] | 否 | 限定节点类型：`claim`、`question`；省略=不限定 |
 | `filters.visibility` | string | 否 | 内容可见性，通常 `public` |
 | `filters.role` | string | 否 | 限定 claim 角色：`conclusion`/`premise`/`highlight` |
+| `filters.paper_ids` | string[] | 否 | 按论文维度限定召回范围，纯数字论文 ID，**不带 `paper:` 前缀**，最多 50 个 |
+| `filters.dois` | string[] | 否 | 按论文维度限定召回范围，论文 DOI，最多 50 个；服务端先换成 paper_id 再与 `paper_ids` 合并过滤；可与 `paper_ids` 同时使用，省略=不限定论文范围 |
 | `reasoning_only` | bool | 否 | `true` 只返回有推理链支撑的 conclusion claim（旧名 `evidence_only`） |
 | `include_paper_enrich` | bool | 否 | `true` 返回更丰富的论文元数据（响应变大，按需开） |
 | `offset` | int | 否 | 分页起点，最大 10000 |
@@ -163,6 +166,8 @@ for v in data["variables"]:
 
 **约束：** `reasoning_only=true` 时，`scopes` 必须省略或 `["claim"]`，`filters.role` 必须省略或 `conclusion`；冲突会返回 `290002`。
 
+> **排序说明：** `recent`/`journal`/`comprehensive` 的时效、质量加成都有相关性门控，不会塞进不相关内容；老调用方不传 `sort_by` 即自动享受更优的 `comprehensive` 默认排序。
+
 ---
 
 ## 2. 推理链检索 — `POST /reasoning/search`
@@ -174,8 +179,12 @@ r = requests.post(f"{BASE}/reasoning/search", headers=H, json={
     "query": "infer phase stability from XRD evidence",
     "keywords": ["powder XRD", "Rietveld refinement", "phase transition"],
     "retrieval_mode": "hybrid",
+    "sort_by": "comprehensive",  # 可选，默认 comprehensive；可选 relevance/recent/journal
     "format": "graph",
-    "filters": {"paper_ids": ["811977903947382784"]},  # 可选，纯数字串，无 paper: 前缀
+    "filters": {                 # 可选，按论文维度限定召回范围
+        "paper_ids": ["811977903947382784"],  # 纯数字串，无 paper: 前缀，≤50 个
+        "dois": ["10.1038/s41586-021-03381-x"]  # ≤50 个，可与 paper_ids 同时用
+    },
     "offset": 0,
     "limit": 20
 })
@@ -193,7 +202,9 @@ for c in data["reasoning_chains"]:
 | `query` | string | 是 | 描述想找的推理过程，建议 ≤200 字 |
 | `keywords` | string[] | 否 | 最多 10 个，放方法名/材料名/实验条件/指标/缩写 |
 | `retrieval_mode` | string | 否 | `hybrid`(默认) / `semantic` / `lexical` |
-| `filters.paper_ids` | string[] | 否 | 限定论文范围，最多 100 个；必须纯数字串，**不带 `paper:` 前缀** |
+| `sort_by` | string | 否 | 排序策略，不传默认 `comprehensive`：`relevance`(纯相关性,首位最准) / `recent`(相关达标前提下偏新) / `journal`(相关达标前提下偏高质量期刊) / `comprehensive`(相关+时效+质量+多样性综合) |
+| `filters.paper_ids` | string[] | 否 | 按论文维度限定召回范围，纯数字串，**不带 `paper:` 前缀**，最多 50 个 |
+| `filters.dois` | string[] | 否 | 按论文维度限定召回范围，论文 DOI，最多 50 个；服务端先换成 paper_id 再与 `paper_ids` 合并过滤；可与 `paper_ids` 同时使用，省略=不限定论文范围 |
 | `format` | string | 否 | 推荐 `graph`，返回 `graph.nodes`/`graph.edges`；省略返回旧结构 |
 | `offset` | int | 否 | 分页起点，最大 10000 |
 | `limit` | int | 否 | 每页条数，默认 20，最大 100 |
@@ -209,6 +220,8 @@ for c in data["reasoning_chains"]:
 | `data.reasoning_chains[].paper` | 来源论文元数据 |
 | `data.reasoning_chains[].addressed_problems` / `open_questions` | 该链处理的问题 / 留下的开放问题 |
 | `data.total` | 命中总数；分页：`offset + 本页条数 < total` 即有下一页 |
+
+> **排序说明：** 与 `/search` 语义一致——`recent`/`journal`/`comprehensive` 的时效、质量加成均有相关性门控，不会引入不相关内容；不传 `sort_by` 即默认 `comprehensive`。
 
 ---
 
@@ -394,15 +407,15 @@ else:
 AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com/openapi/v1/lkm"
 
-# 1. 知识节点检索
+# 1. 知识节点检索（sort_by 可选，默认 comprehensive；filters.paper_ids/dois 可选限定论文范围）
 curl -s -X POST "$BASE/search" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"query":"perovskite thermal stability","keywords":["FAPbI3","Cs doping"],"retrieval_mode":"hybrid","limit":20}' | jq .
+  -d '{"query":"perovskite thermal stability","keywords":["FAPbI3","Cs doping"],"retrieval_mode":"hybrid","sort_by":"comprehensive","limit":20}' | jq .
 
-# 2. 推理链检索
+# 2. 推理链检索（sort_by 可选；filters.paper_ids/dois 可选，各 ≤50）
 curl -s -X POST "$BASE/reasoning/search" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"query":"infer phase stability from XRD","keywords":["powder XRD"],"format":"graph","limit":20}' | jq .
+  -d '{"query":"infer phase stability from XRD","keywords":["powder XRD"],"format":"graph","sort_by":"journal","filters":{"dois":["10.1038/s41586-021-03381-x"]},"limit":20}' | jq .
 
 # 3. 论文级知识图谱
 curl -s -X POST "$BASE/papers/graph" \
