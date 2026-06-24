@@ -127,8 +127,8 @@ def lkm_data(r):
 
 ```python
 r = requests.post(f"{BASE}/search", headers=H, json={
-    "query": "perovskite thermal stability",
-    "keywords": ["FAPbI3", "Cs doping"],
+    "query": "The 2017 chemistry curriculum standard increases emphasis on real‑world problem situations and contexts (explicitly including industrial production, environmental issues, and socio‑technical “hot topics”).",
+    "keywords": ["real-world contexts", "industrial production", "inquiry learning"],
     "retrieval_mode": "hybrid",
     "sort_by": "comprehensive",  # 可选，默认 comprehensive；可选 relevance/recent/journal
     "scopes": ["claim", "question"],

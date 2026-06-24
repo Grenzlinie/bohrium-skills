@@ -127,8 +127,8 @@ Recall claim / question nodes in LKM via natural language. Returns individual no
 
 ```python
 r = requests.post(f"{BASE}/search", headers=H, json={
-    "query": "perovskite thermal stability",
-    "keywords": ["FAPbI3", "Cs doping"],
+    "query": "The 2017 chemistry curriculum standard increases emphasis on real‑world problem situations and contexts (explicitly including industrial production, environmental issues, and socio‑technical “hot topics”).",
+    "keywords": ["real-world contexts", "industrial production", "inquiry learning"],
     "retrieval_mode": "hybrid",
     "sort_by": "comprehensive",  # optional; default comprehensive; or relevance/recent/journal
     "scopes": ["claim", "question"],
