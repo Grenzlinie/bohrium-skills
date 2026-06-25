@@ -1,6 +1,6 @@
 ---
 name: bohrium-lkm
-description: "Large Knowledge Model (LKM) via open.bohrium.com (v1). Use when: user asks about searching scientific claims/questions, retrieving reasoning chains, viewing a paper's knowledge graph, tracing why a claim holds, or batch-hydrating knowledge node details. NOT for: general paper keyword search (use bohrium-paper-search), knowledge base management (use bohrium-knowledge-base), single PDF parsing (use bohrium-pdf-parser)."
+description: "Large Knowledge Model (LKM) via open.bohrium.com (v1). Use when: user asks about searching scientific claims/questions, retrieving reasoning chains, viewing a paper's knowledge graph, tracing why a claim holds, batch-hydrating knowledge node details, or submitting feedback on LKM content/service. NOT for: general paper keyword search (use bohrium-paper-search), knowledge base management (use bohrium-knowledge-base), single PDF parsing (use bohrium-pdf-parser)."
 ---
 
 # SKILL: Bohrium LKM (Large Knowledge Model)
@@ -18,6 +18,7 @@ LKM (Large Knowledge Model) v1 endpoints on `open.bohrium.com` let you search an
 | `POST /v1/lkm/papers/graph` | Paper-level knowledge graph: full graph extracted from a paper |
 | `GET /v1/lkm/claims/{id}/reasoning` | Single-claim reasoning chain: why a claim holds |
 | `POST /v1/lkm/variables/batch` | Batch hydration: fetch node details by an ID list |
+| `POST /v1/lkm/feedback` | Submit feedback: report a bug / feature request / question about LKM content or service |
 
 **Choosing an entry point:**
 
@@ -26,6 +27,7 @@ LKM (Large Knowledge Model) v1 endpoints on `open.bohrium.com` let you search an
 - Open one paper and view its full structured graph → `/papers/graph`
 - Have a claim ID, want its reasoning chain → `/claims/{id}/reasoning`
 - Have a set of node IDs, want to hydrate details → `/variables/batch`
+- Want to report a bug / feature request / question about a node, paper, or the service → `/feedback`
 
 **Don't use for:**
 
@@ -37,10 +39,12 @@ LKM (Large Knowledge Model) v1 endpoints on `open.bohrium.com` let you search an
 
 ## How the endpoints connect
 
-The 5 endpoints fall into two groups:
+The 5 retrieval endpoints fall into two groups:
 
 - **Natural-language search entry points** (only need `query`, no ID up front): `/search`, `/reasoning/search`
 - **Identifier/ID-based lookups** (need a paper identifier or node ID first): `/papers/graph` (paper `package_id`/`paper_id`/`doi`/`title`), `/claims/{id}/reasoning` (claim `gcn_` ID), `/variables/batch` (node `gcn_` ID)
+
+(`/feedback` is a standalone write endpoint, not part of the retrieval data flow below — see section 6.)
 
 > `/papers/graph` can be a standalone starting point if you already have a DOI or title; otherwise its `package_id`/`paper_id` typically comes from paper metadata returned by `/search` or `/reasoning/search`.
 
@@ -73,6 +77,8 @@ flowchart TD
 | `papers`/`paper` metadata; `reasoning_chains[].paper_id` | paper ID (`paper:<number>` or plain numeric) | `papers/graph` (`package_id`/`paper_id`); `reasoning/search` `filters.paper_ids` (plain numeric, no `paper:` prefix) |
 
 **Pitfall:** do not pass a graph local node ID (e.g. `paper:...::conclusion_3`) as a global `gcn_` ID or paper ID downstream — `claims/{id}/reasoning` returns `290004`, and `variables/batch` puts it in `not_found`.
+
+> `/feedback` optionally reuses an upstream global node ID (`gcn_id`) or paper metadata ID (`paper_metadata_id`) to pin the feedback target; the two are mutually exclusive.
 
 ## Auth configuration
 
@@ -132,10 +138,7 @@ r = requests.post(f"{BASE}/search", headers=H, json={
     "retrieval_mode": "hybrid",
     "sort_by": "comprehensive",  # optional; default comprehensive; or relevance/recent/journal
     "scopes": ["claim", "question"],
-    # "filters": {               # optional; ONLY when restricting recall to specific papers
-    #     "paper_ids": ["811977903947382784"],  # plain numeric, no paper: prefix, ≤50
-    #     "dois": ["10.1038/s41586-021-03381-x"]  # ≤50, can combine with paper_ids
-    # },
+    # "filters": {"paper_ids": ["811977903947382784"], "dois": ["10.1038/s41586-021-03381-x"]},  # optional; restrict recall to papers, ≤50 each
     "reasoning_only": False,
     "offset": 0,
     "limit": 20
@@ -195,10 +198,7 @@ r = requests.post(f"{BASE}/reasoning/search", headers=H, json={
     "retrieval_mode": "hybrid",
     "sort_by": "comprehensive",  # optional; default comprehensive; or relevance/recent/journal
     "format": "graph",
-    # "filters": {               # optional; ONLY when restricting recall to specific papers
-    #     "paper_ids": ["811977903947382784"],  # plain numeric, no paper: prefix, ≤50
-    #     "dois": ["10.1038/s41586-021-03381-x"]  # ≤50, can combine with paper_ids
-    # },
+    # "filters": {"paper_ids": ["811977903947382784"], "dois": ["10.1038/s41586-021-03381-x"]},  # optional; restrict recall to papers, ≤50 each
     "offset": 0,
     "limit": 20
 })
@@ -216,9 +216,8 @@ for c in data["reasoning_chains"]:
 | `query` | string | yes | Describe the reasoning process you want, ≤200 chars recommended |
 | `keywords` | string[] | no | Up to 10; put method/material/condition/metric/abbreviation names |
 | `retrieval_mode` | string | no | `hybrid`(default) / `semantic` / `lexical` |
-| `sort_by` | string | no | Sort strategy, default `comprehensive` when omitted: `relevance`(pure relevance, most on-target top hit) / `recent`(prefers newer once relevance bar is met) / `journal`(prefers high-quality journals once relevance bar is met) / `comprehensive`(relevance+recency+quality+diversity combined) |
-| `filters.paper_ids` | string[] | no | Restrict recall to papers, plain numeric, **no `paper:` prefix**, up to 50 |
-| `filters.dois` | string[] | no | Restrict recall to papers by DOI, up to 50; server resolves each to a paper_id then merges with `paper_ids`; can be combined with `paper_ids`, omit = no paper restriction |
+| `sort_by` | string | no | Sort strategy, same values/semantics as `/search` (`relevance`/`recent`/`journal`/`comprehensive`), default `comprehensive` when omitted |
+| `filters.paper_ids` / `filters.dois` | string[] | no | Restrict recall to papers, same semantics as `/search`: plain numeric IDs (no `paper:` prefix) / DOIs, ≤50 each, can be combined |
 | `format` | string | no | Recommended `graph`, returns `graph.nodes`/`graph.edges`; omit returns legacy structure |
 | `offset` | int | no | Page start, max 10000 |
 | `limit` | int | no | Page size, default 20, max 100 |
@@ -234,8 +233,6 @@ for c in data["reasoning_chains"]:
 | `data.reasoning_chains[].paper` | Source paper metadata |
 | `data.reasoning_chains[].addressed_problems` / `open_questions` | Problems addressed / open questions |
 | `data.total` | Total hits; pagination: more pages if `offset + page count < total` |
-
-> **Sorting note:** same semantics as `/search` — the recency/quality boosts in `recent`/`journal`/`comprehensive` are relevance-gated and never introduce irrelevant content; omitting `sort_by` defaults to `comprehensive`.
 
 ---
 
@@ -351,6 +348,40 @@ print("not_found:", data["not_found"])
 
 ---
 
+## 6. Submit feedback — `POST /feedback`
+
+Submit usage feedback about the LKM service / data. Optionally link it to a GCN node or a paper metadata record to pin the exact target. **This is a write endpoint; it returns no knowledge content.**
+
+```python
+r = requests.post(f"{BASE}/feedback", headers=H, json={
+    "type": "bug",          # required: bug / feature / question, case-insensitive
+    "content": "Reasoning-chain results are missing premise nodes; likely a data gap",  # required, non-empty after trim
+    "gcn_id": "gcn_0002bee76d0c4255"  # optional; link a GCN node. Mutually exclusive with paper_metadata_id
+    # or link a paper instead: drop gcn_id and pass "paper_metadata_id": "867766664756724177"
+})
+fb = lkm_data(r)
+print("feedback id:", fb["id"])
+```
+
+**Parameters (Body):**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | yes | Feedback type: `bug` / `feature` / `question`, case-insensitive |
+| `content` | string | yes | Feedback body, non-empty after trim |
+| `gcn_id` | string | no | Linked GCN node ID (from `/search`, graph, etc.), e.g. `gcn_0002bee76d0c4255`; mutually exclusive with `paper_metadata_id` |
+| `paper_metadata_id` | string | no | Linked paper metadata ID, e.g. `867766664756724177`; mutually exclusive with `gcn_id` |
+
+**Key response fields:**
+
+| Field | Description |
+|-------|-------------|
+| `data.id` | Primary key ID of the newly created feedback record |
+
+> `gcn_id` and `paper_metadata_id` may both be empty (no specific target), but **cannot both be non-empty** — passing both is rejected to avoid ambiguity.
+
+---
+
 ## Shared graph notes (endpoints 2 / 3 / 4)
 
 `graph` consists of `nodes` and `edges`, ready for frontend graph rendering.
@@ -417,33 +448,20 @@ else:
 
 ## curl examples
 
+Auth and `code` handling are identical across endpoints. One POST and one GET shown below; other endpoints differ only in path and body (bodies are in each section above).
+
 ```bash
 AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com/openapi/v1/lkm"
 
-# 1. Node search (sort_by optional, default comprehensive; filters.paper_ids/dois optional to restrict papers, ≤50 each)
+# POST example (other POST endpoints work the same: just change path and body)
 curl -s -X POST "$BASE/search" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"query":"perovskite thermal stability","keywords":["FAPbI3","Cs doping"],"retrieval_mode":"hybrid","sort_by":"comprehensive","filters":{"paper_ids":["811977903947382784"],"dois":["10.1038/s41586-021-03381-x"]},"limit":20}' | jq .
+  -d '{"query":"perovskite thermal stability","retrieval_mode":"hybrid","limit":20}' | jq .
 
-# 2. Reasoning chain search (sort_by optional; filters.paper_ids/dois optional, ≤50 each)
-curl -s -X POST "$BASE/reasoning/search" \
-  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"query":"infer phase stability from XRD","keywords":["powder XRD"],"format":"graph","sort_by":"journal","filters":{"dois":["10.1038/s41586-021-03381-x"]},"limit":20}' | jq .
-
-# 3. Paper-level knowledge graph
-curl -s -X POST "$BASE/papers/graph" \
-  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"package_id":"paper:1020661015349559308"}' | jq .
-
-# 4. Single-claim reasoning chain
+# GET example (single-claim reasoning chain)
 curl -s -X GET "$BASE/claims/gcn_73e13bb548f847bd/reasoning?format=graph&max_chains=10" \
   -H "Authorization: Bearer $AK" | jq .
-
-# 5. Batch hydration
-curl -s -X POST "$BASE/variables/batch" \
-  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"ids":["gcn_654cd35dcb814a0c","gcn_9523aa7f1fd04d8a"]}' | jq .
 ```
 
 ---

@@ -1,6 +1,6 @@
 ---
 name: bohrium-lkm
-description: "Large Knowledge Model (LKM) via open.bohrium.com (v1). Use when: user asks about searching scientific claims/questions, retrieving reasoning chains, viewing a paper's knowledge graph, tracing why a claim holds, or batch-hydrating knowledge node details. NOT for: general paper keyword search (use bohrium-paper-search), knowledge base management (use bohrium-knowledge-base), single PDF parsing (use bohrium-pdf-parser)."
+description: "Large Knowledge Model (LKM) via open.bohrium.com (v1). Use when: user asks about searching scientific claims/questions, retrieving reasoning chains, viewing a paper's knowledge graph, tracing why a claim holds, batch-hydrating knowledge node details, or submitting feedback on LKM content/service. NOT for: general paper keyword search (use bohrium-paper-search), knowledge base management (use bohrium-knowledge-base), single PDF parsing (use bohrium-pdf-parser)."
 ---
 
 # SKILL: Bohrium LKM (大知识模型)
@@ -18,6 +18,7 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com (v1). Use when: u
 | `POST /v1/lkm/papers/graph` | 论文级知识图谱：返回某篇论文抽取出的完整 graph |
 | `GET /v1/lkm/claims/{id}/reasoning` | 单条命题推理链：查某条 claim 为什么成立 |
 | `POST /v1/lkm/variables/batch` | 批量水合：按节点 ID 列表批量取详情 |
+| `POST /v1/lkm/feedback` | 提交反馈：对 LKM 服务/数据提交缺陷 / 需求 / 问题 |
 
 **怎么选入口：**
 
@@ -26,6 +27,7 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com (v1). Use when: u
 - 打开一篇论文看完整结构化图谱 → `/papers/graph`
 - 已有 claim ID，想看推理链 → `/claims/{id}/reasoning`
 - 已有一组节点 ID，想批量补全详情 → `/variables/batch`
+- 想对某个节点/论文或服务本身提交缺陷/需求/问题 → `/feedback`
 
 **不适用：**
 
@@ -37,10 +39,12 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com (v1). Use when: u
 
 ## 接口调用关系
 
-把 5 个接口分成两类：
+把 5 个检索类接口分成两类：
 
 - **自然语言检索入口**（只需 `query`，无需预先知道任何 ID）：`/search`、`/reasoning/search`
 - **基于标识/ID 的查询**（需先有论文标识或节点 ID）：`/papers/graph`（论文 `package_id`/`paper_id`/`doi`/`title`）、`/claims/{id}/reasoning`（claim `gcn_` ID）、`/variables/batch`（节点 `gcn_` ID）
+
+（`/feedback` 是独立的写入接口，不在下面的检索数据流中，详见第 6 节。）
 
 > `/papers/graph` 若已知 DOI 或标题，也可不依赖其它接口、直接作为起点；否则其 `package_id`/`paper_id` 通常来自 `/search`、`/reasoning/search` 返回的论文元数据。
 
@@ -73,6 +77,8 @@ flowchart TD
 | 各接口 `papers`/`paper` 元数据；`reasoning_chains[].paper_id` | 论文 ID（`paper:<数字>` 或纯数字串） | `papers/graph`（`package_id`/`paper_id`）；`reasoning/search` 的 `filters.paper_ids`（纯数字、无 `paper:` 前缀） |
 
 **陷阱：** 不要把 graph 本地节点 ID（如 `paper:...::conclusion_3`）当成全局 `gcn_` ID 或论文 ID 往下游传——`claims/{id}/reasoning` 会返回 `290004`，`variables/batch` 会把它放进 `not_found`。
+
+> `/feedback` 可选地复用上游产出的全局节点 ID（`gcn_id`）或论文元数据 ID（`paper_metadata_id`）来定位反馈对象，二者互斥。
 
 ## 认证配置
 
@@ -132,10 +138,7 @@ r = requests.post(f"{BASE}/search", headers=H, json={
     "retrieval_mode": "hybrid",
     "sort_by": "comprehensive",  # 可选，默认 comprehensive；可选 relevance/recent/journal
     "scopes": ["claim", "question"],
-    # "filters": {               # 可选，仅在需要把召回限定到指定论文时才传
-    #     "paper_ids": ["811977903947382784"],  # 纯数字串，无 paper: 前缀，≤50 个
-    #     "dois": ["10.1038/s41586-021-03381-x"]  # ≤50 个，可与 paper_ids 同时用
-    # },
+    # "filters": {"paper_ids": ["811977903947382784"], "dois": ["10.1038/s41586-021-03381-x"]},  # 可选，按论文限定召回，各 ≤50
     "reasoning_only": False,
     "offset": 0,
     "limit": 20
@@ -195,10 +198,7 @@ r = requests.post(f"{BASE}/reasoning/search", headers=H, json={
     "retrieval_mode": "hybrid",
     "sort_by": "comprehensive",  # 可选，默认 comprehensive；可选 relevance/recent/journal
     "format": "graph",
-    # "filters": {               # 可选，仅在需要把召回限定到指定论文时才传
-    #     "paper_ids": ["811977903947382784"],  # 纯数字串，无 paper: 前缀，≤50 个
-    #     "dois": ["10.1038/s41586-021-03381-x"]  # ≤50 个，可与 paper_ids 同时用
-    # },
+    # "filters": {"paper_ids": ["811977903947382784"], "dois": ["10.1038/s41586-021-03381-x"]},  # 可选，按论文限定召回，各 ≤50
     "offset": 0,
     "limit": 20
 })
@@ -216,9 +216,8 @@ for c in data["reasoning_chains"]:
 | `query` | string | 是 | 描述想找的推理过程，建议 ≤200 字 |
 | `keywords` | string[] | 否 | 最多 10 个，放方法名/材料名/实验条件/指标/缩写 |
 | `retrieval_mode` | string | 否 | `hybrid`(默认) / `semantic` / `lexical` |
-| `sort_by` | string | 否 | 排序策略，不传默认 `comprehensive`：`relevance`(纯相关性,首位最准) / `recent`(相关达标前提下偏新) / `journal`(相关达标前提下偏高质量期刊) / `comprehensive`(相关+时效+质量+多样性综合) |
-| `filters.paper_ids` | string[] | 否 | 按论文维度限定召回范围，纯数字串，**不带 `paper:` 前缀**，最多 50 个 |
-| `filters.dois` | string[] | 否 | 按论文维度限定召回范围，论文 DOI，最多 50 个；服务端先换成 paper_id 再与 `paper_ids` 合并过滤；可与 `paper_ids` 同时使用，省略=不限定论文范围 |
+| `sort_by` | string | 否 | 排序策略，取值与语义同 `/search`（`relevance`/`recent`/`journal`/`comprehensive`），不传默认 `comprehensive` |
+| `filters.paper_ids` / `filters.dois` | string[] | 否 | 按论文维度限定召回范围，语义同 `/search`：纯数字 ID（无 `paper:` 前缀）/ DOI，各 ≤50，可同时使用 |
 | `format` | string | 否 | 推荐 `graph`，返回 `graph.nodes`/`graph.edges`；省略返回旧结构 |
 | `offset` | int | 否 | 分页起点，最大 10000 |
 | `limit` | int | 否 | 每页条数，默认 20，最大 100 |
@@ -234,8 +233,6 @@ for c in data["reasoning_chains"]:
 | `data.reasoning_chains[].paper` | 来源论文元数据 |
 | `data.reasoning_chains[].addressed_problems` / `open_questions` | 该链处理的问题 / 留下的开放问题 |
 | `data.total` | 命中总数；分页：`offset + 本页条数 < total` 即有下一页 |
-
-> **排序说明：** 与 `/search` 语义一致——`recent`/`journal`/`comprehensive` 的时效、质量加成均有相关性门控，不会引入不相关内容；不传 `sort_by` 即默认 `comprehensive`。
 
 ---
 
@@ -351,6 +348,40 @@ print("not_found:", data["not_found"])
 
 ---
 
+## 6. 提交反馈 — `POST /feedback`
+
+对 LKM 服务 / 数据提交使用反馈。可选地关联到一个 GCN 节点或一篇论文元数据，用于定位反馈针对的具体对象。**这是写入接口，不返回知识内容。**
+
+```python
+r = requests.post(f"{BASE}/feedback", headers=H, json={
+    "type": "bug",          # 必填：bug(缺陷) / feature(需求) / question(问题)，不区分大小写
+    "content": "推理链查询返回结果中缺少前提节点，疑似数据缺失",  # 必填，trim 后不能为空
+    "gcn_id": "gcn_0002bee76d0c4255"  # 可选；关联 GCN 节点。与 paper_metadata_id 互斥
+    # 或改为关联论文：去掉 gcn_id，改传 "paper_metadata_id": "867766664756724177"
+})
+fb = lkm_data(r)
+print("feedback id:", fb["id"])
+```
+
+**参数（Body）：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `type` | string | 是 | 反馈类型：`bug`(缺陷) / `feature`(需求) / `question`(问题)，不区分大小写 |
+| `content` | string | 是 | 反馈正文，trim 后不能为空 |
+| `gcn_id` | string | 否 | 关联的 GCN 节点 ID（来自 `/search`、graph 等），如 `gcn_0002bee76d0c4255`；与 `paper_metadata_id` 互斥 |
+| `paper_metadata_id` | string | 否 | 关联的论文元数据 ID，如 `867766664756724177`；与 `gcn_id` 互斥 |
+
+**关键返回字段：**
+
+| 字段 | 说明 |
+|------|------|
+| `data.id` | 新建反馈记录的主键 ID |
+
+> `gcn_id` 与 `paper_metadata_id` 可同时为空（不关联具体对象），但**不能同时非空**——同时传会因语义混淆被拒。
+
+---
+
 ## graph 公共说明（端点 2 / 3 / 4 共享）
 
 `graph` 由 `nodes` 和 `edges` 组成，可直接用于前端图谱渲染。
@@ -417,33 +448,20 @@ else:
 
 ## curl 示例
 
+所有接口鉴权、`code` 判定一致，下面给一个 POST、一个 GET 代表；其余接口仅 path 与 body 不同，body 见上文各节。
+
 ```bash
 AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com/openapi/v1/lkm"
 
-# 1. 知识节点检索（sort_by 可选，默认 comprehensive；filters.paper_ids/dois 可选限定论文范围，各 ≤50）
+# POST 示例（其它 POST 接口同理：仅换 path 与 body）
 curl -s -X POST "$BASE/search" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"query":"perovskite thermal stability","keywords":["FAPbI3","Cs doping"],"retrieval_mode":"hybrid","sort_by":"comprehensive","filters":{"paper_ids":["811977903947382784"],"dois":["10.1038/s41586-021-03381-x"]},"limit":20}' | jq .
+  -d '{"query":"perovskite thermal stability","retrieval_mode":"hybrid","limit":20}' | jq .
 
-# 2. 推理链检索（sort_by 可选；filters.paper_ids/dois 可选，各 ≤50）
-curl -s -X POST "$BASE/reasoning/search" \
-  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"query":"infer phase stability from XRD","keywords":["powder XRD"],"format":"graph","sort_by":"journal","filters":{"dois":["10.1038/s41586-021-03381-x"]},"limit":20}' | jq .
-
-# 3. 论文级知识图谱
-curl -s -X POST "$BASE/papers/graph" \
-  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"package_id":"paper:1020661015349559308"}' | jq .
-
-# 4. 单条命题推理链
+# GET 示例（单条命题推理链）
 curl -s -X GET "$BASE/claims/gcn_73e13bb548f847bd/reasoning?format=graph&max_chains=10" \
   -H "Authorization: Bearer $AK" | jq .
-
-# 5. 批量水合
-curl -s -X POST "$BASE/variables/batch" \
-  -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"ids":["gcn_654cd35dcb814a0c","gcn_9523aa7f1fd04d8a"]}' | jq .
 ```
 
 ---
