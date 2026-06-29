@@ -260,7 +260,7 @@ def cmd_alter_table(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Bohrium custom database helper")
+    parser = argparse.ArgumentParser(description="Bohrium private database helper")
     sub = parser.add_subparsers(required=True)
 
     p = sub.add_parser("list-dbs")

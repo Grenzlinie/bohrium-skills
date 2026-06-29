@@ -1,16 +1,16 @@
 ---
 name: bohrium-database
-description: "Operate Bohrium custom/private databases with bohrium-open-sdk. Use when: the user asks to list Bohrium databases, inspect tables or schemas, query/filter/export rows, insert/update/delete records, create tables, or alter table columns using db_ak/table_ak IDs. NOT for: internal shrimp PostgreSQL operations, general file storage, datasets, or compute jobs."
+description: "Operate Bohrium private databases with bohrium-open-sdk. Use when: the user asks to list private/authorized Bohrium databases, inspect tables or schemas, query/filter/export rows, insert/update/delete records, create tables, or alter table columns using db_ak/table_ak IDs. NOT for: public materials databases such as crystal/electrolyte/positive-electrode databases, internal shrimp PostgreSQL operations, general file storage, datasets, or compute jobs."
 metadata:
   openclaw:
     primaryEnv: BOHR_ACCESS_KEY
 ---
 
-# SKILL: Bohrium 自定义数据库
+# SKILL: Bohrium 私有数据库
 
 ## 概述
 
-使用 `bohrium-open-sdk` 操作用户有权限访问的 Bohrium 自定义数据库。常见对象：
+使用 `bohrium-open-sdk` 操作用户有权限访问的 Bohrium 私有数据库。这里的“私有数据库”包括用户自己创建的库、团队授权库以及 AK 可访问的库；不包括晶体材料数据库、电解液分子数据库、正极材料数据库等公共材料数据库目录。常见对象：
 
 - `db_ak`：数据库访问标识，例如 `669ng`
 - `table_ak`：数据表访问标识，例如 `669ng00`

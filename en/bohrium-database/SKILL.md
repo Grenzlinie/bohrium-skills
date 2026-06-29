@@ -1,16 +1,16 @@
 ---
 name: bohrium-database
-description: "Operate Bohrium custom/private databases with bohrium-open-sdk. Use when: the user asks to list Bohrium databases, inspect tables or schemas, query/filter/export rows, insert/update/delete records, create tables, or alter table columns using db_ak/table_ak IDs. NOT for: internal shrimp PostgreSQL operations, general file storage, datasets, or compute jobs."
+description: "Operate Bohrium private databases with bohrium-open-sdk. Use when: the user asks to list private/authorized Bohrium databases, inspect tables or schemas, query/filter/export rows, insert/update/delete records, create tables, or alter table columns using db_ak/table_ak IDs. NOT for: public materials databases such as crystal/electrolyte/positive-electrode databases, internal shrimp PostgreSQL operations, general file storage, datasets, or compute jobs."
 metadata:
   openclaw:
     primaryEnv: BOHR_ACCESS_KEY
 ---
 
-# SKILL: Bohrium Custom Database
+# SKILL: Bohrium Private Database
 
 ## Overview
 
-Use `bohrium-open-sdk` to operate Bohrium custom databases that the user can access. Common identifiers:
+Use `bohrium-open-sdk` to operate Bohrium private databases that the user can access. "Private databases" here includes databases created by the user, team-authorized databases, and any database visible to the current AK. It does not include the public materials database catalog such as crystal, electrolyte, or positive-electrode databases. Common identifiers:
 
 - `db_ak`: database access key, for example `669ng`
 - `table_ak`: table access key, for example `669ng00`
