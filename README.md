@@ -54,7 +54,7 @@ export BOHR_ACCESS_KEY="your_access_key_here"
 /plugin install bohrium-skills@bohrium
 ```
 
-装完会得到 15 个 Bohrium skill（英文版）。
+装完会得到 16 个 Bohrium skill（英文版）。
 
 ---
 
@@ -69,6 +69,7 @@ export BOHR_ACCESS_KEY="your_access_key_here"
 | [bohrium-job](zh/bohrium-job/SKILL.md) | 计算任务管理 — 提交、查询、终止、删除任务 |
 | [bohrium-node](zh/bohrium-node/SKILL.md) | 开发节点管理 — 创建、启停、删除容器/虚拟机 |
 | [bohrium-dataset](zh/bohrium-dataset/SKILL.md) | 数据集管理 — 创建、上传、下载、版本控制 |
+| [bohrium-database](zh/bohrium-database/SKILL.md) | 自定义数据库 — 查询库表结构、增删改查数据、新建表和修改表结构 |
 | [bohrium-image](zh/bohrium-image/SKILL.md) | 容器镜像管理 — 查询、拉取、创建、删除镜像 |
 | [bohrium-project](zh/bohrium-project/SKILL.md) | 项目管理 — 创建项目、管理成员、设置额度 |
 | [bohrium-knowledge-base](zh/bohrium-knowledge-base/SKILL.md) | 知识库管理 — 文献管理、标签、笔记、召回搜索 |
