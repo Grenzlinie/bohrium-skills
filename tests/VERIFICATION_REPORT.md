@@ -1,25 +1,26 @@
 # Bohrium Skills API 端点验证报告
 
-**最近验证**: 2026-06-15（全量真实冒烟，含 mentor/sandbox）｜2026-06-11（bohrium-tools 真实实测）｜2026-06-08（v2 网关冒烟实测）｜详细功能基线: 2026-05-11
+**最近验证**: 2026-06-30（bohrium-file 全链路实测 + 文档/校验补齐）｜2026-06-15（全量真实冒烟，含 mentor/sandbox）｜2026-06-11（bohrium-tools 真实实测）｜2026-06-08（v2 网关冒烟实测）｜详细功能基线: 2026-05-11
 **测试 AK**: 通过 `BOHR_ACCESS_KEY` 环境变量注入（不在报告中明文记录）
-**API Base**: https://open.bohrium.com/openapi/v2 （网关已升级 v2；`bohrium-job` 仍用 v1）
+**API Base**: https://open.bohrium.com/openapi （多数 skill 使用 v2；`bohrium-job` 和 `bohrium-file` 的常规文件操作保留 v1）
 **bohr CLI**: v1.1.0 (Go, 从 OSS 安装到 ~/.bohrium/bohr)
 **lbg CLI**: v4.0.0b47 (Python >=3.10 prerelease, pip install --pre lbg)
 **OPENAPI_HOST**: https://open.bohrium.com
 
-> 网关版本：除 `bohrium-job`（保留 v1，因其 v2 上游不同且 `job_group` 在网关无 v2 路由）外，所有 skill 的 OpenAPI 网关路径已统一升级到 `/openapi/v2/*`，上游服务与 v1 一致（多数仅外层版本号变化）。镜像 / 数据集 / 项目等域名已统一为 `open.bohrium.com`（历史上 dataset create 需走 `openapi.dp.tech` 的 307 问题已在 open-platform 修复）。
+> 网关版本：多数 skill 的 OpenAPI 网关路径已统一升级到 `/openapi/v2/*`，上游服务与 v1 一致（多数仅外层版本号变化）。例外：`bohrium-job` 保留 v1（v2 上游不同且 `job_group` 在网关无 v2 路由）；`bohrium-file` 的 personal/share 常规文件操作保留 v1，只有上传凭证使用 v2。镜像 / 数据集 / 项目等域名已统一为 `open.bohrium.com`（历史上 dataset create 需走 `openapi.dp.tech` 的 307 问题已在 open-platform 修复）。
 
 ---
 
-## v2 冒烟实测（2026-06-15，`tests/smoke_test.py`）
+## 网关冒烟实测（2026-06-15 全量 + 2026-06-30 bohrium-file 补测，`tests/smoke_test.py`）
 
-每个 skill 打一个主端点，真实请求 `open.bohrium.com`（非 mock）。结果：**PASS=16, FAIL=0, SKIP=0**（`mentor` 创建会话，`sandbox` 创建短时沙箱并执行命令后销毁）。
+每个 skill 打一个主端点，真实请求 `open.bohrium.com`（非 mock）。结果：**PASS=17, FAIL=0, SKIP=0**（`mentor` 创建会话，`sandbox` 创建短时沙箱并执行命令后销毁；`bohrium-file` 使用 v1 常规文件接口 + v2 上传凭证接口）。
 
 | Skill | 端点 | 方法 | 结果 | 计费 |
 |-------|------|------|------|------|
 | bohrium-job | `/v1/job/list` | GET | ✅ PASS | 免费（保持 v1） |
 | bohrium-node | `/v2/node/list` | GET | ✅ PASS | 免费 |
 | bohrium-dataset | `/v2/ds/` | GET | ✅ PASS | 免费 |
+| bohrium-file | `/v1/file/iterate`、`/v1/file/stat/*`、`/v2/file/upload/binary` | POST/GET | ✅ PASS | 免费（上传凭证；未上传 bytes） |
 | bohrium-image | `/v2/image/public` | GET | ✅ PASS | 免费 |
 | bohrium-project | `/v2/project/lite_list` | GET | ✅ PASS | 免费 |
 | bohrium-knowledge-base | `/v2/knowledge/knowledge_base/list` | GET | ✅ PASS | 免费 |
@@ -42,8 +43,8 @@
 
 | 状态 | Skill | 说明 |
 |------|-------|------|
-| ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node, bohrium-knowledge-base, bohrium-image, bohrium-scholar-search, bohrium-wiki, bohrium-tools, bohrium-lkm, bohrium-paper-search, bohrium-dataset, bohrium-mentor | 当前仓库 15 个 skill，文档端点 / CLI 均正常 |
-| ❌ 已移除 | polymer-db, bohrium-file, bohrium-viking-memory, bohrium-scholar, bohrium-matmaster, diagnose-agent, proposal-agent, preparation-agent, scoring-agent | 已下架 / 冗余 / 后端不可用；当前仓库不含这些 skill |
+| ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node, bohrium-knowledge-base, bohrium-image, bohrium-scholar-search, bohrium-wiki, bohrium-tools, bohrium-lkm, bohrium-paper-search, bohrium-dataset, bohrium-file, bohrium-mentor | 当前仓库 17 个 skill，文档端点 / CLI 均正常 |
+| ❌ 已移除 | polymer-db, bohrium-viking-memory, bohrium-scholar, bohrium-matmaster, diagnose-agent, proposal-agent, preparation-agent, scoring-agent | 已下架 / 冗余 / 后端不可用；当前仓库不含这些 skill |
 
 ---
 
@@ -136,6 +137,35 @@
 | `/v2/ds/` | POST | ✅ | 创建（307 问题已修复） |
 
 **结论**: CLI 和 API 全功能可用，统一使用 `open.bohrium.com`。
+
+---
+
+### bohrium-file (文件盘)
+
+**推荐方式**: 常规 personal/share 文件操作使用 `/openapi/v1/file/*`；上传优先使用 `/openapi/v2/file/upload/binary` 获取 storage/NAS 上传凭证后再上传 bytes。
+
+#### API 实测（2026-06-30）
+
+| 端点 | 方法 | 状态 | 备注 |
+|------|------|------|------|
+| `/v1/ak/get` | GET | ✅ | 获取当前 `user_id` / `orgId` |
+| `/v1/file/iterate` | POST | ✅ | personal 盘列目录；字段为 `prefix` |
+| `/v1/file/stat/*` / `/v1/file/meta/*` | GET | ✅ | personal 路径存在性和元数据 |
+| `/v1/file/download/*` | GET | ✅ | 下载需跟随重定向 |
+| `/v1/file/mkdir` | POST | ✅ | 临时目录创建成功，已清理 |
+| `/v1/file/copy` / `/copyr` | POST | ✅ | 文件复制、目录递归复制成功，已清理 |
+| `/v1/file/move` / `/mover` | POST | ✅ | 文件移动、目录递归移动成功，已清理 |
+| `/v1/file/delete/*` / `/deleter/*` | DELETE | ✅ | 文件删除、目录递归删除成功 |
+| `/v1/file/decompress` | POST | ✅ | zip 解压成功，已清理 |
+| `/v1/file/search/config` / `/recent` / `/transfer/list` | POST/GET | ✅ | 查询类端点正常 |
+| `/v1/file/upload/binary` | POST | ✅ | v1 直接上传返回 307；`curl -L` 后文件上传成功 |
+| `/v2/file/upload/binary` | GET | ✅ | 返回 `host`、`Authorization`、`X-Storage-Param`；未上传 bytes 的冒烟也通过 |
+| `/v2/file/modify` | POST | ✅ | 修改历史上报接口正常 |
+| `/v2/file/iterate` with `pathType=personal` | POST | ✅ | 按预期返回 `path type not found`，说明 personal/share 不走 v2 iterate |
+
+**鉴权补充**: 生产网关实测 `Authorization: Bearer <AK>` 与 `accessKey: <AK>` 均可用；`BOHR_ACCESS_KEY: <AK>` header 返回 401（入口层可能过滤下划线 header）。skill 文档统一使用环境变量 `BOHR_ACCESS_KEY` + HTTP header `Authorization: Bearer $BOHR_ACCESS_KEY`。
+
+**结论**: personal/share 文件盘应按 v1 使用；v2 的 `upload/binary` 是 storage/NAS 上传凭证签发，不是裸 OSS 地址。最终落盘位置由第一步的 `path=/personal/...` 或 `path=/share/...` 决定。`/v2/file/iterate` / `/v2/file/download` 只适用于 `pathType=appJob`、`pathKey=appJobId`。
 
 ---
 
