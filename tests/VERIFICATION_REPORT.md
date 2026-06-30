@@ -29,7 +29,7 @@
 | bohrium-pdf-parser | `/v2/parse/trigger-url-async` | POST | ✅ PASS | 按页余额扣费 |
 | bohrium-web-search | `/v2/search/web` | GET | ✅ PASS | 免费（v2 取消 v1 限额） |
 | bohrium-scholar-search | `/v2/paper-server/scholar/search` | POST | ✅ PASS | 免费 |
-| bohrium-sciencepedia | `/v2/literature-sage/wiki_v2/search_index_name` | POST | ✅ PASS | 免费 |
+| bohrium-sciencepedia | `/wiki_v2/{info, search/universal, article, major_levels, level_fields, get_wiki_index, knowledge_graph, search_index_name}` | GET / POST | ✅ PASS ×8（任务链路冒烟） | 免费 |
 | bohrium-tools | `/v2/literature-sage/tool/domain` | GET | ✅ PASS | 免费 |
 | bohrium-tools | `/v2/literature-sage/tool/search/hybrid` | POST | ✅ PASS | 免费 |
 | bohrium-mentor | `/v2/sigma-search/api/v4/ai_search/sessions` | POST | ✅ PASS | 创建会话扣余额 |
@@ -275,7 +275,7 @@
 ### bohrium-sciencepedia (百科，原 bohrium-wiki) — 2026-06-26 真实实测（重写后 12 端点全通）
 
 > 网关前缀 `/openapi/v2/literature-sage/wiki_v2/*` → LiteratureSage `/api/v1/wiki_v2`。
-> 重写后 skill 围绕 4 个用户任务（搜词条/关键词、浏览领域课程、看课程章节、查知识图谱）。下表为 2026-06-26 用真实数据按调用链跑的冒烟（`/tmp/wiki_smoke.py`），全部 HTTP=200 / `code=0`。
+> 重写后 skill 围绕 4 个用户任务（搜词条/关键词、浏览领域课程、看课程章节、查知识图谱）。下表为 2026-06-26 用真实数据按调用链跑的冒烟，全部 HTTP=200 / `code=0`。其中 8 个核心免费端点（`/info`、`/search/universal`、`/article`、`/major_levels`、`/level_fields`、`/get_wiki_index`、`/knowledge_graph`、`/search_index_name`）已纳入仓库内 `tests/smoke_test.py` 的 `sciencepedia_smoke()` 链路（用前一步真实响应里的 id 串起来，不依赖硬编码）；图谱细节（`/knowledge_graph/node`、`/relationship`、`/search`）及 `/keyword` 暂以本表实测覆盖。
 
 | 端点 | 方法 | 状态 | 实测要点（`data` 下） |
 |------|------|------|------|
