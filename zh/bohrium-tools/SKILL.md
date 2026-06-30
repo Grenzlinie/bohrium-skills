@@ -1,6 +1,6 @@
 ---
 name: bohrium-tools
-description: "浏览与检索 Bohrium 科学工具库（Tools），通过 open.bohrium.com 访问。Use when: 用户需要按领域/子领域浏览科学计算工具、按关键词混合检索工具、查看某个工具的详情（GitHub 指标、教程、关联词条等）。NOT for: 论文检索（用 bohrium-paper-search）、百科词条（用 bohrium-wiki）、知识库管理（用 bohrium-knowledge-base）。"
+description: "浏览与检索 Bohrium 科学工具库（Tools），通过 open.bohrium.com 访问。Use when: 用户需要按领域/子领域浏览科学计算工具、按关键词混合检索工具、查看某个工具的详情（GitHub 指标、教程、关联词条等）。NOT for: 论文检索（用 bohrium-paper-search）、百科词条（用 bohrium-sciencepedia）、知识库管理（用 bohrium-knowledge-base）。"
 ---
 
 # SKILL: Bohrium 科学工具库（Tools）
@@ -20,7 +20,7 @@ description: "浏览与检索 Bohrium 科学工具库（Tools），通过 open.b
 **不适用**：
 
 - 搜论文 → `bohrium-paper-search`
-- 查百科词条 → `bohrium-wiki`
+- 查百科词条 → `bohrium-sciencepedia`
 - 管理自己的知识库 → `bohrium-knowledge-base`
 
 **无 CLI 支持** — 通过 HTTP API 操作。

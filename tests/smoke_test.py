@@ -512,15 +512,132 @@ record(
 )
 
 # ---------------------------------------------------------------------------
-# bohrium-wiki
+# bohrium-sciencepedia (formerly bohrium-wiki)
+#
+# Chains through the four documented user tasks (search / browse / course
+# structure / knowledge graph) using ids resolved from previous responses, so a
+# doc–gateway drift on any of those endpoints surfaces immediately. All paths
+# touched here are free / read-only.
 # ---------------------------------------------------------------------------
-print("\n[bohrium-wiki]")
-record(
-    "wiki",
-    "/v2/literature-sage/wiki_v2/search_index_name",
-    "POST",
-    body={"name": "graphene", "node_types": ["field"], "style": "Feynman"},
-)
+print("\n[bohrium-sciencepedia]")
+
+
+def sciencepedia_smoke() -> None:
+    wiki_base = "/v2/literature-sage/wiki_v2"
+    defaults = {"language": "en-US", "style": "Feynman"}
+
+    def push(skill: str, endpoint: str, method: str, code: int, status: str, note: str) -> None:
+        results.append(Result(skill, endpoint, status, code, note))
+        print(f"  [{status}] {method:<4} {endpoint}  HTTP={code}  {note}")
+
+    # 0) /info — service stats (no body, no auth params beyond bearer).
+    record("sciencepedia", f"{wiki_base}/info", "GET")
+
+    # 1) /search/universal — unified search; capture an article id + field id.
+    search_endpoint = f"{wiki_base}/search/universal"
+    code, data = http("POST", search_endpoint, body={"text": "graphene", **defaults})
+    status, note = classify(code, data)
+    entry_id: str | None = None
+    field_id: str | None = None
+    if status == "PASS":
+        payload = data.get("data") if isinstance(data, dict) else None
+        articles = (payload or {}).get("articles") or []
+        fields = (payload or {}).get("fields") or []
+        for a in articles:
+            if a.get("type") == "article" and a.get("id"):
+                entry_id = a["id"]
+                break
+        for f in fields:
+            if f.get("field_id"):
+                field_id = f["field_id"]
+                break
+        note = f"articles={len(articles)} fields={len(fields)}"
+    push("sciencepedia", search_endpoint, "POST", code, status, note)
+
+    # 1') /article — fetch full body for the article id from search.
+    article_endpoint = f"{wiki_base}/article"
+    if entry_id:
+        code, data = http("POST", article_endpoint, body={"entry_id": entry_id, **defaults})
+        status, note = classify(code, data)
+        # 250002 = "content not yet generated for this language/style" — documented
+        # fallback path, not a regression of the endpoint itself.
+        api_code = data.get("code") if isinstance(data, dict) else None
+        if status == "FAIL" and api_code == 250002:
+            status = "PASS"
+            note = f"tolerated api code=250002 (content not generated for entry_id={entry_id[:24]})"
+        elif status == "PASS":
+            note = f"entry_id={entry_id[:24]}"
+        push("sciencepedia", article_endpoint, "POST", code, status, note)
+    else:
+        skip("sciencepedia", article_endpoint, "no entry_id from /search/universal")
+
+    # 2) /major_levels — discipline tree; collect a few level_ids for /level_fields.
+    ml_endpoint = f"{wiki_base}/major_levels"
+    code, data = http("POST", ml_endpoint, body=defaults)
+    status, note = classify(code, data)
+    level_ids: list[str] = []
+    if status == "PASS":
+        majors = ((data.get("data") if isinstance(data, dict) else None) or {}).get("majors") or []
+        for m in majors:
+            for lv in m.get("levels") or []:
+                if lv.get("node_id"):
+                    level_ids.append(lv["node_id"])
+        note = f"majors={len(majors)} levels={len(level_ids)}"
+    push("sciencepedia", ml_endpoint, "POST", code, status, note)
+
+    # 2') /level_fields — paged courses under those level ids.
+    lf_endpoint = f"{wiki_base}/level_fields"
+    if level_ids:
+        record(
+            "sciencepedia",
+            lf_endpoint,
+            "POST",
+            body={
+                "node_ids": level_ids[:3],
+                "page_num": 1,
+                "page_size": 5,
+                **defaults,
+            },
+        )
+    else:
+        skip("sciencepedia", lf_endpoint, "no level_ids from /major_levels")
+
+    # 3) /get_wiki_index — chapter tree for the course found in search.
+    gwi_endpoint = f"{wiki_base}/get_wiki_index"
+    if field_id:
+        record(
+            "sciencepedia",
+            gwi_endpoint,
+            "POST",
+            body={"field_id": field_id, **defaults},
+            note_on_pass=f"field_id={field_id[:24]}",
+        )
+    else:
+        skip("sciencepedia", gwi_endpoint, "no field_id from /search/universal")
+
+    # 4) /knowledge_graph — GET, single id (the entry from task 1).
+    kg_endpoint = f"{wiki_base}/knowledge_graph"
+    if entry_id:
+        record(
+            "sciencepedia",
+            kg_endpoint,
+            "GET",
+            params={"id": entry_id, **defaults},
+            note_on_pass=f"id={entry_id[:24]}",
+        )
+    else:
+        skip("sciencepedia", kg_endpoint, "no entry_id from /search/universal")
+
+    # Backward-compat: original single-endpoint smoke kept for regression.
+    record(
+        "sciencepedia",
+        f"{wiki_base}/search_index_name",
+        "POST",
+        body={"name": "graphene", "node_types": ["field"], "style": "Feynman"},
+    )
+
+
+sciencepedia_smoke()
 
 # ---------------------------------------------------------------------------
 # bohrium-tools  (literature-sage tool library — list/search are free)

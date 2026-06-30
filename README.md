@@ -77,7 +77,7 @@ export BOHR_ACCESS_KEY="your_access_key_here"
 | [bohrium-paper-search](zh/bohrium-paper-search/SKILL.md) | 论文与专利搜索 — RAG 引擎关键词+语义检索 |
 | [bohrium-pdf-parser](zh/bohrium-pdf-parser/SKILL.md) | PDF 解析 — 提取文本、表格、图表、公式 |
 | [bohrium-scholar-search](zh/bohrium-scholar-search/SKILL.md) | 学者搜索与画像 — 按姓名/机构检索，查看发文/引用/h-index/研究方向 |
-| [bohrium-wiki](zh/bohrium-wiki/SKILL.md) | 科学百科 — 按层级浏览科学词条 |
+| [bohrium-sciencepedia](zh/bohrium-sciencepedia/SKILL.md) | 科学百科 — 搜词条/关键词拿简介与链接、浏览领域课程、看课程章节知识点、查主题知识图谱 |
 | [bohrium-tools](zh/bohrium-tools/SKILL.md) | 科学工具库 — 按领域/子领域浏览、混合检索工具、查看工具详情与分类 |
 | [bohrium-web-search](zh/bohrium-web-search/SKILL.md) | 网页搜索 — 代理 searchapi.io 做开放互联网检索 |
 | [bohrium-sandbox](zh/bohrium-sandbox/SKILL.md) | 云沙箱 — 按需创建临时云 VM，运行 shell/Python |
