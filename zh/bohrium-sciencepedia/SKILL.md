@@ -1,5 +1,5 @@
 ---
-name: bohrium-wiki
+name: bohrium-sciencepedia
 description: "Search and read Bohrium SciencePedia (科学百科) via open.bohrium.com. Use when the user wants to: look up / explain a scientific term and get a reading link (搜词条/关键词), browse what disciplines·fields·courses exist (有哪些领域和课程), get a course's chapter outline and knowledge list (课程章节与知识点), or explore the knowledge graph around a topic (主题相关的知识图谱). NOT for: paper search (use bohrium-paper-search), managing your own knowledge base (use bohrium-knowledge-base), or the LKM reasoning graph (use bohrium-lkm)."
 ---
 
@@ -23,7 +23,7 @@ description: "Search and read Bohrium SciencePedia (科学百科) via open.bohri
 ## 认证配置
 
 ```json
-"bohrium-wiki": {
+"bohrium-sciencepedia": {
   "enabled": true,
   "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": { "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY" }
@@ -328,5 +328,5 @@ curl -s -G "$BASE/knowledge_graph" \
 
 ## 搭配使用
 
-- **wiki** 拿概念的基础解释 → **bohrium-paper-search** 深入某个方向
-- **wiki** 浏览学科目录（`major_levels`）→ 选定课程 → **bohrium-scholar-search** 找代表学者
+- **bohrium-sciencepedia** 拿概念的基础解释 → **bohrium-paper-search** 深入某个方向
+- **bohrium-sciencepedia** 浏览学科目录（`major_levels`）→ 选定课程 → **bohrium-scholar-search** 找代表学者

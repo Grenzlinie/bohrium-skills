@@ -29,9 +29,9 @@
         "./en/bohrium-project",
         "./en/bohrium-sandbox",
         "./en/bohrium-scholar-search",
+        "./en/bohrium-sciencepedia",
         "./en/bohrium-tools",
-        "./en/bohrium-web-search",
-        "./en/bohrium-wiki"
+        "./en/bohrium-web-search"
       ]
     }
   ]

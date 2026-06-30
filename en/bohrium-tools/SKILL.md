@@ -1,6 +1,6 @@
 ---
 name: bohrium-tools
-description: "Browse and search the Bohrium scientific Tools library via open.bohrium.com. Use when: user wants to browse scientific computing tools by domain/subdomain, hybrid-search tools by keywords, or view a tool's details (GitHub metrics, tutorial, related entries). NOT for: paper search (use bohrium-paper-search), encyclopedia entries (use bohrium-wiki), knowledge base management (use bohrium-knowledge-base)."
+description: "Browse and search the Bohrium scientific Tools library via open.bohrium.com. Use when: user wants to browse scientific computing tools by domain/subdomain, hybrid-search tools by keywords, or view a tool's details (GitHub metrics, tutorial, related entries). NOT for: paper search (use bohrium-paper-search), encyclopedia entries (use bohrium-sciencepedia), knowledge base management (use bohrium-knowledge-base)."
 ---
 
 # SKILL: Bohrium Scientific Tools Library
@@ -20,7 +20,7 @@ Access the **Bohrium Tools library** through the `/v2/literature-sage/tool/*` en
 **Don't use for**:
 
 - Paper search → `bohrium-paper-search`
-- Encyclopedia entries → `bohrium-wiki`
+- Encyclopedia entries → `bohrium-sciencepedia`
 - Managing your own knowledge base → `bohrium-knowledge-base`
 
 **No CLI support** — HTTP API only.

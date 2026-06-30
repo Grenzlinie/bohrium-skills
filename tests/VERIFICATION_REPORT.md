@@ -1,6 +1,6 @@
 # Bohrium Skills API 端点验证报告
 
-**最近验证**: 2026-06-26（bohrium-wiki 重写后 12 端点真实实测）｜2026-06-15（全量真实冒烟，含 mentor/sandbox）｜2026-06-11（bohrium-tools 真实实测）｜2026-06-08（v2 网关冒烟实测）｜详细功能基线: 2026-05-11
+**最近验证**: 2026-06-26（bohrium-sciencepedia 重写后 12 端点真实实测，原 bohrium-wiki 重命名）｜2026-06-15（全量真实冒烟，含 mentor/sandbox）｜2026-06-11（bohrium-tools 真实实测）｜2026-06-08（v2 网关冒烟实测）｜详细功能基线: 2026-05-11
 **测试 AK**: 通过 `BOHR_ACCESS_KEY` 环境变量注入（不在报告中明文记录）
 **API Base**: https://open.bohrium.com/openapi/v2 （网关已升级 v2；`bohrium-job` 仍用 v1）
 **bohr CLI**: v1.1.0 (Go, 从 OSS 安装到 ~/.bohrium/bohr)
@@ -28,7 +28,7 @@
 | bohrium-pdf-parser | `/v2/parse/trigger-url-async` | POST | ✅ PASS | 按页余额扣费 |
 | bohrium-web-search | `/v2/search/web` | GET | ✅ PASS | 免费（v2 取消 v1 限额） |
 | bohrium-scholar-search | `/v2/paper-server/scholar/search` | POST | ✅ PASS | 免费 |
-| bohrium-wiki | `/v2/literature-sage/wiki_v2/search_index_name` | POST | ✅ PASS | 免费 |
+| bohrium-sciencepedia | `/v2/literature-sage/wiki_v2/search_index_name` | POST | ✅ PASS | 免费 |
 | bohrium-tools | `/v2/literature-sage/tool/domain` | GET | ✅ PASS | 免费 |
 | bohrium-tools | `/v2/literature-sage/tool/search/hybrid` | POST | ✅ PASS | 免费 |
 | bohrium-mentor | `/v2/sigma-search/api/v4/ai_search/sessions` | POST | ✅ PASS | 创建会话扣余额 |
@@ -42,7 +42,7 @@
 
 | 状态 | Skill | 说明 |
 |------|-------|------|
-| ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node, bohrium-knowledge-base, bohrium-image, bohrium-scholar-search, bohrium-wiki, bohrium-tools, bohrium-lkm, bohrium-paper-search, bohrium-dataset, bohrium-mentor | 当前仓库 15 个 skill，文档端点 / CLI 均正常 |
+| ✅ 完全可用 | bohrium-project, bohrium-pdf-parser, bohrium-web-search, bohrium-sandbox, bohrium-job, bohrium-node, bohrium-knowledge-base, bohrium-image, bohrium-scholar-search, bohrium-sciencepedia, bohrium-tools, bohrium-lkm, bohrium-paper-search, bohrium-dataset, bohrium-mentor | 当前仓库 15 个 skill，文档端点 / CLI 均正常 |
 | ❌ 已移除 | polymer-db, bohrium-file, bohrium-viking-memory, bohrium-scholar, bohrium-matmaster, diagnose-agent, proposal-agent, preparation-agent, scoring-agent | 已下架 / 冗余 / 后端不可用；当前仓库不含这些 skill |
 
 ---
@@ -242,7 +242,7 @@
 
 ---
 
-### bohrium-wiki (百科) — 2026-06-26 真实实测（重写后 12 端点全通）
+### bohrium-sciencepedia (百科，原 bohrium-wiki) — 2026-06-26 真实实测（重写后 12 端点全通）
 
 > 网关前缀 `/openapi/v2/literature-sage/wiki_v2/*` → LiteratureSage `/api/v1/wiki_v2`。
 > 重写后 skill 围绕 4 个用户任务（搜词条/关键词、浏览领域课程、看课程章节、查知识图谱）。下表为 2026-06-26 用真实数据按调用链跑的冒烟（`/tmp/wiki_smoke.py`），全部 HTTP=200 / `code=0`。
@@ -337,7 +337,7 @@
 | 1 | bohrium-job | API `POST /job/submit`、`GET /job_group/list` 返回 404 | 不影响 | CLI 正常，文档已说明优先 CLI |
 | 2 | bohrium-node | API `/node/start/{id}` 返回 404 | 低 | 文档使用 `restart`；start 网关无路由 |
 | 3 | ~~bohrium-dataset~~ | ~~`open.bohrium.com` 的 `POST /ds/` 307→404~~ | ~~中~~ | **已修复**：307 已修复，统一 open.bohrium.com |
-| 4 | ~~bohrium-wiki~~ | ~~article 端点返回 250002 "Article not found"~~ | ~~低~~ | **已澄清**：用正确 `entry_id` 可正常取全文（2026-06-26 实测）；250002 仅为无内容个例 |
+| 4 | ~~bohrium-sciencepedia~~ | ~~article 端点返回 250002 "Article not found"~~ | ~~低~~ | **已澄清**：用正确 `entry_id` 可正常取全文（2026-06-26 实测）；250002 仅为无内容个例 |
 | 5 | bohrium-lkm | `/papers/ocr/batch` 返回 290007 权限不足 | 低 | 需更高权限 AK |
 
 ## CLI 环境配置说明

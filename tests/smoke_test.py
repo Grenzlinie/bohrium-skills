@@ -446,11 +446,11 @@ record(
 )
 
 # ---------------------------------------------------------------------------
-# bohrium-wiki
+# bohrium-sciencepedia (formerly bohrium-wiki)
 # ---------------------------------------------------------------------------
-print("\n[bohrium-wiki]")
+print("\n[bohrium-sciencepedia]")
 record(
-    "wiki",
+    "sciencepedia",
     "/v2/literature-sage/wiki_v2/search_index_name",
     "POST",
     body={"name": "graphene", "node_types": ["field"], "style": "Feynman"},

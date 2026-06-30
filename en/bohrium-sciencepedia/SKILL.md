@@ -1,5 +1,5 @@
 ---
-name: bohrium-wiki
+name: bohrium-sciencepedia
 description: "Search and read Bohrium SciencePedia (encyclopedia) via open.bohrium.com. Use when the user wants to: look up / explain a scientific term and get a reading link, browse what disciplines·fields·courses exist, get a course's chapter outline and knowledge list, or explore the knowledge graph around a topic. NOT for: paper search (use bohrium-paper-search), managing your own knowledge base (use bohrium-knowledge-base), or the LKM reasoning graph (use bohrium-lkm)."
 ---
 
@@ -23,7 +23,7 @@ An encyclopedia of scientific concepts. This skill wraps it into **4 things you 
 ## Auth configuration
 
 ```json
-"bohrium-wiki": {
+"bohrium-sciencepedia": {
   "enabled": true,
   "apiKey": "YOUR_BOHR_ACCESS_KEY",
   "env": { "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY" }
@@ -328,5 +328,5 @@ curl -s -G "$BASE/knowledge_graph" \
 
 ## Pairs well with
 
-- **wiki** for a baseline explanation of a concept → **bohrium-paper-search** to go deep
-- **wiki** to browse the discipline tree (`major_levels`) → pick a course → **bohrium-scholar-search** to find leading researchers
+- **bohrium-sciencepedia** for a baseline explanation of a concept → **bohrium-paper-search** to go deep
+- **bohrium-sciencepedia** to browse the discipline tree (`major_levels`) → pick a course → **bohrium-scholar-search** to find leading researchers
