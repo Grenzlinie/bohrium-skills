@@ -58,6 +58,51 @@ This installs 17 Bohrium skills (English versions).
 
 ---
 
+## CLI Install And Update
+
+Use `bohrium-skills-cli` to install and update the bundled skill set:
+
+```bash
+npm install -g bohrium-skills-cli
+```
+
+The npm `postinstall` downloads the platform binary and runs:
+
+```bash
+bohrium-skills-cli install --lang zh --json
+```
+
+By default the CLI syncs the bundled skills to:
+
+- `~/.agents/skills`
+- `~/.claude/skills`
+- `~/.codex/skills`
+
+Useful commands:
+
+```bash
+bohrium-skills-cli update
+bohrium-skills-cli status
+bohrium-skills-cli install --force
+bohrium-skills-cli install --lang en
+```
+
+To skip postinstall skill sync while still installing the binary:
+
+```bash
+BOHRIUM_SKILLS_CLI_NO_POSTINSTALL_SYNC=1 npm install -g bohrium-skills-cli
+```
+
+To test postinstall binary downloads from a locally packed tarball, temporarily override the release repository:
+
+```bash
+BOHRIUM_SKILLS_CLI_RELEASE_REPO=https://github.com/OWNER/REPO npm install -g ./bohrium-skills-cli-0.1.0.tgz
+```
+
+The sync only manages official `bohrium-*` skills. Existing same-name skills are backed up under `~/.config/bohrium-skills-cli/backups/<timestamp>/` before replacement.
+
+---
+
 ## Skill List
 
 ### Platform API Skills
