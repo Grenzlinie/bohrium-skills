@@ -1,6 +1,6 @@
 # Bohrium Skills API 端点验证报告
 
-**最近验证**: 2026-06-15（全量真实冒烟，含 mentor/sandbox）｜2026-06-11（bohrium-tools 真实实测）｜2026-06-08（v2 网关冒烟实测）｜详细功能基线: 2026-05-11
+**最近验证**: 2026-06-26（bohrium-wiki 重写后 12 端点真实实测）｜2026-06-15（全量真实冒烟，含 mentor/sandbox）｜2026-06-11（bohrium-tools 真实实测）｜2026-06-08（v2 网关冒烟实测）｜详细功能基线: 2026-05-11
 **测试 AK**: 通过 `BOHR_ACCESS_KEY` 环境变量注入（不在报告中明文记录）
 **API Base**: https://open.bohrium.com/openapi/v2 （网关已升级 v2；`bohrium-job` 仍用 v1）
 **bohr CLI**: v1.1.0 (Go, 从 OSS 安装到 ~/.bohrium/bohr)
@@ -242,18 +242,27 @@
 
 ---
 
-### bohrium-wiki (百科)
+### bohrium-wiki (百科) — 2026-06-26 真实实测（重写后 12 端点全通）
 
 > 网关前缀 `/openapi/v2/literature-sage/wiki_v2/*` → LiteratureSage `/api/v1/wiki_v2`。
+> 重写后 skill 围绕 4 个用户任务（搜词条/关键词、浏览领域课程、看课程章节、查知识图谱）。下表为 2026-06-26 用真实数据按调用链跑的冒烟（`/tmp/wiki_smoke.py`），全部 HTTP=200 / `code=0`。
 
-| 端点 | 方法 | 状态 | 备注 |
+| 端点 | 方法 | 状态 | 实测要点（`data` 下） |
 |------|------|------|------|
-| `/v2/literature-sage/wiki_v2/info` | GET | ✅ | 基础信息 |
-| `/v2/literature-sage/wiki_v2/search_index_name` | POST | ✅ | 中英文搜索均正常（冒烟实测 PASS） |
-| `/v2/literature-sage/wiki_v2/major_levels` | POST | ✅ | 学科分类 |
-| `/v2/literature-sage/wiki_v2/article` | POST | ⚠️ | 250002 "Article not found"（内容可能按需生成） |
+| `/wiki_v2/search/universal` | POST | ✅ | `articles[]`（`type`=article/keyword、`id`、`article_name`、`matched_elements`）+ `fields[]`（带 `field_id`/`node_id`，命中需用课程名查询） |
+| `/wiki_v2/article` | POST | ✅ | `document` 全文：`article_name`/`main_content`/`seo_description`/`field_node.field_id` 等（用 `entry_id` 取，如 `many_body_physics-physics_of_graphene`） |
+| `/wiki_v2/keyword` | POST | ✅ | `document`：`definition`/`applications`/`appendices`/`citations`/`current_revision_id` 等（用 `keyword_id` 取） |
+| `/wiki_v2/major_levels` | POST | ✅ | `majors[]`（9 大类 / 17 分级），每级带 `node_id` |
+| `/wiki_v2/level_fields` | POST | ✅ | 分页 `items[]`（`total`），`field` 对象含 `field_id`/`node_id`/`name`/`seo_title`、`topic_count`、示例 `topics` |
+| `/wiki_v2/get_wiki_index` | POST | ✅ | 课程章节树 `wiki_indices` + `entry_count`/基础·核心·进阶计数；叶子 `entry` 带 `entry_id`/`snapshot`/`seo_description` |
+| `/wiki_v2/knowledge_graph` | GET | ✅ | 从中心 `id` 展开：`nodes`(577)/`relationships`(999)/`domains`(8)，节点带 `node_type`/`field_id`/`depth` 等 |
+| `/wiki_v2/knowledge_graph/search` | POST | ✅ | `items[]`（`type`=entry/keyword、`id`）用于拿图谱中心点 |
+| `/wiki_v2/knowledge_graph/node` | GET | ✅ | 单节点详情（`display_name`/`description`/`field_name` 等） |
+| `/wiki_v2/knowledge_graph/relationship` | GET | ✅ | 边详情，含 `evidences`（小写）/`evidence_count`/`is_cross_domain` |
+| `/wiki_v2/info` | GET | ✅ | 总量：entry 47467 / keyword 108719 / total 156186 |
+| `/wiki_v2/search_index_name` | POST | ✅ | 按名搜索索引（`node_types` 过滤；非课程名词可能 0 命中属正常） |
 
-**结论**: 索引搜索正常；article 端点可达。
+**结论**: 重写后 4 个用户任务覆盖的 12 个端点全部实测通过。`article`/`keyword` 用正确的 `entry_id`/`keyword_id` 可正常取全文（早先 250002 是该 id 无内容的个例，非接口问题）。修正点：`level_fields` 的 `field` 对象**确实返回 `field_id`**（Apifox 示例漏录），课程链接可直接用它拼。知识图谱为 **GET + 单个 `id`**（非 Apifox 标的 POST+ids）。
 
 ---
 
@@ -328,7 +337,7 @@
 | 1 | bohrium-job | API `POST /job/submit`、`GET /job_group/list` 返回 404 | 不影响 | CLI 正常，文档已说明优先 CLI |
 | 2 | bohrium-node | API `/node/start/{id}` 返回 404 | 低 | 文档使用 `restart`；start 网关无路由 |
 | 3 | ~~bohrium-dataset~~ | ~~`open.bohrium.com` 的 `POST /ds/` 307→404~~ | ~~中~~ | **已修复**：307 已修复，统一 open.bohrium.com |
-| 4 | bohrium-wiki | article 端点返回 250002 "Article not found" | 低 | 索引存在，文章内容按需生成 |
+| 4 | ~~bohrium-wiki~~ | ~~article 端点返回 250002 "Article not found"~~ | ~~低~~ | **已澄清**：用正确 `entry_id` 可正常取全文（2026-06-26 实测）；250002 仅为无内容个例 |
 | 5 | bohrium-lkm | `/papers/ocr/batch` 返回 290007 权限不足 | 低 | 需更高权限 AK |
 
 ## CLI 环境配置说明

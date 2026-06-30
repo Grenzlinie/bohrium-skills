@@ -75,7 +75,7 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 | [bohrium-paper-search](en/bohrium-paper-search/SKILL.md) | Paper & patent search — RAG engine keyword + semantic retrieval |
 | [bohrium-pdf-parser](en/bohrium-pdf-parser/SKILL.md) | PDF parsing — extract text, tables, charts, formulas |
 | [bohrium-scholar-search](en/bohrium-scholar-search/SKILL.md) | Scholar search & profile — find scholars by name/affiliation, view papers/citations/h-index/research directions |
-| [bohrium-wiki](en/bohrium-wiki/SKILL.md) | SciencePedia — browse scientific topics by hierarchy |
+| [bohrium-wiki](en/bohrium-wiki/SKILL.md) | SciencePedia — search topics/keywords for summaries & links, browse fields & courses, get a course's chapters & knowledge points, explore a topic's knowledge graph |
 | [bohrium-tools](en/bohrium-tools/SKILL.md) | Scientific Tools library — browse by domain/subdomain, hybrid-search tools, view tool details & taxonomy |
 | [bohrium-web-search](en/bohrium-web-search/SKILL.md) | Web search — proxy to searchapi.io for open internet search |
 | [bohrium-sandbox](en/bohrium-sandbox/SKILL.md) | Cloud sandbox — on-demand temp VM for running shell/Python |

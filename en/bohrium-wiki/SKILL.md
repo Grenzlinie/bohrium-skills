@@ -1,28 +1,24 @@
 ---
 name: bohrium-wiki
-description: "Browse and search Bohrium SciencePedia (encyclopedia) via open.bohrium.com. Use when: user asks about finding scientific topics, reading encyclopedia-style entries, browsing by major/level/field hierarchy, or looking up a specific concept's article. NOT for: paper search (use bohrium-paper-search), knowledge base management (use bohrium-knowledge-base)."
+description: "Search and read Bohrium SciencePedia (encyclopedia) via open.bohrium.com. Use when the user wants to: look up / explain a scientific term and get a reading link, browse what disciplines·fields·courses exist, get a course's chapter outline and knowledge list, or explore the knowledge graph around a topic. NOT for: paper search (use bohrium-paper-search), managing your own knowledge base (use bohrium-knowledge-base), or the LKM reasoning graph (use bohrium-lkm)."
 ---
 
 # SKILL: Bohrium SciencePedia
 
-## Overview
+An encyclopedia of scientific concepts. This skill wraps it into **4 things you can do directly**:
 
-Access **Bohrium SciencePedia** through the `/v2/literature-sage/wiki_v2/*` endpoints on `open.bohrium.com` — a hierarchical encyclopedia of scientific topics organized as `major` → `level` → `field` → `topic` (a `topic` is one article/entry).
+1. **Search a term** → get a summary + a clickable reading link (covers both "topics" and "keywords"; you do **not** need to make the user distinguish them).
+2. **Browse what disciplines, fields and courses exist.**
+3. **Given a course** → get its chapter structure and knowledge-point list.
+4. **Starting from a topic** → get the knowledge graph it forms with related concepts.
 
-> **Two hosts, two jobs**: call the **API** on `open.bohrium.com`; build the **clickable reader link** you show to a human on `https://www.bohrium.com` (see [Building page links](#building-page-links)). They are different hosts — don't paste the API URL to a user.
+> **Two hosts, don't mix them**: call the **API** on `open.bohrium.com`; build the **reading link** you show a human on `https://www.bohrium.com` (see [Building reading links](#building-reading-links)). Never paste the API URL to a user.
 
-**Use when**:
+**Don't use for**: paper search → `bohrium-paper-search`; your own knowledge base → `bohrium-knowledge-base`; LKM reasoning graph → `bohrium-lkm`.
 
-- Getting a quick definition of a scientific term (more focused than web-search — encyclopedia-style entries)
-- Browsing by discipline (e.g., all subfields under materials science)
-- Retrieving the full article of a topic (intro / applications / background sections)
+**No CLI** — HTTP API only.
 
-**Don't use for**:
-
-- Paper search → `bohrium-paper-search`
-- Managing your own knowledge base → `bohrium-knowledge-base`
-
-**No CLI support** — HTTP API only.
+---
 
 ## Auth configuration
 
@@ -30,228 +26,307 @@ Access **Bohrium SciencePedia** through the `/v2/literature-sage/wiki_v2/*` endp
 "bohrium-wiki": {
   "enabled": true,
   "apiKey": "YOUR_BOHR_ACCESS_KEY",
-  "env": {
-    "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY"
-  }
+  "env": { "BOHR_ACCESS_KEY": "YOUR_BOHR_ACCESS_KEY" }
 }
 ```
 
-## Common template
+## Common template (copy-paste)
 
 ```python
 import os, requests
+from urllib.parse import quote
 
 AK = os.environ["BOHR_ACCESS_KEY"]
 BASE = "https://open.bohrium.com/openapi/v2/literature-sage/wiki_v2"
 H = {"Authorization": f"Bearer {AK}", "Content-Type": "application/json"}
 
-# Optional global defaults
+# Almost every endpoint needs these two:
 DEFAULTS = {"language": "en-US", "style": "Feynman"}
-# language: "en-US" / "zh-CN"
-# style: "Feynman" for accessible tone, or others
+# language: "en-US" or "zh-CN"
+# style:    "Feynman" (accessible) or "Hardcore" (rigorous/academic)
+
+def data(resp):
+    """Unwrap: responses are {"code":0,"data":{...}}; errors have code != 0."""
+    resp.raise_for_status()
+    body = resp.json()
+    if body.get("code") not in (0, None):
+        raise RuntimeError(f"API error code={body.get('code')}: {body.get('message') or body}")
+    return body.get("data", body)
 ```
 
----
+## The only 3 concepts you need (ignore the rest of the jargon)
 
-## Actions overview
+| Concept | What it is | What to give the user |
+|---------|------------|-----------------------|
+| **Topic (词条)** | A full encyclopedia article | Build an article link from `entry_id` |
+| **Keyword (关键词)** | A smaller concept card | Build a keyword link from `keyword_id` |
+| **Course / Field (领域)** | A "course" made of many topics | Build a course link from `field_id` |
 
-| Action | Method | Purpose |
-|--------|--------|---------|
-| `info` | GET | Basic SciencePedia info |
-| `major_levels` | POST | List all majors and their levels |
-| `get_wiki_index` | POST | Fetch index for a given nodeId / fieldId |
-| `get_level_wiki_index` | POST | List nodes filtered by `node_types` |
-| `search_index_name` | POST | Keyword search of index entries |
-| `level_fields` | POST | List fields under a set of level nodes |
-| `article` | POST | Fetch the article body of a node / entry |
+> Search returns all three mixed together. **To the user they are just "encyclopedia entries"** — give title + summary + link; no need to explain the type difference.
 
 ---
 
-## Choosing an action (intent → action)
+## Task 1: Search a term, get summaries and reading links
 
-Map what the user is asking for to the right call. Most flows are: **find an id → fetch content**.
-
-| The user wants… | Use | You get back |
-|-----------------|-----|--------------|
-| "What disciplines / majors exist?" (top of the tree) | `major_levels` | majors + their `node_id` and levels |
-| "What fields are under this major/level?" | `level_fields` (bulk, paged) or `get_level_wiki_index` (by `node_types`) | field rows / nodes |
-| "Find the entry or field about **X**" | `search_index_name` | nodes with `node_id`, `node_type`, and `field_id` (for fields) |
-| "Show the outline / topics of this field" | `get_wiki_index` (`field_id` or `node_id`) | topic tree, each topic carries an `entry_id` |
-| "Explain / give me the article on **X**" | `article` (`entry_id` or `node_id`) | `document.article_name` + `main_content` + … |
-| "Is the service up? basic metadata" | `info` | service info |
-
-**Rule of thumb**: if you don't have an id yet, start with `search_index_name`; if the user is browsing a discipline, start with `major_levels`.
-
-## Workflows
-
-### A. Explain a concept (most common)
-
-1. `search_index_name` with `{"name": "<concept>", "node_types": ["field","topic"]}` → take the best match's `node_id` (and `entry_id`/`field_id` if present).
-2. `article` with that id → summarize `document.main_content`.
-3. Return the explanation **plus** the reader link (see [Building page links](#building-page-links)).
-
-### B. Browse a discipline
-
-1. `major_levels` → pick a major/level.
-2. `level_fields` (pass that level's `node_id`) → list fields.
-3. `get_wiki_index` on a `field_id` → list the topics; attach a `course_url` for the field and `article_url` per topic.
-
-### C. Build a learning path for a field
-
-1. Resolve the field via `search_index_name` (`node_types: ["field"]`).
-2. `get_wiki_index` → read topics in tree order.
-3. Present as fundamentals → core → advanced, each topic linked.
-
----
-
-## 1. Info — `info`
+**One endpoint does it**: `POST /search/universal`. It returns related "topics + keywords" (in `articles`) and related "courses" (in `fields`), each with a highlighted snippet.
 
 ```python
-r = requests.get(f"{BASE}/info", headers={"Authorization": f"Bearer {AK}"})
-print(r.json())
+d = data(requests.post(f"{BASE}/search/universal", headers=H,
+                       json={"text": "graphene", **DEFAULTS}))
+
+for a in d["articles"]:                       # topics and keywords mixed, ranked by relevance
+    link = build_read_url(a["type"], a["id"], **DEFAULTS)   # see “Building reading links”
+    snippet = a["matched_elements"][0]["content"] if a.get("matched_elements") else ""
+    print(a["article_name"], "→", link)
+    print("  ", snippet.replace("<em>", "").replace("</em>", ""))   # strip highlight tags
+
+for f in d["fields"]:                         # related courses (optional)
+    print("course:", f["node_name"], "→", course_url(f["field_id"], **DEFAULTS))
 ```
 
----
+Key fields in each `articles[]` item:
+- `type`: `"article"` (topic) or `"keyword"` — **decides which link to build**.
+- `id`: `entry_id` for a topic, `keyword_id` for a keyword.
+- `article_name`: title.
+- `matched_elements[].content`: the matched highlighted snippet, usable as a **summary** (contains `<em>` tags — strip before display).
 
-## 2. Majors & levels — `major_levels`
+### Want a fuller summary / full text
+
+`/search/universal` returns search snippets. For the body, fetch the detail by type:
 
 ```python
-r = requests.post(f"{BASE}/major_levels", headers=H, json={**DEFAULTS})
-for m in r.json().get("majors", []):
-    levels = ", ".join(l["name"] for l in m.get("levels", []))
-    print(f"- {m['name']} [{m['node_id']}]  levels: {levels}")
+# Full topic (article) body
+doc = data(requests.post(f"{BASE}/article", headers=H,
+                         json={"entry_id": "<entry_id>", **DEFAULTS}))["document"]
+
+# Full keyword body
+doc = data(requests.post(f"{BASE}/keyword", headers=H,
+                         json={"keyword_id": "<keyword_id>", **DEFAULTS}))["document"]
+
+# Common fields in doc:
+#   article_name    title
+#   seo_description one-line summary (best for an abstract)
+#   definition      definition
+#   key_points      key points
+#   main_content    body (Markdown)
+#   applications    applications
 ```
+
+> ⚠️ `article` / `keyword` occasionally return `code=250002` (content is generated on demand and not yet available for that language/style). In that case **fall back** to the `matched_elements` snippet from search, or retry with another `style` / `language`.
 
 ---
 
-## 3. Search entries — `search_index_name`
+## Task 2: Browse what fields and courses exist
+
+**Browse by discipline**: get majors and levels first, then list the courses under a level.
 
 ```python
-r = requests.post(f"{BASE}/search_index_name", headers=H, json={
-    "name": "graphene",
-    "node_types": ["field"],   # Filter: major / level / field / topic
-    "style": "Feynman",
-})
-for i, n in enumerate(r.json().get("wiki_indices", []), 1):
-    print(f"[{i}] [{n['node_type']}] {n['node_name']}  id={n['node_id']}")
+# 1) Top structure: major → level
+ml = data(requests.post(f"{BASE}/major_levels", headers=H, json={**DEFAULTS}))
+for m in ml["majors"]:
+    levels = ", ".join(l["name"] for l in m["levels"])
+    print(m["name"], "| levels:", levels)
+
+# 2) List the courses (fields) under some levels
+level_ids = [lv["node_id"] for m in ml["majors"] for lv in m["levels"]]
+lf = data(requests.post(f"{BASE}/level_fields", headers=H,
+                        json={"node_ids": level_ids[:5], "page_num": 1, "page_size": 20, **DEFAULTS}))
+for it in lf["items"]:
+    f = it["field"]
+    print(f'{it["major"]["name"]} / {it["level"]["name"]} / {f["name"]}'
+          f' ({it.get("topic_count", 0)} knowledge points) →', course_url(f["field_id"], **DEFAULTS))
 ```
+
+- `major_levels` returns `majors[]`, each with `name` and `levels[]` (`name` + `node_id`).
+- `level_fields` returns paged `items[]` (`total` = count); each has `major` / `level` / `field`, `topic_count`, and a few sample `topics`; the `field` carries `node_id`, `name`, `seo_title` and **`field_id`**.
+
+> For a clickable **course link**, use `field.field_id` directly (`course_url(...)`, see [Building reading links](#building-reading-links)); for the chapter structure, pass `field_id` (or `field.node_id`) to `get_wiki_index` in Task 3.
 
 ---
 
-## 4. All nodes under a level — `get_level_wiki_index`
+## Task 3: Given a course, get chapters and the knowledge list
+
+Two steps: resolve the course by name → fetch the whole chapter tree.
 
 ```python
-r = requests.post(f"{BASE}/get_level_wiki_index", headers=H, json={
-    "node_types": ["major", "level"],
-    **DEFAULTS,
-})
-for n in r.json().get("wiki_indices", [])[:50]:
-    print(f"[{n['node_type']}] {n['node_name']}  ({n['node_id']})")
+# 1) Locate the course by name (to get field_id)
+s = data(requests.post(f"{BASE}/search/universal", headers=H,
+                       json={"text": "Solid State Physics", **DEFAULTS}))
+field = s["fields"][0]                 # has node_id, field_id, node_name
+
+# 2) Fetch chapter structure + knowledge points (pass field_id, or that field's node_id)
+tree = data(requests.post(f"{BASE}/get_wiki_index", headers=H,
+                          json={"field_id": field["field_id"], **DEFAULTS}))
+
+def walk(nodes, depth=0):
+    for n in nodes:
+        print("  " * depth, f'[{n["node_type"]}]', n["node_name"])
+        if n["node_type"] == "entry":          # leaf = one knowledge point (topic)
+            print("  " * (depth + 1), "→", topic_url(n["entry_id"], **DEFAULTS))
+        walk(n.get("children") or [], depth + 1)
+
+walk(tree["wiki_indices"])
+print("total knowledge points:", tree.get("entry_count"))
 ```
+
+- The tree has 4 levels: `field` (course) → `category` → `chapter` → `entry` (knowledge point / topic).
+- Each node has `node_id`, `node_type`, `node_name`; **leaf `entry` nodes additionally carry `entry_id`** (for the reading link), `snapshot` (an AI quick-look, great as a one-liner), and `seo_title`.
+- The top level also returns `entry_count` plus `foundational_entry_count` / `core_entry_count` / `advanced_entry_count` (foundational / core / advanced counts).
 
 ---
 
-## 5. Index for a given node — `get_wiki_index`
+## Task 4: Starting from a topic, get the knowledge graph
+
+Expand outward from a center node (topic or keyword) to get its graph of related concepts.
 
 ```python
-r = requests.post(f"{BASE}/get_wiki_index", headers=H, json={
-    "node_id": "NODE_ID_HERE",
-    # or "field_id": "FIELD_ID_HERE"
-    **DEFAULTS,
-})
-print(r.json())
+# 1) Find the center node's id (entry_id for a topic, keyword_id for a keyword)
+s = data(requests.post(f"{BASE}/search/universal", headers=H,
+                       json={"text": "superconductivity", **DEFAULTS}))
+center_id = s["articles"][0]["id"]
+# Or find nodes directly with the graph search:
+# gs = data(requests.post(f"{BASE}/knowledge_graph/search", headers=H, json={"text": "entropy"}))
+# center_id = gs["items"][0]["id"]
+
+# 2) Fetch the graph (note: GET + query params)
+g = data(requests.get(f"{BASE}/knowledge_graph", headers=H,
+                      params={"id": center_id, **DEFAULTS}))
+
+for n in g["nodes"]:                  # nodes
+    link = build_read_url(n["node_type"], n["node_id"], **DEFAULTS)
+    print(n["display_name"], f'({n["node_type"]}, depth {n["depth"]})', "→", link)
+
+for e in g["relationships"]:          # edges
+    print(e["src_node_id"], "──", e["relationship"], "──>", e["desc_node_id"],
+          f'(weight {e["weight"]})')
 ```
 
----
+- Input: `id` (required, the center node's `entry_id` or `keyword_id`), `language`, `style`, optional `skip_cross_domain` (true = same-domain only).
+- `nodes[]`: `node_id` (which IS the `entry_id`/`keyword_id`, link it directly), `node_type` (`entry`/`keyword`), `display_name`, `description`, `field_name`, `major_name`, `depth` (center node = 0).
+- `relationships[]`: `src_node_id` / `desc_node_id`, `relationship` (description), `relation_type`, `description`, `weight`, `evidence_count`, `is_bidirectional`, `is_cross_domain`.
+- `domains[]`: disciplines involved (`major_node_id` + `major_name`).
 
-## 6. Bulk list fields under level — `level_fields`
+### Drill into a single node / edge
 
 ```python
-r = requests.post(f"{BASE}/level_fields", headers=H, json={
-    "node_ids": ["LEVEL_NODE_ID1", "LEVEL_NODE_ID2"],
-    "page_num": 1, "page_size": 10,
-    **DEFAULTS,
-})
-for row in r.json().get("items", []):
-    major = row.get("major", {}).get("name")
-    level = row.get("level", {}).get("name")
-    field = row.get("field", {}).get("name")
-    print(f"- {major}/{level}/{field}  topics={row.get('topic_count')}")
+# Single node detail
+node = data(requests.get(f"{BASE}/knowledge_graph/node", headers=H,
+            params={"id": center_id, "node_type": "entry", **DEFAULTS}))
+
+# Single relationship detail (with supporting evidences)
+rel = data(requests.get(f"{BASE}/knowledge_graph/relationship", headers=H,
+           params={"src_node_id": "A", "desc_node_id": "B", "relation_id": "R", **DEFAULTS}))
 ```
 
 ---
 
-## 7. Article body — `article`
+## Action reference
+
+| Task | Method + path | Purpose |
+|------|---------------|---------|
+| Search (preferred) | `POST /search/universal` | One term → topics + keywords + related courses |
+| Topic body | `POST /article` | Article body by `entry_id` (or `node_id`) |
+| Keyword body | `POST /keyword` | Keyword content by `keyword_id` |
+| Discipline tree | `POST /major_levels` | All majors and their levels |
+| Course list | `POST /level_fields` | Courses under some levels (paged) |
+| Course structure | `POST /get_wiki_index` | Chapter tree + knowledge points (leaves carry `entry_id`) |
+| Knowledge graph | `GET /knowledge_graph` | Expand a graph from a topic/keyword |
+| Graph · node | `GET /knowledge_graph/node` | Single node detail |
+| Graph · edge | `GET /knowledge_graph/relationship` | Single relationship detail (with evidence) |
+| Graph · search | `POST /knowledge_graph/search` | Find nodes in the graph by text |
+| (optional) Stats | `GET /info` | Total topics / keywords |
+| (optional) Name search | `POST /search_index_name` | Search nodes by name (e.g. only `field`) |
+
+> Every response is wrapped in `{"code":0,"data":{...}}`; unwrap with `data()` above. `GET` endpoints use `params=`, `POST` endpoints use `json=`.
+
+---
+
+## Building reading links
+
+Whenever you show a topic / keyword / course to a human, attach the reading link on `https://www.bohrium.com` (NOT the API host).
+
+Rules:
+- **Language prefix**: `zh-CN` → no prefix; `en-US` → add `/en`.
+- **Style segment**: lowercase, `Feynman → feynman`, `Hardcore → hardcore`.
+- **URL-encode** dynamic ids.
+
+| Type | Pattern | id source |
+|------|---------|-----------|
+| Topic | `{prefix}/sciencepedia/{style}/{entry_id}` | search `type=article` `id`; course-tree leaf `entry_id`; graph `node_type=entry` `node_id` |
+| Keyword | `{prefix}/sciencepedia/{style}/keyword/{keyword_id}` | search `type=keyword` `id`; graph `node_type=keyword` `node_id` |
+| Course / Field | `{prefix}/sciencepedia/field/{style}/{field_id}` | `/search/universal` `fields[].field_id`, or `/level_fields` `items[].field.field_id` |
 
 ```python
-r = requests.post(f"{BASE}/article", headers=H, json={
-    "node_id": "NODE_ID",         # or "entry_id": "ENTRY_ID"
-    **DEFAULTS,
-})
-doc = r.json().get("document", {})
-print(f"# {doc.get('article_name')}")
-print(doc.get("main_content", "")[:2000])
+def _site(language):
+    return "https://www.bohrium.com/en" if language == "en-US" else "https://www.bohrium.com"
+
+def topic_url(entry_id, language="en-US", style="Feynman"):
+    return f"{_site(language)}/sciencepedia/{style.lower()}/{quote(str(entry_id))}"
+
+def keyword_url(keyword_id, language="en-US", style="Feynman"):
+    return f"{_site(language)}/sciencepedia/{style.lower()}/keyword/{quote(str(keyword_id))}"
+
+def course_url(field_id, language="en-US", style="Feynman"):
+    return f"{_site(language)}/sciencepedia/field/{style.lower()}/{quote(str(field_id))}"
+
+def build_read_url(node_type, node_id, language="en-US", style="Feynman"):
+    # node_type "keyword" -> keyword page; otherwise (article/entry) -> topic page
+    if node_type == "keyword":
+        return keyword_url(node_id, language, style)
+    return topic_url(node_id, language, style)
 ```
 
-**Common fields**: `document.article_name` / `document.main_content` / `document.applications` / `document.seo_title`.
+Examples:
+```text
+Topic   (en, Feynman):   https://www.bohrium.com/en/sciencepedia/feynman/<entry_id>
+Keyword (zh, Feynman):   https://www.bohrium.com/sciencepedia/feynman/keyword/<keyword_id>
+Course  (en, Hardcore):  https://www.bohrium.com/en/sciencepedia/field/hardcore/<field_id>
+```
 
 ---
 
-## curl example
+## curl examples
 
 ```bash
 AK="$BOHR_ACCESS_KEY"
 BASE="https://open.bohrium.com/openapi/v2/literature-sage/wiki_v2"
 
-# Search entries by keyword
-curl -s -X POST "$BASE/search_index_name" \
+# Unified search
+curl -s -X POST "$BASE/search/universal" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"name":"graphene","node_types":["field"],"style":"Feynman"}' \
-  | jq '.wiki_indices[] | {node_name, node_type, node_id}'
+  -d '{"text":"graphene","language":"en-US","style":"Feynman"}' \
+  | jq '.data.articles[] | {type, id, article_name}'
+
+# Knowledge graph (GET + query)
+curl -s -G "$BASE/knowledge_graph" \
+  -H "Authorization: Bearer $AK" \
+  --data-urlencode "id=<entry_id_or_keyword_id>" \
+  --data-urlencode "language=en-US" --data-urlencode "style=Feynman" \
+  | jq '.data | {nodes: (.nodes|length), edges: (.relationships|length)}'
 ```
 
 ---
-
-## Building page links
-
-Whenever you show an entry or field to a human, attach the clickable reader link on `https://www.bohrium.com` (NOT the API host). This is what makes the answer useful to a person.
-
-- **Page host**: `https://www.bohrium.com`
-- **Style segment**: `Feynman → feynman`, `Hardcore → hardcore`
-- **Language prefix**: `zh-CN` → no prefix; `en-US` → prefix with `/en`
-- **URL-encode** dynamic ids.
-
-| Link | Pattern | id source |
-|------|---------|-----------|
-| Article (topic) | `{lang}/sciencepedia/{style}/{entry_id}` | `entry_id` from `get_wiki_index` topic nodes (or the `entry_id` you pass to `article`) |
-| Field (course) | `{lang}/sciencepedia/field/{style}/{field_id}` | `field_id` from `search_index_name` field results / `level_fields` |
-
-```text
-Article (en, Feynman):  https://www.bohrium.com/en/sciencepedia/feynman/<entry_id>
-Field   (zh, Feynman):  https://www.bohrium.com/sciencepedia/field/feynman/solid_state_physics
-```
-
-> This skill exposes only article/field reading — there are no keyword page links here.
 
 ## Response standards
 
-- Prefer a **teaching-style** answer: definition → intuition → key points → where it sits in the tree.
-- Always include the reader link (`article_url` / `course_url`) for any entry or field you mention.
-- If the requested `language`/`style` returns nothing, fall back in order: same language with the other style → `zh-CN`+`Feynman` → `en-US`+`Feynman`, and tell the user you switched.
+- **Search**: just give a list of "title + one-line summary + reading link"; do not explain the "topic vs keyword" difference to the user.
+- **Explain a concept**: definition → intuition → key points, with the entry's reading link.
+- **Course structure**: present as chapter → section → knowledge point, each point linked; you may group by foundational / core / advanced (using `*_entry_count`).
+- **Knowledge graph**: describe the center node first, then list the most relevant edges (by `weight`); expand with `node` / `relationship` detail when needed.
+- Always attach the reading link for any entry you mention. If the requested `language`/`style` returns nothing, fall back in order: same language with the other style → `zh-CN`+`Feynman` → `en-US`+`Feynman`, and say you switched.
 - Keep API failures transparent; on empty results, suggest synonyms and one alternate language/style.
-
----
 
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `No matches for "..."` | Keyword not in index | Try synonyms; expand `node_types` to `["field","topic","major","level"]` |
-| Empty `article` | Wrong nodeId/entryId or no body | First call `search_index_name` to obtain the correct `node_id` |
-| All-English (or all-Chinese) results | Wrong `language` | Set `"language": "en-US"` or `"zh-CN"` |
-| Built a reader link on `open.bohrium.com` | Mixed up API host and page host | Page links use `https://www.bohrium.com` (see *Building page links*) |
+| No matches | Term not in the index | Try synonyms; or use `/search_index_name` with broader `node_types` |
+| `article`/`keyword` returns `250002` | Content not yet generated for that language/style | Fall back to the search snippet, or retry with another `style`/`language` |
+| All-English (or all-Chinese) results | Wrong `language` | Set `"language":"en-US"` or `"zh-CN"` |
+| Empty knowledge graph | `id` is not a valid `entry_id`/`keyword_id`, or the node has no neighbors | First resolve the id via `/search/universal` or `/knowledge_graph/search` |
+| Built a reading link on `open.bohrium.com` | Mixed up API host and page host | Page links use `https://www.bohrium.com` (see [Building reading links](#building-reading-links)) |
 
 ## Pairs well with
 
-- **wiki** for a baseline explanation of a concept → **paper-search** to go deep
-- **wiki** to browse the discipline tree (`major_levels`) → pick a field → **scholar** to find leading researchers
+- **wiki** for a baseline explanation of a concept → **bohrium-paper-search** to go deep
+- **wiki** to browse the discipline tree (`major_levels`) → pick a course → **bohrium-scholar-search** to find leading researchers
