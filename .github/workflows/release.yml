@@ -94,4 +94,4 @@ jobs:
             echo "NPM_TOKEN is not configured; skipping npm publish"
             exit 0
           fi
-          npm publish --provenance
+          npm publish --access public --provenance
