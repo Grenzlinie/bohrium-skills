@@ -7,13 +7,13 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com (v1). Use when: u
 
 ## Overview
 
-LKM (Large Knowledge Model) v1 endpoints on `open.bohrium.com` let you search and trace knowledge extracted from scientific literature: search claim/question nodes, retrieve reasoning chains, view a paper-level knowledge graph, trace the reasoning behind a single claim, and batch-hydrate node details by ID.
+LKM (Large Knowledge Model) v1 endpoints on `open.bohrium.com` let you search and trace knowledge extracted from scientific literature: search claim/question/abstract knowledge hits, retrieve reasoning chains, view a paper-level knowledge graph, trace the reasoning behind a single claim, and batch-hydrate node details by ID.
 
 **Core capabilities:**
 
 | Endpoint | Function |
 |----------|----------|
-| `POST /v1/lkm/search` | Node search: recall relevant claim / question nodes |
+| `POST /v1/lkm/search` | Public search: recall claim / question / abstract hits; claim scopes may also target conclusion / premise roles |
 | `POST /v1/lkm/reasoning/search` | Reasoning chain search: recall whole chains by argument similarity |
 | `POST /v1/lkm/papers/graph` | Paper-level knowledge graph: full graph extracted from a paper |
 | `GET /v1/lkm/claims/{id}/reasoning` | Single-claim reasoning chain: why a claim holds |
@@ -22,7 +22,7 @@ LKM (Large Knowledge Model) v1 endpoints on `open.bohrium.com` let you search an
 
 **Choosing an entry point:**
 
-- Find claims/questions by keyword/semantics → `/search`
+- Find claims/questions/abstracts by keyword/semantics → `/search`
 - Find whole reasoning chains whose research/experimental process is similar (not just a single matching claim) → `/reasoning/search`
 - Open one paper and view its full structured graph → `/papers/graph`
 - Have a claim ID, want its reasoning chain → `/claims/{id}/reasoning`
@@ -48,7 +48,7 @@ The 5 retrieval endpoints fall into two groups:
 
 > `/papers/graph` can be a standalone starting point if you already have a DOI or title; otherwise its `package_id`/`paper_id` typically comes from paper metadata returned by `/search` or `/reasoning/search`.
 
-A search entry point's output (node IDs, paper IDs) is exactly the downstream input. Data flow:
+A search entry point's output (node IDs, paper IDs) is exactly the downstream input. `/search` defaults to paper aggregation: each main `variables[]` row is the representative hit for roughly one paper, and same-paper hits are folded into `related`. Abstract hits are paper-level background context; do not treat them as claims or reasoning roots.
 
 ```mermaid
 flowchart TD
@@ -127,9 +127,9 @@ The examples below call `lkm_data(r)` so the documented `code` contract is alway
 
 ---
 
-## 1. Node search — `POST /search`
+## 1. Public search — `POST /search`
 
-Recall claim / question nodes in LKM via natural language. Returns individual nodes, not full reasoning chains.
+Recall claim / question / abstract hits in LKM via natural language. By default, the server aggregates by paper and returns one representative main hit per paper, with additional same-paper hits in `related`. It returns hits and paper metadata, not full reasoning chains.
 
 ```python
 r = requests.post(f"{BASE}/search", headers=H, json={
@@ -137,8 +137,15 @@ r = requests.post(f"{BASE}/search", headers=H, json={
     "keywords": ["real-world contexts", "industrial production", "inquiry learning"],
     "retrieval_mode": "hybrid",
     "sort_by": "comprehensive",  # optional; default comprehensive; or relevance/recent/journal
-    "scopes": ["claim", "question"],
-    # "filters": {"paper_ids": ["811977903947382784"], "dois": ["10.1038/s41586-021-03381-x"]},  # optional; restrict recall to papers, ≤50 each
+    "scopes": ["claim", "question", "abstract", "conclusion", "premise"],
+    # "filters": {
+    #     "paper_ids": ["811977903947382784"],  # plain numeric IDs, no paper: prefix
+    #     "dois": ["10.1038/s41586-021-03381-x"],
+    #     "title": "perovskite stability",      # fuzzy title filter
+    #     "publication_date_start": "2020-01-01",
+    #     "publication_date_end": "2026-12-31",
+    #     "limit_publication_date": True,        # default true; false also recalls undated papers
+    # },
     "reasoning_only": False,
     "offset": 0,
     "limit": 20
@@ -146,7 +153,8 @@ r = requests.post(f"{BASE}/search", headers=H, json={
 data = lkm_data(r)
 for v in data["variables"]:
     print(v["id"], v["type"], v.get("role"), v["has_reasoning"], (v.get("content") or "")[:80])
-# data["papers"]: paper metadata referenced by hits (key like paper:<id>)
+# data["related"]: other relevant same-paper hits folded under the representative hit
+# data["papers"]: authoritative paper metadata referenced by hits (key like paper:<id>)
 # data["has_more"]: whether more pages exist
 ```
 
@@ -158,11 +166,14 @@ for v in data["variables"]:
 | `keywords` | string[] | no | Up to 10, ≤100 chars each; put terms/materials/methods/abbreviations, not full sentences |
 | `retrieval_mode` | string | no | `hybrid`(default, semantic+lexical) / `semantic`(vector only, faster) / `lexical`(keyword only) |
 | `sort_by` | string | no | Sort strategy, default `comprehensive` when omitted: `relevance`(pure relevance, most on-target top hit) / `recent`(prefers newer once relevance bar is met) / `journal`(prefers high-quality journals once relevance bar is met) / `comprehensive`(relevance+recency+quality+diversity combined) |
-| `scopes` | string[] | no | Restrict node type: `claim`, `question`; omit = no restriction |
+| `scopes` | string[] | no | Restrict hit scope: node types `claim` / `question` / `abstract`, or claim roles `conclusion` / `premise`; omit = no restriction |
 | `filters.visibility` | string | no | Content visibility, usually `public` |
 | `filters.role` | string | no | Restrict claim role: `conclusion`/`premise`/`highlight` |
 | `filters.paper_ids` | string[] | no | Restrict recall to papers, plain numeric IDs, **no `paper:` prefix**, up to 50 |
-| `filters.dois` | string[] | no | Restrict recall to papers by DOI, up to 50; server resolves each to a paper_id then merges with `paper_ids` for filtering; can be combined with `paper_ids`, omit = no paper restriction |
+| `filters.dois` | string[] | no | Restrict recall to papers by DOI, up to 50; can be combined with `paper_ids` |
+| `filters.title` | string | no | Fuzzy paper-title filter. When combined with `paper_ids` / `dois`, all dimensions are intersected (AND). Title filtering returns only the most relevant few papers by default and is not exhaustive. |
+| `filters.publication_date_start` / `filters.publication_date_end` | string | no | Publication-date bounds in `YYYY-MM-DD`; either side may be omitted |
+| `filters.limit_publication_date` | bool | no | Default `true`: apply the given date range; if both bounds are omitted, fall back to approximately the last 20 years. Set `false` to remove publication-date filtering entirely and recall undated papers. |
 | `reasoning_only` | bool | no | `true` returns only conclusion claims backed by a reasoning chain (legacy alias `evidence_only`) |
 | `include_paper_enrich` | bool | no | `true` returns richer paper metadata (larger response; use only when needed) |
 | `offset` | int | no | Page start, max 10000 |
@@ -172,16 +183,21 @@ for v in data["variables"]:
 
 | Field | Description |
 |-------|-------------|
-| `data.variables[].id` | Global node ID (`gcn_...`), usable in later reasoning / batch calls |
-| `data.variables[].type` | `claim` or `question` |
-| `data.variables[].role` | Claim role: `conclusion`/`premise`, etc. |
-| `data.variables[].score` | Retrieval rank score — **not credibility/evidence strength**, do not show as confidence |
+| `data.variables[]` | Main result list after aggregation; each row is the representative hit for roughly one paper. `id` is the hit object ID. |
+| `data.variables[].type` | `claim`, `question`, or `abstract` |
+| `data.variables[].role` | Claim role: `conclusion` / `premise`, etc. |
+| `data.variables[].score` / `rerank_score` | Retrieval rank score — **not credibility/evidence strength**, do not show as confidence |
 | `data.variables[].has_reasoning` | Whether the claim has a traceable reasoning chain (prefer `true` when showing reasoning) |
 | `data.variables[].provenance.source_packages` | Source paper package IDs |
-| `data.papers` | Paper metadata map, key like `paper:<id>` |
+| `data.related` | Other relevant same-paper snippets folded under the main hit. This is same-paper context, not cross-paper recommendation and not the complete paper graph. |
+| `data.papers` | Authoritative paper metadata map, key like `paper:<id>`; use this for paper cards, DOI, journal, impact factor, etc. |
 | `data.has_more` | Whether more pages exist (next page: same body, `offset += page count`) |
 
-**Constraint:** when `reasoning_only=true`, `scopes` must be omitted or `["claim"]`, and `filters.role` must be omitted or `conclusion`; conflicts return `290002`.
+**Constraints and policy:**
+
+- `paper_ids`, `dois`, and `title` are intersected (AND). If any dimension resolves to no papers, the whole result is empty.
+- `abstract` hits are paper-level context for judging relevance or RAG background. Do **not** use them as claims and do not request reasoning chains from them.
+- When `reasoning_only=true`, `scopes` must be omitted or `["claim"]` / `["conclusion"]`, and `filters.role` must be omitted or `conclusion`; conflicts return `290002`.
 
 > **Sorting note:** the recency/quality boosts in `recent`/`journal`/`comprehensive` are all relevance-gated, so they never pull in irrelevant content; existing callers that omit `sort_by` automatically get the better `comprehensive` default ordering.
 
@@ -198,7 +214,13 @@ r = requests.post(f"{BASE}/reasoning/search", headers=H, json={
     "retrieval_mode": "hybrid",
     "sort_by": "comprehensive",  # optional; default comprehensive; or relevance/recent/journal
     "format": "graph",
-    # "filters": {"paper_ids": ["811977903947382784"], "dois": ["10.1038/s41586-021-03381-x"]},  # optional; restrict recall to papers, ≤50 each
+    # "filters": {
+    #     "paper_ids": ["811977903947382784"],
+    #     "dois": ["10.1038/s41586-021-03381-x"],
+    #     "title": "phase stability",
+    #     "publication_date_start": "2020-01-01",
+    #     "limit_publication_date": True,
+    # },
     "offset": 0,
     "limit": 20
 })
@@ -218,6 +240,9 @@ for c in data["reasoning_chains"]:
 | `retrieval_mode` | string | no | `hybrid`(default) / `semantic` / `lexical` |
 | `sort_by` | string | no | Sort strategy, same values/semantics as `/search` (`relevance`/`recent`/`journal`/`comprehensive`), default `comprehensive` when omitted |
 | `filters.paper_ids` / `filters.dois` | string[] | no | Restrict recall to papers, same semantics as `/search`: plain numeric IDs (no `paper:` prefix) / DOIs, ≤50 each, can be combined |
+| `filters.title` | string | no | Fuzzy paper-title filter; intersects (AND) with `paper_ids` and `dois` |
+| `filters.publication_date_start` / `filters.publication_date_end` | string | no | Publication-date bounds in `YYYY-MM-DD`; either side may be omitted |
+| `filters.limit_publication_date` | bool | no | Default `true`; if both bounds are omitted, fall back to approximately the last 20 years. `false` removes publication-date filtering and can recall undated papers. |
 | `format` | string | no | Recommended `graph`, returns `graph.nodes`/`graph.edges`; omit returns legacy structure |
 | `offset` | int | no | Page start, max 10000 |
 | `limit` | int | no | Page size, default 20, max 100 |
@@ -233,6 +258,8 @@ for c in data["reasoning_chains"]:
 | `data.reasoning_chains[].paper` | Source paper metadata |
 | `data.reasoning_chains[].addressed_problems` / `open_questions` | Problems addressed / open questions |
 | `data.total` | Total hits; pagination: more pages if `offset + page count < total` |
+
+`paper_ids`, `dois`, and `title` filters are intersected (AND), as in `/search`; an empty match in any dimension yields an empty result set.
 
 ---
 
@@ -426,6 +453,7 @@ res = lkm_data(requests.post(f"{BASE}/search", headers=H, json={
     "keywords": ["FAPbI3", "thermal stability"],
     "retrieval_mode": "hybrid",
     "reasoning_only": True,
+    "scopes": ["conclusion"],
     "limit": 10,
 }))
 
@@ -457,7 +485,7 @@ BASE="https://open.bohrium.com/openapi/v1/lkm"
 # POST example (other POST endpoints work the same: just change path and body)
 curl -s -X POST "$BASE/search" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"query":"perovskite thermal stability","retrieval_mode":"hybrid","limit":20}' | jq .
+  -d '{"query":"perovskite thermal stability","retrieval_mode":"hybrid","scopes":["abstract","conclusion"],"filters":{"title":"perovskite","publication_date_start":"2020-01-01"},"limit":20}' | jq .
 
 # GET example (single-claim reasoning chain)
 curl -s -X GET "$BASE/claims/gcn_73e13bb548f847bd/reasoning?format=graph&max_chains=10" \
@@ -471,7 +499,7 @@ curl -s -X GET "$BASE/claims/gcn_73e13bb548f847bd/reasoning?format=graph&max_cha
 | code | Meaning | Fix |
 |------|---------|-----|
 | `2000` | Unauthorized | Check `BOHR_ACCESS_KEY` validity and that the request carries `Authorization: Bearer` |
-| `290002` | Invalid params | Check `retrieval_mode`/`scopes` values, `keywords` over limit, pagination bounds, `reasoning_only` vs scopes/role conflict, empty/over-100 `ids`, `package_id` format |
+| `290002` | Invalid params | Check `retrieval_mode`/`scopes` values, `keywords` over limit, pagination bounds, `reasoning_only` vs scopes/role conflict, title/date filter format, empty/over-100 `ids`, `package_id` format |
 | `290001` | Search/query failed | Retry once; if still failing, shorten query or lower limit |
 | `290004` | Claim not found | Ensure you pass a global `gcn_...`, not a graph local node ID |
 | `290008` | Claim has no reasoning chain | Only call reasoning on conclusions with `has_reasoning=true` |

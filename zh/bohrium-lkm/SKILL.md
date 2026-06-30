@@ -7,13 +7,13 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com (v1). Use when: u
 
 ## 概述
 
-通过 `open.bohrium.com` 的 LKM (Large Knowledge Model) v1 端点，对科研文献中抽取出的知识进行检索与追溯：搜索命题/研究问题节点、检索推理链、查看论文级知识图谱、追溯单条命题的支撑推理、按 ID 批量水合节点详情。
+通过 `open.bohrium.com` 的 LKM (Large Knowledge Model) v1 端点，对科研文献中抽取出的知识进行检索与追溯：搜索命题/研究问题/摘要命中、检索推理链、查看论文级知识图谱、追溯单条命题的支撑推理、按 ID 批量水合节点详情。
 
 **核心能力：**
 
 | 端点 | 功能 |
 |------|------|
-| `POST /v1/lkm/search` | 知识节点检索：召回相关的 claim / question 节点 |
+| `POST /v1/lkm/search` | 公开检索：召回 claim / question / abstract 命中；claim 还可按 conclusion / premise 角色检索 |
 | `POST /v1/lkm/reasoning/search` | 推理链检索：按论证过程相似性召回整条推理链 |
 | `POST /v1/lkm/papers/graph` | 论文级知识图谱：返回某篇论文抽取出的完整 graph |
 | `GET /v1/lkm/claims/{id}/reasoning` | 单条命题推理链：查某条 claim 为什么成立 |
@@ -22,7 +22,7 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com (v1). Use when: u
 
 **怎么选入口：**
 
-- 按关键词/语义找命题或问题 → `/search`
+- 按关键词/语义找命题、问题或论文摘要 → `/search`
 - 想找"论证/实验过程"相似的整条推理链（而非单个命题）→ `/reasoning/search`
 - 打开一篇论文看完整结构化图谱 → `/papers/graph`
 - 已有 claim ID，想看推理链 → `/claims/{id}/reasoning`
@@ -48,7 +48,7 @@ description: "Large Knowledge Model (LKM) via open.bohrium.com (v1). Use when: u
 
 > `/papers/graph` 若已知 DOI 或标题，也可不依赖其它接口、直接作为起点；否则其 `package_id`/`paper_id` 通常来自 `/search`、`/reasoning/search` 返回的论文元数据。
 
-检索入口的输出（节点 ID、论文 ID）正是下游接口的输入，数据流如下：
+检索入口的输出（节点 ID、论文 ID）正是下游接口的输入。`/search` 默认按 paper 聚合：主结果 `variables[]` 每条约等于一篇论文的代表命中，同论文的其它命中折叠进 `related`。`abstract` 是论文级背景上下文，不要当 claim 使用，也不要拿去追 reasoning。
 
 ```mermaid
 flowchart TD
@@ -127,9 +127,9 @@ def lkm_data(r):
 
 ---
 
-## 1. 知识节点检索 — `POST /search`
+## 1. 公开检索 — `POST /search`
 
-用自然语言召回 LKM 中的 claim / question 节点。返回的是一个个节点，不是完整推理链。
+用自然语言召回 LKM 中的 claim / question / abstract 命中。服务端默认按论文聚合，返回每篇论文最相关的一条主命中，同论文其它命中放到 `related`。返回的是检索命中和论文元信息，不是完整推理链。
 
 ```python
 r = requests.post(f"{BASE}/search", headers=H, json={
@@ -137,8 +137,15 @@ r = requests.post(f"{BASE}/search", headers=H, json={
     "keywords": ["real-world contexts", "industrial production", "inquiry learning"],
     "retrieval_mode": "hybrid",
     "sort_by": "comprehensive",  # 可选，默认 comprehensive；可选 relevance/recent/journal
-    "scopes": ["claim", "question"],
-    # "filters": {"paper_ids": ["811977903947382784"], "dois": ["10.1038/s41586-021-03381-x"]},  # 可选，按论文限定召回，各 ≤50
+    "scopes": ["claim", "question", "abstract", "conclusion", "premise"],
+    # "filters": {
+    #     "paper_ids": ["811977903947382784"],  # 纯数字 ID，不带 paper: 前缀
+    #     "dois": ["10.1038/s41586-021-03381-x"],
+    #     "title": "perovskite stability",      # 论文标题模糊过滤
+    #     "publication_date_start": "2020-01-01",
+    #     "publication_date_end": "2026-12-31",
+    #     "limit_publication_date": True,        # 默认 true；false 会召回无发表日期文献
+    # },
     "reasoning_only": False,
     "offset": 0,
     "limit": 20
@@ -146,7 +153,8 @@ r = requests.post(f"{BASE}/search", headers=H, json={
 data = lkm_data(r)
 for v in data["variables"]:
     print(v["id"], v["type"], v.get("role"), v["has_reasoning"], (v.get("content") or "")[:80])
-# data["papers"]: 命中节点引用到的论文元数据（key 形如 paper:<id>）
+# data["related"]: 同一篇 paper 内折叠的其它相关命中
+# data["papers"]: 权威论文元数据（key 形如 paper:<id>）
 # data["has_more"]: 是否还有下一页
 ```
 
@@ -158,11 +166,14 @@ for v in data["variables"]:
 | `keywords` | string[] | 否 | 关键词，最多 10 个、每个 ≤100 字；放术语/材料名/方法名/缩写，不要塞整句 |
 | `retrieval_mode` | string | 否 | `hybrid`(默认,语义+关键词) / `semantic`(仅语义,更快) / `lexical`(仅关键词) |
 | `sort_by` | string | 否 | 排序策略，不传默认 `comprehensive`：`relevance`(纯相关性,首位最准) / `recent`(相关达标前提下偏新) / `journal`(相关达标前提下偏高质量期刊) / `comprehensive`(相关+时效+质量+多样性综合) |
-| `scopes` | string[] | 否 | 限定节点类型：`claim`、`question`；省略=不限定 |
+| `scopes` | string[] | 否 | 限定命中范围：节点类型 `claim` / `question` / `abstract`，或 claim 角色 `conclusion` / `premise`；省略=不限定 |
 | `filters.visibility` | string | 否 | 内容可见性，通常 `public` |
 | `filters.role` | string | 否 | 限定 claim 角色：`conclusion`/`premise`/`highlight` |
 | `filters.paper_ids` | string[] | 否 | 按论文维度限定召回范围，纯数字论文 ID，**不带 `paper:` 前缀**，最多 50 个 |
-| `filters.dois` | string[] | 否 | 按论文维度限定召回范围，论文 DOI，最多 50 个；服务端先换成 paper_id 再与 `paper_ids` 合并过滤；可与 `paper_ids` 同时使用，省略=不限定论文范围 |
+| `filters.dois` | string[] | 否 | 按论文维度限定召回范围，论文 DOI，最多 50 个；可与 `paper_ids` 同时使用 |
+| `filters.title` | string | 否 | 按论文标题模糊过滤。与 `paper_ids` / `dois` 同时传时取交集（AND）。标题过滤只返回最相关的前若干篇，默认约 5 篇，不保证精确或穷尽。 |
+| `filters.publication_date_start` / `filters.publication_date_end` | string | 否 | 发表日期范围，格式 `YYYY-MM-DD`；可只传一侧 |
+| `filters.limit_publication_date` | bool | 否 | 默认 `true`：按日期范围过滤；若两侧日期都空，默认回落近 20 年。设为 `false` 时完全不限制发表日期，并可召回无发表日期文献。 |
 | `reasoning_only` | bool | 否 | `true` 只返回有推理链支撑的 conclusion claim（旧名 `evidence_only`） |
 | `include_paper_enrich` | bool | 否 | `true` 返回更丰富的论文元数据（响应变大，按需开） |
 | `offset` | int | 否 | 分页起点，最大 10000 |
@@ -172,16 +183,21 @@ for v in data["variables"]:
 
 | 字段 | 说明 |
 |------|------|
-| `data.variables[].id` | 全局节点 ID（`gcn_...`），可用于后续 reasoning / batch 查询 |
-| `data.variables[].type` | `claim` 或 `question` |
-| `data.variables[].role` | claim 角色：`conclusion`/`premise` 等 |
-| `data.variables[].score` | 检索排序分数，**不等于可信度/证据强度**，不要当置信度展示 |
+| `data.variables[]` | 聚合后的主结果列表；每条约等于一篇 paper 的代表命中。`id` 是命中对象 ID。 |
+| `data.variables[].type` | `claim` / `question` / `abstract` |
+| `data.variables[].role` | claim 角色：`conclusion` / `premise` 等 |
+| `data.variables[].score` / `rerank_score` | 检索排序分数，**不等于可信度/证据强度**，不要当置信度展示 |
 | `data.variables[].has_reasoning` | 该 claim 是否有推理链可追溯（展示推理时优先选 `true`） |
 | `data.variables[].provenance.source_packages` | 来源论文包 ID 列表 |
-| `data.papers` | 论文元数据 map，key 形如 `paper:<id>` |
+| `data.related` | 同一篇 paper 内被折叠的其它相关片段。它是 same-paper context，不是跨论文推荐，也不是完整 paper graph。 |
+| `data.papers` | 权威论文元数据 map，key 形如 `paper:<id>`；论文卡片、DOI、期刊、影响因子等优先从这里取。 |
 | `data.has_more` | 是否还有下一页（下一页用相同请求体，`offset += 本页条数`） |
 
-**约束：** `reasoning_only=true` 时，`scopes` 必须省略或 `["claim"]`，`filters.role` 必须省略或 `conclusion`；冲突会返回 `290002`。
+**约束与使用策略：**
+
+- `paper_ids`、`dois`、`title` 同时给定时取交集（AND）；任一维度命中为空则整体返回空结果。
+- `abstract` 是论文级背景上下文，适合快速判断论文相关性或做 RAG 背景；不要当 claim 用，也不要追 reasoning。
+- `reasoning_only=true` 时，`scopes` 必须省略或 `["claim"]` / `["conclusion"]`，`filters.role` 必须省略或 `conclusion`；冲突会返回 `290002`。
 
 > **排序说明：** `recent`/`journal`/`comprehensive` 的时效、质量加成都有相关性门控，不会塞进不相关内容；老调用方不传 `sort_by` 即自动享受更优的 `comprehensive` 默认排序。
 
@@ -198,7 +214,13 @@ r = requests.post(f"{BASE}/reasoning/search", headers=H, json={
     "retrieval_mode": "hybrid",
     "sort_by": "comprehensive",  # 可选，默认 comprehensive；可选 relevance/recent/journal
     "format": "graph",
-    # "filters": {"paper_ids": ["811977903947382784"], "dois": ["10.1038/s41586-021-03381-x"]},  # 可选，按论文限定召回，各 ≤50
+    # "filters": {
+    #     "paper_ids": ["811977903947382784"],
+    #     "dois": ["10.1038/s41586-021-03381-x"],
+    #     "title": "phase stability",
+    #     "publication_date_start": "2020-01-01",
+    #     "limit_publication_date": True,
+    # },
     "offset": 0,
     "limit": 20
 })
@@ -218,6 +240,9 @@ for c in data["reasoning_chains"]:
 | `retrieval_mode` | string | 否 | `hybrid`(默认) / `semantic` / `lexical` |
 | `sort_by` | string | 否 | 排序策略，取值与语义同 `/search`（`relevance`/`recent`/`journal`/`comprehensive`），不传默认 `comprehensive` |
 | `filters.paper_ids` / `filters.dois` | string[] | 否 | 按论文维度限定召回范围，语义同 `/search`：纯数字 ID（无 `paper:` 前缀）/ DOI，各 ≤50，可同时使用 |
+| `filters.title` | string | 否 | 论文标题模糊过滤；与 `paper_ids`、`dois` 取交集（AND） |
+| `filters.publication_date_start` / `filters.publication_date_end` | string | 否 | 发表日期范围，格式 `YYYY-MM-DD`；可只传一侧 |
+| `filters.limit_publication_date` | bool | 否 | 默认 `true`；两侧日期都空时回落近 20 年。`false` 完全不限制发表日期，可召回无发表日期文献。 |
 | `format` | string | 否 | 推荐 `graph`，返回 `graph.nodes`/`graph.edges`；省略返回旧结构 |
 | `offset` | int | 否 | 分页起点，最大 10000 |
 | `limit` | int | 否 | 每页条数，默认 20，最大 100 |
@@ -233,6 +258,8 @@ for c in data["reasoning_chains"]:
 | `data.reasoning_chains[].paper` | 来源论文元数据 |
 | `data.reasoning_chains[].addressed_problems` / `open_questions` | 该链处理的问题 / 留下的开放问题 |
 | `data.total` | 命中总数；分页：`offset + 本页条数 < total` 即有下一页 |
+
+`paper_ids`、`dois`、`title` 过滤语义同 `/search`，三者取交集（AND）；任一维度命中为空则整体为空结果。
 
 ---
 
@@ -426,6 +453,7 @@ res = lkm_data(requests.post(f"{BASE}/search", headers=H, json={
     "keywords": ["FAPbI3", "thermal stability"],
     "retrieval_mode": "hybrid",
     "reasoning_only": True,
+    "scopes": ["conclusion"],
     "limit": 10,
 }))
 
@@ -457,7 +485,7 @@ BASE="https://open.bohrium.com/openapi/v1/lkm"
 # POST 示例（其它 POST 接口同理：仅换 path 与 body）
 curl -s -X POST "$BASE/search" \
   -H "Authorization: Bearer $AK" -H "Content-Type: application/json" \
-  -d '{"query":"perovskite thermal stability","retrieval_mode":"hybrid","limit":20}' | jq .
+  -d '{"query":"perovskite thermal stability","retrieval_mode":"hybrid","scopes":["abstract","conclusion"],"filters":{"title":"perovskite","publication_date_start":"2020-01-01"},"limit":20}' | jq .
 
 # GET 示例（单条命题推理链）
 curl -s -X GET "$BASE/claims/gcn_73e13bb548f847bd/reasoning?format=graph&max_chains=10" \
@@ -471,7 +499,7 @@ curl -s -X GET "$BASE/claims/gcn_73e13bb548f847bd/reasoning?format=graph&max_cha
 | code | 含义 | 处理 |
 |------|------|------|
 | `2000` | 未授权 | 检查 `BOHR_ACCESS_KEY` 是否有效、请求头是否带 `Authorization: Bearer` |
-| `290002` | 入参错误 | 检查 `retrieval_mode`/`scopes` 取值、`keywords` 超限、分页越界、`reasoning_only` 与 scopes/role 冲突、`ids` 为空或超 100、`package_id` 格式 |
+| `290002` | 入参错误 | 检查 `retrieval_mode`/`scopes` 取值、`keywords` 超限、分页越界、`reasoning_only` 与 scopes/role 冲突、title/date 过滤格式、`ids` 为空或超 100、`package_id` 格式 |
 | `290001` | 检索/查询失败 | 重试一次；仍失败则缩短 query 或降低 limit |
 | `290004` | claim 不存在 | 确认传的是全局 `gcn_...`，而非 graph 本地节点 ID |
 | `290008` | claim 无推理链 | 仅对 `has_reasoning=true` 的 conclusion 调用 reasoning |
