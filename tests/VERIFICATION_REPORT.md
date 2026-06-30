@@ -312,13 +312,14 @@
 
 | 端点 | 方法 | 状态 | 备注 |
 |------|------|------|------|
-| `/v2/lkm/search` | POST | ✅ | 知识图谱搜索正常 |
-| `/v2/lkm/claims/match` | POST | ✅ | 论断匹配正常 |
-| `/v2/lkm/claims/{id}/evidence` | GET | ✅ | 证据链详情正常 |
-| `/v2/lkm/variables/batch` | POST | ✅ | 批量查询正常 |
-| `/v2/lkm/papers/ocr/batch` | POST | ❌ | 290007 权限不足（需更高权限 AK） |
+| `/v1/lkm/search` | POST | ✅ | 公开检索：claim/question/abstract 命中，支持 conclusion/premise scope、title/DOI/paper/date 过滤，默认按 paper 聚合 |
+| `/v1/lkm/reasoning/search` | POST | ✅ | 推理链检索：支持 paper_ids/dois/title/date 过滤，推荐 `format=graph` |
+| `/v1/lkm/claims/{id}/reasoning` | GET | ✅ | 单 claim 推理链，替代旧 `/evidence` 路径 |
+| `/v1/lkm/papers/graph` | POST | ✅ | 论文级知识图谱，按 package_id/paper_id/doi/title 查询 |
+| `/v1/lkm/variables/batch` | POST | ✅ | 批量水合节点详情 |
+| `/v1/lkm/feedback` | POST | ✅ | 反馈提交；写入接口，不返回知识内容 |
 
-**结论**: 核心功能（搜索/匹配/证据/变量）正常；OCR 批处理需更高权限。
+**结论**: LKM 当前 skill 以 `/openapi/v1/lkm` 为准；旧 `/v2/lkm/claims/match`、`/claims/{id}/evidence`、`/papers/ocr/batch` 不是当前 skill 推荐路径。
 
 ---
 
@@ -359,7 +360,7 @@
 | 2 | bohrium-node | API `/node/start/{id}` 返回 404 | 低 | 文档使用 `restart`；start 网关无路由 |
 | 3 | ~~bohrium-dataset~~ | ~~`open.bohrium.com` 的 `POST /ds/` 307→404~~ | ~~中~~ | **已修复**：307 已修复，统一 open.bohrium.com |
 | 4 | bohrium-wiki | article 端点返回 250002 "Article not found" | 低 | 索引存在，文章内容按需生成 |
-| 5 | bohrium-lkm | `/papers/ocr/batch` 返回 290007 权限不足 | 低 | 需更高权限 AK |
+| 5 | ~~bohrium-lkm~~ | ~~旧 `/papers/ocr/batch` 权限问题~~ | ~~低~~ | **已更新**：当前 skill 改用 `/openapi/v1/lkm` 的 search / reasoning / graph / feedback 路径，不再推荐 OCR 批处理 |
 
 ## CLI 环境配置说明
 
