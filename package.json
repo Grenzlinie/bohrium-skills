@@ -1,0 +1,26 @@
+{
+  "name": "bohrium-skills-cli",
+  "version": "0.1.0",
+  "description": "CLI installer and updater for the bundled Bohrium skills set.",
+  "license": "MIT",
+  "bin": {
+    "bohrium-skills-cli": "bin/bohrium-skills-cli"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "README.md",
+    "README_EN.md"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js",
+    "postinstall:dry-run": "node scripts/postinstall.js --dry-run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dptech-corp/bohrium-skills.git"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

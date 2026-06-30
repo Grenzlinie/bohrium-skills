@@ -1,0 +1,94 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, for example 0.1.0"
+        required: true
+        type: string
+      publish_npm:
+        description: "Publish npm package through npm Trusted Publishing"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.x"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Test
+        run: go test ./...
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          version="${version#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          mkdir -p dist
+          for goos in darwin linux windows; do
+            for goarch in amd64 arm64; do
+              ext=""
+              if [ "$goos" = "windows" ]; then
+                ext=".exe"
+              fi
+              GOOS="$goos" GOARCH="$goarch" go build \
+                -ldflags "-s -w -X github.com/dptech-corp/bohrium-skills/internal/build.Version=$version" \
+                -o "dist/bohrium-skills-cli_${goos}_${goarch}${ext}" \
+                ./cmd/bohrium-skills-cli
+            done
+          done
+          (cd dist && shasum -a 256 * > checksums.txt)
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          files: dist/*
+          generate_release_notes: true
+
+      - name: Publish npm package
+        env:
+          PUBLISH_NPM: ${{ github.event_name == 'push' || inputs.publish_npm }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$PUBLISH_NPM" != "true" ]; then
+            echo "npm publish skipped by workflow input"
+            exit 0
+          fi
+          npm pkg set repository.type=git
+          npm pkg set "repository.url=git+https://github.com/${GITHUB_REPOSITORY}.git"
+          npm publish --access public --provenance

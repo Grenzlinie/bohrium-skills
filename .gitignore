@@ -9,3 +9,14 @@ __pycache__/
 .idea/
 .vscode/
 *.swp
+
+# Go / release artifacts
+.gocache/
+dist/
+bin/bohrium-skills-cli.exe
+
+# Local npm cache used for dry-run tests
+.npm-cache/
+
+# Local reference checkout used for implementation notes
+references/
