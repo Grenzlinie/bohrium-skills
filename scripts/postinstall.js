@@ -6,7 +6,8 @@ const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
 
-const repo = "https://github.com/dptech-corp/bohrium-skills";
+const defaultRepo = "https://github.com/dptech-corp/bohrium-skills";
+const repo = (process.env.BOHRIUM_SKILLS_CLI_RELEASE_REPO || defaultRepo).replace(/\/+$/, "");
 const pkg = require("../package.json");
 const dryRun = process.argv.includes("--dry-run");
 const skipSync = process.env.BOHRIUM_SKILLS_CLI_NO_POSTINSTALL_SYNC === "1";
