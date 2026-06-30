@@ -54,7 +54,7 @@ This repo is also a Claude Code plugin marketplace:
 /plugin install bohrium-skills@bohrium
 ```
 
-This installs 15 Bohrium skills (English versions).
+This installs 17 Bohrium skills (English versions).
 
 ---
 
@@ -69,6 +69,8 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 | [bohrium-job](en/bohrium-job/SKILL.md) | Compute job management — submit, list, kill, delete jobs |
 | [bohrium-node](en/bohrium-node/SKILL.md) | Dev node management — create, start, stop, delete containers/VMs |
 | [bohrium-dataset](en/bohrium-dataset/SKILL.md) | Dataset management — create, upload, download, version control |
+| [bohrium-file](en/bohrium-file/SKILL.md) | File disk management — list, upload, download, move, copy, and delete personal/share disk files |
+| [bohrium-database](en/bohrium-database/SKILL.md) | Private database — inspect schemas, query/filter/export rows, insert/update/delete records, create and alter tables |
 | [bohrium-image](en/bohrium-image/SKILL.md) | Container image management — list, pull, create, delete images |
 | [bohrium-project](en/bohrium-project/SKILL.md) | Project management — create projects, manage members, set budgets |
 | [bohrium-knowledge-base](en/bohrium-knowledge-base/SKILL.md) | Knowledge base management — literature, tags, notes, recall search |

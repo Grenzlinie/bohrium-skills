@@ -3,7 +3,8 @@
 Smoke-test every Bohrium skill's primary endpoint against open.bohrium.com.
 
 Gateway paths use the v2 prefix (aligned with the current skills). bohrium-job
-stays on v1 (its v2 upstream differs and job_group has no v2 route).
+stays on v1 (its v2 upstream differs and job_group has no v2 route). bohrium-file
+uses v1 for normal personal/share file operations and v2 only for upload credentials.
 
 Usage:
     export BOHR_ACCESS_KEY="..."
@@ -159,6 +160,29 @@ def record(
     if status == "PASS" and note_on_pass:
         note = note_on_pass
     results.append(Result(skill, endpoint, status, code, note))
+    print(f"  [{status}] {method:<4} {endpoint}  HTTP={code}  {note}")
+
+
+def record_file(
+    endpoint: str,
+    method: str,
+    *,
+    params: dict | None = None,
+    body: dict | None = None,
+    require_data_keys: tuple[str, ...] = (),
+    note_on_pass: str = "",
+) -> None:
+    code, data = http(method, endpoint, params=params, body=body)
+    status, note = classify(code, data)
+    if status == "PASS" and require_data_keys:
+        payload = data.get("data") if isinstance(data, dict) else None
+        missing = [k for k in require_data_keys if not isinstance(payload, dict) or k not in payload]
+        if missing:
+            status = "FAIL"
+            note = f"missing data keys: {','.join(missing)}"
+    if status == "PASS" and note_on_pass:
+        note = note_on_pass
+    results.append(Result("file", endpoint, status, code, note))
     print(f"  [{status}] {method:<4} {endpoint}  HTTP={code}  {note}")
 
 
@@ -318,6 +342,48 @@ record("node", "/v2/node/list", "GET", params={"page": 1, "pageSize": 1})
 # ---------------------------------------------------------------------------
 print("\n[bohrium-dataset]")
 record("dataset", "/v2/ds/", "GET", params={"page": 1, "pageSize": 1})
+
+# ---------------------------------------------------------------------------
+# bohrium-file  (personal/share list/download use v1; upload credential uses v2)
+# ---------------------------------------------------------------------------
+print("\n[bohrium-file]")
+code, ak_data = http("GET", "/v1/ak/get")
+status, note = classify(code, ak_data)
+user_id = None
+if status == "PASS" and isinstance(ak_data, dict):
+    payload = ak_data.get("data") if isinstance(ak_data.get("data"), dict) else {}
+    user_id = payload.get("user_id") or payload.get("userId")
+    if not user_id:
+        status, note = "FAIL", f"no user_id; body={json.dumps(ak_data)[:160]}"
+results.append(Result("file", "/v1/ak/get", status, code, note))
+print(f"  [{status}] GET  /v1/ak/get  HTTP={code}  {note}")
+if user_id:
+    record_file(
+        "/v1/file/iterate",
+        "POST",
+        body={
+            "prefix": "personal/",
+            "projectId": 0,
+            "userId": user_id,
+            "dirSpace": "personal",
+            "maxObjects": 1,
+            "nextToken": "",
+        },
+        require_data_keys=("objects", "hasNext"),
+    )
+    record_file(
+        "/v1/file/stat/personal/",
+        "GET",
+        params={"projectId": 0, "userId": user_id},
+        require_data_keys=("exist",),
+    )
+    record_file(
+        "/v2/file/upload/binary",
+        "GET",
+        params={"projectId": 0, "userId": user_id, "path": "/personal/bohrium-file-smoke.txt"},
+        require_data_keys=("host", "Authorization", "X-Storage-Param"),
+        note_on_pass="credential issued; upload bytes not sent",
+    )
 
 # ---------------------------------------------------------------------------
 # bohrium-image  — image v2 endpoints live on open-platform

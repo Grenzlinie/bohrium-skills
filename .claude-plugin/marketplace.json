@@ -12,12 +12,14 @@
   "plugins": [
     {
       "name": "bohrium-skills",
-      "description": "15 Bohrium platform skills: job/node/dataset/image/project management, knowledge-base, paper & patent search, PDF parsing, scholar search, SciencePedia wiki, scientific tools library, web search, sandbox, large knowledge model, and AI science mentor.",
+      "description": "17 Bohrium platform skills: job/node/dataset/file/database/image/project management, knowledge-base, paper & patent search, PDF parsing, scholar search, SciencePedia wiki, scientific tools library, web search, sandbox, large knowledge model, and AI science mentor.",
       "category": "research",
       "source": "./",
       "strict": false,
       "skills": [
         "./en/bohrium-dataset",
+        "./en/bohrium-file",
+        "./en/bohrium-database",
         "./en/bohrium-image",
         "./en/bohrium-job",
         "./en/bohrium-knowledge-base",
