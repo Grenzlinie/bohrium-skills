@@ -11,7 +11,7 @@ on:
         required: true
         type: string
       publish_npm:
-        description: "Publish npm package when NPM_TOKEN is configured"
+        description: "Publish npm package through npm Trusted Publishing"
         required: false
         default: false
         type: boolean
@@ -32,7 +32,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
 
       - name: Test
@@ -81,17 +81,12 @@ jobs:
 
       - name: Publish npm package
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           PUBLISH_NPM: ${{ github.event_name == 'push' || inputs.publish_npm }}
         shell: bash
         run: |
           set -euo pipefail
           if [ "$PUBLISH_NPM" != "true" ]; then
             echo "npm publish skipped by workflow input"
-            exit 0
-          fi
-          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "NPM_TOKEN is not configured; skipping npm publish"
             exit 0
           fi
           npm pkg set repository.type=git
