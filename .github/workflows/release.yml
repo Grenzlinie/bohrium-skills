@@ -94,4 +94,6 @@ jobs:
             echo "NPM_TOKEN is not configured; skipping npm publish"
             exit 0
           fi
+          npm pkg set repository.type=git
+          npm pkg set "repository.url=git+https://github.com/${GITHUB_REPOSITORY}.git"
           npm publish --access public --provenance
