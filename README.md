@@ -90,15 +90,15 @@ bohrium-skills-cli install --lang zh --json
 BOHRIUM_SKILLS_CLI_NO_POSTINSTALL_SYNC=1 npm install -g bohrium-skills-cli
 ```
 
-如需先从 fork 的 GitHub Release 测试二进制下载，可覆盖 release 仓库地址：
+如需测试本地打包产物的 postinstall 下载逻辑，可临时覆盖 release 仓库地址：
 
 ```bash
-BOHRIUM_SKILLS_CLI_RELEASE_REPO=https://github.com/Grenzlinie/bohrium-skills npm install -g ./bohrium-skills-cli-0.1.0.tgz
+BOHRIUM_SKILLS_CLI_RELEASE_REPO=https://github.com/OWNER/REPO npm install -g ./bohrium-skills-cli-0.1.0.tgz
 ```
 
 ### 方式二：GitHub Release 二进制安装
 
-如果没有 npm 账号，或只想使用 GitHub Release 发布的单文件二进制，可以手动下载对应平台的 release asset：
+如果只想使用 GitHub Release 发布的单文件二进制，可以手动下载对应平台的 release asset：
 
 ```bash
 # macOS Apple Silicon

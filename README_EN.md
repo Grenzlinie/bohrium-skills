@@ -93,10 +93,10 @@ To skip postinstall skill sync while still installing the binary:
 BOHRIUM_SKILLS_CLI_NO_POSTINSTALL_SYNC=1 npm install -g bohrium-skills-cli
 ```
 
-To test binary downloads from a fork release before the official release is available:
+To test postinstall binary downloads from a locally packed tarball, temporarily override the release repository:
 
 ```bash
-BOHRIUM_SKILLS_CLI_RELEASE_REPO=https://github.com/Grenzlinie/bohrium-skills npm install -g ./bohrium-skills-cli-0.1.0.tgz
+BOHRIUM_SKILLS_CLI_RELEASE_REPO=https://github.com/OWNER/REPO npm install -g ./bohrium-skills-cli-0.1.0.tgz
 ```
 
 The sync only manages official `bohrium-*` skills. Existing same-name skills are backed up under `~/.config/bohrium-skills-cli/backups/<timestamp>/` before replacement.
