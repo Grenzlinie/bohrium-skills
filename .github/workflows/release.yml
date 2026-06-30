@@ -4,6 +4,17 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, for example 0.1.0"
+        required: true
+        type: string
+      publish_npm:
+        description: "Publish npm package when NPM_TOKEN is configured"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -27,11 +38,25 @@ jobs:
       - name: Test
         run: go test ./...
 
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          version="${version#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
       - name: Build release assets
         shell: bash
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
+          version="${{ steps.version.outputs.version }}"
           mkdir -p dist
           for goos in darwin linux windows; do
             for goarch in amd64 arm64; do
@@ -49,10 +74,24 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           files: dist/*
           generate_release_notes: true
 
       - name: Publish npm package
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --provenance
+          PUBLISH_NPM: ${{ github.event_name == 'push' || inputs.publish_npm }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$PUBLISH_NPM" != "true" ]; then
+            echo "npm publish skipped by workflow input"
+            exit 0
+          fi
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "NPM_TOKEN is not configured; skipping npm publish"
+            exit 0
+          fi
+          npm publish --provenance
