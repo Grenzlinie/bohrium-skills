@@ -207,6 +207,7 @@ bohrium-skills-cli update --check --json
 | bohrium-paper-search | 论文搜索（keyword） | type 0 = 0.05 元/次；type 1 = 0.1 元/次 |
 | bohrium-paper-search | 专利搜索（patent） | type 0 = 0.1 元/次；type 1 = 0.3 元/次；type 2 = 0.5 元/次 |
 | bohrium-pdf-parser | PDF 解析 | 0.05 元/页（触发解析时扣，查询结果免费） |
+| bohrium-mentor | AI 科学小导师（创建 session） | 2 元/次 |
 
 ---
 

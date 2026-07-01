@@ -140,6 +140,7 @@ The following skills are charged to your account balance per call. Check your ba
 | bohrium-paper-search | Paper search (keyword) | type 0 = ¥0.05/call; type 1 = ¥0.1/call |
 | bohrium-paper-search | Patent search (patent) | type 0 = ¥0.1/call; type 1 = ¥0.3/call; type 2 = ¥0.5/call |
 | bohrium-pdf-parser | PDF parsing | ¥0.05/page (charged on trigger; fetching results is free) |
+| bohrium-mentor | AI Science Mentor (create session) | ¥2/call |
 
 ---
 
