@@ -23,6 +23,12 @@ Since 2023, Bohrium no longer supports VM jobs — container images are required
 
 Only configure `BOHR_ACCESS_KEY` for this skill. Helper scripts handle any legacy CLI compatibility internally.
 
+When calling the `bohr` CLI directly, map `BOHR_ACCESS_KEY` to the legacy variable that the CLI reads:
+
+```bash
+export ACCESS_KEY="$BOHR_ACCESS_KEY"
+```
+
 ## Prerequisites: Install bohr CLI
 
 ```bash
@@ -31,6 +37,7 @@ Only configure `BOHR_ACCESS_KEY` for this skill. Helper scripts handle any legac
 # Linux
 /bin/bash -c "$(curl -fsSL https://dp-public.oss-cn-beijing.aliyuncs.com/bohrctl/1.0.0/install_bohr_linux_curl.sh)"
 source ~/.bashrc && export PATH="$HOME/.bohrium:$PATH"
+export ACCESS_KEY="$BOHR_ACCESS_KEY"
 ```
 
 ---
@@ -243,6 +250,7 @@ After installing software on a container node, save the environment as a custom 
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
+| `AccessKey Invalid` | Direct `bohr` calls are missing the legacy variable name | Run `export ACCESS_KEY="$BOHR_ACCESS_KEY"` and retry |
 | `bohr image pull` fails | Docker not running | Start Docker Desktop |
 | v2 private param error | Missing required params | Add `device=container&type=private` parameters |
 | `no permission` | Not image creator | Can only manage own images |

@@ -25,6 +25,12 @@ Projects are the organizational containers for Nodes, Jobs, Images, and Datasets
 
 Only configure `BOHR_ACCESS_KEY` for this skill. Helper scripts handle any legacy CLI compatibility internally.
 
+When calling the `bohr` CLI directly, map `BOHR_ACCESS_KEY` to the legacy variable that the CLI reads:
+
+```bash
+export ACCESS_KEY="$BOHR_ACCESS_KEY"
+```
+
 ## Prerequisites: Install bohr CLI
 
 ```bash
@@ -36,6 +42,7 @@ Only configure `BOHR_ACCESS_KEY` for this skill. Helper scripts handle any legac
 
 source ~/.bashrc  # or source ~/.zshrc
 export PATH="$HOME/.bohrium:$PATH"
+export ACCESS_KEY="$BOHR_ACCESS_KEY"
 ```
 
 ---
@@ -255,6 +262,7 @@ The following endpoints are **not accessible** via openapi auth (return 404):
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
+| `AccessKey Invalid` | Direct `bohr` calls are missing the legacy variable name | Run `export ACCESS_KEY="$BOHR_ACCESS_KEY"` and retry |
 | Can't find newly created project | New project is at end of list | `bohr project list --json` to see all |
 | Failed to remove member | Wrong userId | Get userId via API `/{id}/users` first |
 | Adding member has no effect | Email doesn't exist | Ensure target user is registered on Bohrium |

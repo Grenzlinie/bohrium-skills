@@ -26,6 +26,12 @@ BOHR_ACCESS_KEY and PROJECT_ID are read from the OpenClaw config `~/.openclaw/op
 
 OpenClaw automatically injects `env` variables into the runtime. The skill only requires `BOHR_ACCESS_KEY`; helper scripts handle any legacy CLI compatibility internally.
 
+When calling the `bohr` CLI directly, map `BOHR_ACCESS_KEY` to the legacy variable that the CLI reads:
+
+```bash
+export ACCESS_KEY="$BOHR_ACCESS_KEY"
+```
+
 ## Prerequisites: Install bohr CLI
 
 ```bash
@@ -38,6 +44,7 @@ OpenClaw automatically injects `env` variables into the runtime. The skill only 
 # Verify
 source ~/.bashrc  # or source ~/.zshrc
 export PATH="$HOME/.bohrium:$PATH"
+export ACCESS_KEY="$BOHR_ACCESS_KEY"
 bohr version
 ```
 
@@ -370,6 +377,7 @@ requests.post(f"{BASE}/job_group/{job_group_id}/modify",
 | `cd /root/input: No such file` | Absolute path in command | Use **relative paths** |
 | `unsupported protocol scheme ""` | Missing env vars | Set `OPENAPI_HOST` and `TIEFBLUE_HOST` |
 | `(200, '/account/login', None)` | Old pip lbg | Use Go CLI (`~/.bohrium/bohr`) |
+| `AccessKey Invalid` | Direct `bohr` calls are missing the legacy variable name | Run `export ACCESS_KEY="$BOHR_ACCESS_KEY"` and retry |
 | WAF 405 | Shell keywords in command | Write to script, use `bash run.sh` |
 | `Permission error` | Wrong user | Verify BOHR_ACCESS_KEY |
 | `jobId` vs `jobGroupId` | Different concepts | CLI uses `jobId` for kill/terminate/delete |

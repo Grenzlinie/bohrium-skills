@@ -23,6 +23,13 @@ Dev nodes are used for data preparation, compilation, debugging, and post-proces
 
 Only configure `BOHR_ACCESS_KEY` for this skill. Helper scripts handle any legacy CLI compatibility internally.
 
+When calling `bohr node ...` commands directly, map `BOHR_ACCESS_KEY` to the legacy variable that the CLI reads:
+
+```bash
+export PATH="$HOME/.bohrium:$PATH"
+export ACCESS_KEY="$BOHR_ACCESS_KEY"
+```
+
 ## List Nodes
 
 ```bash
@@ -186,6 +193,7 @@ requests.post(f"{BASE}/ds/bind", headers=HEADERS_JSON,
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
+| `AccessKey Invalid` | Direct `bohr` calls are missing the legacy variable name | Run `export ACCESS_KEY="$BOHR_ACCESS_KEY"` and retry |
 | `No resource for selected machine` | Out of stock | Try another spec or retry later |
 | `record not found` | Invalid machineId | Verify with `python node_manager.py list` |
 | Restart fails | Node not stopped | `bohr node stop` first, wait for Paused |

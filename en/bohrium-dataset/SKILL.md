@@ -28,6 +28,12 @@ Datasets solve common pain points:
 
 Only configure `BOHR_ACCESS_KEY` for this skill. Helper scripts handle any legacy CLI compatibility internally.
 
+When calling the `bohr` CLI directly, map `BOHR_ACCESS_KEY` to the legacy variable that the CLI reads:
+
+```bash
+export ACCESS_KEY="$BOHR_ACCESS_KEY"
+```
+
 ## Prerequisites: Install bohr CLI
 
 ```bash
@@ -36,6 +42,7 @@ Only configure `BOHR_ACCESS_KEY` for this skill. Helper scripts handle any legac
 # Linux
 /bin/bash -c "$(curl -fsSL https://dp-public.oss-cn-beijing.aliyuncs.com/bohrctl/1.0.0/install_bohr_linux_curl.sh)"
 source ~/.bashrc && export PATH="$HOME/.bohrium:$PATH"
+export ACCESS_KEY="$BOHR_ACCESS_KEY"
 export OPENAPI_HOST=https://open.bohrium.com
 ```
 
@@ -227,6 +234,7 @@ r = requests.get(f"{BASE}/project", headers=HEADERS)
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
+| `AccessKey Invalid` | Direct `bohr` calls are missing the legacy variable name | Run `export ACCESS_KEY="$BOHR_ACCESS_KEY"` and retry |
 | Upload interrupted | Network instability | Re-run same command, enter `y` to resume |
 | Dataset path not found | Wrong mount path | Check `path` with `bohr dataset list --json` |
 | Job can't access dataset | Not in job.json | Add `"dataset_path": ["/bohr/xxx/v1"]` |
