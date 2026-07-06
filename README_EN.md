@@ -133,14 +133,19 @@ Operate Bohrium platform resources via `bohr` CLI or `open.bohrium.com` HTTP API
 
 ## Billing
 
-The following skills are charged to your account balance per call. Check your balance and bills on the [Research Assets](https://www.bohrium.com/en/assets):
+Charged skills bill your account balance per call or per compute-hour. Check your balance and bills on the [Research Assets](https://www.bohrium.com/en/assets):
 
-| Skill | Type | Price |
-|-------|------|-------|
-| bohrium-paper-search | Paper search (keyword) | type 0 = ¥0.05/call; type 1 = ¥0.1/call |
-| bohrium-paper-search | Patent search (patent) | type 0 = ¥0.1/call; type 1 = ¥0.3/call; type 2 = ¥0.5/call |
-| bohrium-pdf-parser | PDF parsing | ¥0.05/page (charged on trigger; fetching results is free) |
-| bohrium-mentor | AI Science Mentor (create session) | ¥2/call |
+| Skill | Charged | Price | Unit | Notes |
+|-------|:-------:|-------|------|-------|
+| bohrium-job | Yes | See pricing page | ¥/hour | Compute-hour fee after machine starts; see Job pricing page |
+| bohrium-node | Yes | See pricing page | ¥/hour | Compute-hour fee after machine starts; see Node pricing page |
+| bohrium-sandbox | Yes | See pricing page | ¥/hour | Compute-hour fee after machine starts; see Node pricing page |
+| bohrium-paper-search | Yes | From ¥0.05/call | ¥/call | Paper: standard (type 0) ¥0.05, enhanced (type 1) ¥0.1/call; Patent: type 0 ¥0.1, type 1 ¥0.3, type 2 ¥0.5/call |
+| bohrium-pdf-parser | Yes | ¥0.05/page | ¥/page | Charged on trigger; fetching results is free |
+| bohrium-lkm | Yes | TBD | ¥/call | Pricing in progress, TBD |
+| bohrium-mentor | Yes | ¥2.0/call | ¥/call | Charged on session creation; ¥2/call or 200 photons/call |
+| bohrium-dataset / bohrium-image / bohrium-project / bohrium-knowledge-base / bohrium-scholar-search / bohrium-web-search | Free | - | - | - |
+| bohrium-sciencepedia | Free | - | - | Free for a limited time, pricing TBD |
 
 ---
 

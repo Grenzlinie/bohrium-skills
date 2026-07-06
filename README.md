@@ -200,14 +200,19 @@ bohrium-skills-cli update --check --json
 
 ## 计费说明
 
-以下 Skill 按调用扣账户余额，可在 [科研资产](https://www.bohrium.com/assets) 查看余额与账单：
+收费 Skill 按调用或机时扣账户余额，可在 [科研资产](https://www.bohrium.com/assets) 查看余额与账单：
 
-| Skill | 类型 | 价格 |
-|-------|------|------|
-| bohrium-paper-search | 论文搜索（keyword） | type 0 = 0.05 元/次；type 1 = 0.1 元/次 |
-| bohrium-paper-search | 专利搜索（patent） | type 0 = 0.1 元/次；type 1 = 0.3 元/次；type 2 = 0.5 元/次 |
-| bohrium-pdf-parser | PDF 解析 | 0.05 元/页（触发解析时扣，查询结果免费） |
-| bohrium-mentor | AI 科学小导师（创建 session） | 2 元/次 |
+| Skill | 是否收费 | 定价 | 计价单位 | 定价说明 |
+|-------|:------:|------|------|------|
+| bohrium-job | 收费 | 见定价页 | 元/小时 | 开机后收取机时费，价格见 Job 定价页 |
+| bohrium-node | 收费 | 见定价页 | 元/小时 | 开机后收取机时费，价格见 Node 定价页 |
+| bohrium-sandbox | 收费 | 见定价页 | 元/小时 | 开机后收取机时费，价格见 Node 定价页 |
+| bohrium-paper-search | 收费 | 0.05 元/次起 | 元/次 | 论文：普通版(type 0) 0.05、加强版(type 1) 0.1 元/次；专利：type 0 0.1、type 1 0.3、type 2 0.5 元/次 |
+| bohrium-pdf-parser | 收费 | 0.05 元/页 | 元/页 | 触发 PDF 解析时收取，查询结果免费 |
+| bohrium-lkm | 收费 | 定价中，待补充 | 元/次 | 定价中，待补充 |
+| bohrium-mentor | 收费 | 2.0 元/次 | 元/次 | 创建会话时收取，2 元/次 或 200 光子/次 |
+| bohrium-dataset / bohrium-image / bohrium-project / bohrium-knowledge-base / bohrium-scholar-search / bohrium-web-search | 免费 | - | - | - |
+| bohrium-sciencepedia | 免费 | - | - | 限时免费，定价中，待补充 |
 
 ---
 
