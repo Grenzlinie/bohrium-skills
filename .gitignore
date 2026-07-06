@@ -20,3 +20,56 @@ bin/bohrium-skills-cli.exe
 
 # Local reference checkout used for implementation notes
 references/
+
+# Skill demo/orchestration output (timestamped generated files)
+academic_promo_*.md
+compare_DFT_vs_ML-force-fields_*.md
+conference_tracker_*.md
+field_map_*.md
+field_map_*_data.json
+frontier_alert_*.json
+journal_report_*.md
+method_card_molecular_dynamics_*.md
+method_card_molecular_dynamics_*_data.json
+patent_paper_cross_*.md
+patent_paper_cross_*_data.json
+reading_club_*.md
+references_*.bib
+related_work_*.md
+research_data_*.json
+research_memo_*.md
+review_*.md
+review_*_data.json
+journal_recommendations.md
+journal_recommendations_data.json
+
+# Local orchestration skills (not yet published)
+zh/academic-promo/
+zh/citation-explorer/
+zh/collaborator-finder/
+zh/conference-tracker/
+zh/field-mapper/
+zh/frontier-alert/
+zh/grant-helper/
+zh/journal-matcher/
+zh/literature-review/
+zh/method-wiki/
+zh/paper-dissector/
+zh/patent-paper-cross/
+zh/personal-research-radar/
+zh/pre-review/
+zh/reading-club/
+zh/related-work-writer/
+zh/research-agent/
+zh/research-journal/
+zh/review-assistant/
+zh/scholar-profiler/
+zh/tech-compare/
+zh/tech-radar/
+zh/topic-scout/
+
+# Local docs/tests not yet ready
+docs/SKILL-OPTIMIZATION.md
+docs/demo-reports/
+docs/superpowers/
+tests/
