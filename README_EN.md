@@ -45,64 +45,6 @@ export BOHR_ACCESS_KEY="your_access_key_here"
 
 ---
 
-## Claude Code Plugin Install
-
-This repo is also a Claude Code plugin marketplace:
-
-```
-/plugin marketplace add dptech-corp/bohrium-skills
-/plugin install bohrium-skills@bohrium
-```
-
-This installs 17 Bohrium skills (English versions).
-
----
-
-## CLI Install And Update
-
-Use `bohrium-skills-cli` to install and update the bundled skill set:
-
-```bash
-npm install -g bohrium-skills-cli
-```
-
-The npm `postinstall` downloads the platform binary and runs:
-
-```bash
-bohrium-skills-cli install --lang zh --json
-```
-
-By default the CLI syncs the bundled skills to:
-
-- `~/.agents/skills`
-- `~/.claude/skills`
-- `~/.codex/skills`
-
-Useful commands:
-
-```bash
-bohrium-skills-cli update
-bohrium-skills-cli status
-bohrium-skills-cli install --force
-bohrium-skills-cli install --lang en
-```
-
-To skip postinstall skill sync while still installing the binary:
-
-```bash
-BOHRIUM_SKILLS_CLI_NO_POSTINSTALL_SYNC=1 npm install -g bohrium-skills-cli
-```
-
-To test postinstall binary downloads from a locally packed tarball, temporarily override the release repository:
-
-```bash
-BOHRIUM_SKILLS_CLI_RELEASE_REPO=https://github.com/OWNER/REPO npm install -g ./bohrium-skills-cli-0.1.0.tgz
-```
-
-The sync only manages official `bohrium-*` skills. Existing same-name skills are backed up under `~/.config/bohrium-skills-cli/backups/<timestamp>/` before replacement.
-
----
-
 ## Skill List
 
 ### Platform API Skills
@@ -146,6 +88,31 @@ Charged skills bill your account balance per call or per compute-hour. Check you
 | bohrium-mentor | Yes | ¥2.0/call | ¥/call | Charged on session creation; ¥2/call or 200 photons/call |
 | bohrium-dataset / bohrium-image / bohrium-project / bohrium-knowledge-base / bohrium-scholar-search / bohrium-web-search | Free | - | - | - |
 | bohrium-sciencepedia | Free | - | - | Free for a limited time, pricing TBD |
+
+---
+
+## Installation
+
+### Option 1: Claude Code Plugin
+
+```
+/plugin marketplace add dptech-corp/bohrium-skills
+/plugin install bohrium-skills@bohrium
+```
+
+### Option 2: bohrium-skills-cli (recommended)
+
+```bash
+npm install -g bohrium-skills-cli
+```
+
+After install, skills are automatically synced to `~/.agents/skills`, `~/.claude/skills`, and `~/.codex/skills`. To update:
+
+```bash
+bohrium-skills-cli update
+```
+
+> For more options (manual binary install, env vars, all commands) see [CLI Guide](docs/cli.md).
 
 ---
 
